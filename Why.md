@@ -3,221 +3,168 @@
 In this day and age, where AI agents can spit out whatever React component you want in a couple of seconds,
 why bother with yet another UI framework? It seems a bit pointless, but it isn't.
 
-While I don't like React that much, it is the best UI framework I've tried so far.
-Functional components in particular, look aesthetically pleasing, and are intuitive and easy to understand, build and compose.
-I simply won't bother trying or using any UI frameworks that don't have something like them. 
+Over the years, there are a couple of programming ideas that I have learned that have helped me greatly improve the performance,readability and maintainability of my code:
 
-However, this framework was created largely because of these shortcomings of React. Let me elaborate on that a bit:
+- Prefer reusing memory instead of allocating new memory, unless it is inconvenient to do so
+    - Prefer iterating datastructures over materializing them
+    - Prefer mutability over immutability, unless it is inconvenient/buggy to do so
+- Prefer keeping functions together for as long as possible, and only refactor logic that you will actually reuse, instead of prematurely breaking them up into lots of tiny pieces, unless inconvenient to do so
+- Prefer declaring state as close as possible to where it is actually needed
+- Prefer APIs that provide primitives and operations on those primitives instead of an API that accepts a craptonne of callbacks, unless actually inconvenient to do so
+- Prefer grouping related values into single objects, and pass that object around, instead of passing around lots of values
+- Functions with fewer inputs and outputs are simpler, easier to reason about, and easier to maintain
+    - Spamming early returns should only be done in 'leaf' functions with limited scope
+- The code should be the source of truth for as much as possible. 
+    - The entire program and possibly even the build script should be written in the same language if at all possible, and DSLs/scripting languages should be avoided unless inconvenient or actually needed
+    - If your program has logic relating to styling, the code should always have some way to read it, and dynamically set it using arbitrary values/state. (this is a dig at css).
+- Only use libraries/dependencies for things that are legitimately difficult or time-consuming to implement/get right yourself, or that you don't really care too much about, unless you believe they are inferior to what you can cook up yourself and this difference actually matters to you
+- Prefer reimplementable ideas over reuseable code. If your code is tightly coupled to a specific language feature, like annotations, decorators, Aspects/pointcuts, async-await, typescript type inference, comptime, etc. it becomes difficult to transfer the knowledge/ideas elsewhere. 
 
-1. React discourages packaging related fields into singular objects. This is because it relies heavily on memoization of large numbers of props to get things done. Objects will change as frequently as the things inside of them, so passing around whole objects, while simpler, is detrimental to memoization. This also causes code and refactors to become far more complicated and tedious than they need to be, since I need to manually pass around individual props instead of singular objects.
-2. React encourages the frequent shallow-copying of data. This makes it incredibly difficult for any app to remain performant. If there was some kind of escape-hatch where we could write performant allocation-free code and manually trigger rerenders, it may have been worth it, but it. All the state-management libraries also encourage something similar, or convert simple mutations into shallow copies with Proxy magic. It is simply more performant, easier to test, and easier to reason about code that just acts on plain objects. Immutability has it's place, but it shouldn't be literally every piece of state in the program.
-3. Hooks in react cannot be rendered conditionally. Hooks need to take in an `enabled` prop so that devs can turn them on and off. They need to be wrapped in components so that they can be called multiple times, or their inner workings updated. I imagine it is partially a techincal limitation of React's immediate mode renderer that is similar to the one in this framework, except I have added mechanisms to allow for conditional 'hook' rendering (I just don't call them hooks here).
-4. Code cannot be written inside of JSX, close to where it is actually needed. This leads to massive monolith components overtime - massive components that should really have been split into smaller components long ago, but the code kept evolving and now it is too late to do the refactor, because everything depends on everything else. Had it been easy to move and keep state close to where it's actually needed, not only would this refactor be easier - it would also not really be needed. Because state is being declared as close to where it is actually being used, the 'component' boundaries are clearly demarcated, and components only need to be refactored if the programmer wants to, or if they need to actually reuse them.
+My experience with web in general, is that the frameworks make it very difficult to adhere to these principles, and the result is that it is far more work to write simple code that is easy to refactor/maintain, and where interactions remain performant. 
+Even simple things like "state management" have tens of frameworks, because the actual UI framework didn't do a particularly good job of it. 
+And they must all need to write themselves in a framework-agnostic way and make adapters for the actual UI frameworks people use.
+In React for example, I can't simply put my state into some global object. It will no longer have any way to know about what updates.
 
-I have set out to make a framework that:
-- Has function components, and is composable in the same way function calls are
-- Allows writing zero or low allocation code, as needed
-- Can rerender its components at the same refresh rate as the monitor
-- Can allow 'hooks' aka state that persists between renders, to be stored as close to where it is being used as possible
+The claim I stake this framework on, is that the main reason why all of these frameworks suck, is that they can't just rerender their UI at the refresh rate of the monitor using `reqestAnimationFrame`. (Unrelated tangent: This is most-likely because they all subscribe to the (stupid) functional-programming notion that functions should be immutable and pure, and as a result, put a giant amount of GC pressure on the javascript runtime every render. If JavaScript actually had value types/structs, React may have actually been more than capable of rendering to a continguous bump-allocator, and I would have had far less of a reason to be writing this). 
+If they _could_ render components at 60fps, the following problems dissapear entirely:
 
-# Philosophy
+- Which library do users need to install to keep track of it's state and notify the right VDom subtree to rerender so that rerenders occur as little as possbile?
+    - No need - the entire UI will just update every frame so we don't need to do this
+- Which library do users need to install to track and react to asyncronous state?
+    - None. It can be observed directly, just like any state
+- No but really. I want TanStack querying and invalidating of async state its epic your puny C programmin mind prob woudn't get it
+    - I've not tried it yet, but you can probably just use the framework-agnostic core query client directly
+- How do we integrate with vanillaJS libraries that are external to the state management system but have their own queryable state
+    - Nothing special, now that any value anywhere can simply be read from and written to the DOM
+- How do we robustly notify the UI elements that the mouse is no-longer over them, so that they aren't stuck in a hover state because someone used the framework's useState equivelant instead of css :hover ?
+    - Now that we're in an animation loop, we _can_ rely on javascript variables though. In this framework, I have an event system that stores which elements we're hovering over in a Set datastructure, and query it every frame. 
+- Which library do users need to install animate the style or other things using values in their code?
+    - None, you can now just use simple JavaScript and maths. It's pretty insane how far you can get with these two for other things:
+        - https://www.youtube.com/watch?v=qjWkNZ0SXfo
+        - https://www.dspforaudioprogramming.com
+    so I'm sure it will work just fine  here as well
 
-1. Locality of a system's components make reasining about the sytem far easier
+As I hope I've demonstrated, problems that were originally non-trivial in your framework of choice that required
+various external libraries to get right, become far simpler to solve on your own.
+If a UI framework could make this possible in a way that doesn't comprimise too heavily on other things, 
+the ceiling for what a single person can accomplish with just domain-knowledge (knowledge about the programming language itself, and about maths/physics/animation/digital-signal-processing/whatever as opposed to web/css/framework-specific knowledge) just got a lot higher.
 
-I believe that things like the styling, layout information, functionality, and state that a particular UI element needs should live as close to that element as it possibly can in the codebase. 
-This means that, among other things, rather than something like this:
+## First failed attempt
+
+It turns out that it is very easy to write a UI framework API that can rerender itself at the monitor's refresh rate. 
+The secret: in most of my apps, every UI element is in fact _not_ randomly shuffling itself spontaneously at all times, like they might in benchmarks. 
+So even if the 'reconciliation' algorithm is complete trash, it wouldn't matter, as long as you only run it when dom nodes are actually moved.
+The late-stage of my first UI framework API looked something like this (in other words, my third attempt at making it):
+
 ```ts
-function App() {
-    const [todoItems, setTodoItems] = useState([]);
-    return todoItems.map(item => <TodoItem key={item.id} item={item} />;
-}
-
-function TodoItem(props) {
-    // various hooks, interal state, etc
-    ...
-}
-```
-I believe it is better to not have a wall between the List and the list item:
-
-```ts
-function App() {
-    const [todoItems, setTodoItems] = useState([]);
-
-    return (
-        <Map data={todoItems} component={(item, i) => (
-                // various hooks, interal state, etc
-                ...
-            )}
-        />
-    );
-}
-```
-
-
-2. Renders should be cheap
-
-All of my projects run at the same refresh rate as the monitor, even though I constantly need to rerender thousands of DOM nodes every frame. The secret: in most of my apps, the is _not_ randomly shuffling itself spontaneously at all times like in benchmarks. This means that memoization is an extremely effective way to perform very few style/class/DOM mutations.
-The other secret: Keep memory allocations to an absolute minimum. If I have some massive map or array in my state, I will probably keep it around for almost the entire duration of a component's lifetime on the screen, rather than throwing it away between rerenders. I restrict slop-code to be behind infrequent user-events or other well-defined times in the program. While, there is really nothing stopping you from continuing to use a state-management library with this framework, you simply don't need to if you opt to rerender your component every frame with `requestAnimationFrame` (the intended experience).
-With strings, allocation is kinda unavoidable. I have not had many issues with strings causing GC pressure though, yet. 
-Do note that I've only ever used this framework in Firefox and Chrome, which have heavily optimized and JITed runtimes. I've got no clue how it's going to do in something like hermes, for example (yet).
-
-3. Callbacks should be avoided in favour of data and methods where possible.
-
-Some issues with callbacks:
-- it is very unclear whether they do or do not allocate memory. This is not ideal if you want to rerender at 60fps, though it could also be fine like strings
-- in many cases, well-defined primitives that can be composed will offer simpler, more straightforward and more flexible options to a consumer than a black-box system with various hooks, though callbacks still have their place and will need to be used from time to time, possibly as the "just get something that works" entry-layer of your API
-- they create arbitrary boundaries in your program. For example:
-```ts
-function App(root: ImRoot) {
-    div(r, r => {
-        const innerDiv = div(r, r => {
-        });
+function Counter(rg: RenderGroup) {
+    rg.preRender(() => {
+        console.log("This is kinda like useEffect");
     });
 
-    // here
-}
-```
-I can no longer access innerDiv `here`, even if I wanted to. It is also fairly cumbersome to type the above.
-Something like this is far simpler:
+    rg.postRender(() => {
+        console.log("or maybe this is ...");
+    });
 
-```ts
-function App() {
-    divBegin(); {
-        const innerDiv = divBegin(); {
-        } divEnd();
-    } divEnd();
-
-    // here
-}
-```
-
-I still can't access innerDiv `here`, but I could just remove the blocks if needed.
-
-
-4. Functions may be used as provenance for types
-
-```ts
-function newNumber(): number {
-    return 0;
-}
-```
-
-Seems like a pretty pointless function, right? Wrong.
-Typescript will imbue this value with a type, and we can use this type to validate that a particular value is actually
-of the type that we say it is. It looks something like this:
-
-```ts
-type Box<T> = { value: T; typeId: () => T: }
-
-function createBox<T>(typeId: () => T) {
-    return { value: typeId(), typeId };
-}
-
-function getValueOfTypeOrUndefined<T>(box: Box<unknown>, typeId: () => T): { val: T } | undefined {
-    if (box.typeId === typeId) {
-        return { val: box.value as T };
+    function ListItem(rg: RenderGroup<{ i: number }>) {
+        return div({ class: [cn.blah] }, [
+            "Item ", rg.text(s => "" + s.i)
+        ]);
     }
-    return undefined;
-}
-```
 
-This technique is used heavily to assert that the type of a value is what we think it is,
-and significantly reduce the likelyhood of out-of-order immediate-mode state rendering bugs that would otherwise corrupt data.
-
-An alternative to functions, is to literally use TypeIds:
-```ts
-type TypeId<T> = string & { __type: T | void };
-function newTypeId<T>(key: string): TypeId<T> {
-    return key as TypeId<T>;
-}
-```
-
-The problem, is that you'll be writing a whole bunch of code everywhere to create the TypeIds, whereas
-you probably already have one or two functions lying around somewhere already imbued with the type you need!
-
-```ts
-const numberBox = createBox(newNumber);
-```
-
-5. Being explicit about dependencies is better, most of the time
-
-The following matrix is what I use to decide wheter something should be passed as a parameter to a method, or if it is better-off
-as a `globalStateStack` entry (this is our equivelant of React.Context):
-
-```
-A := I need this state everywhere, and I make sure to passs it as a method param everywhere anyway
-B := I infrequently need this value, but the requirement can arise naturally literally anywhere in a UI component, and I have to spend a bunch of time adding an extra function argument everywhere when it does
-C := This state is related to my app's domain model
-D := This state is not related to my app's domain model
-```
-
-- if A:
-    - if C: Pass this as a parameter. A common example of this is `ctx: AppContext` - an object with all state of the entire app packaged into one. Makes it obvious that the component is an application-level utility
-    - if D: Pass this as a parameter. A common example is the `c: ImCache` variable you'll see everywhere in the examples here. Makes it obvious that a method reads from the immediate-mode cache, and doesn't make sense to call outside of an immediate mode context
-- if B:
-    - if C: Pass this as a parameter. A common example of this is `s: WidgetState` - an object that encapsulates all state for a particular widget or subsystem within the program. It may start off as local state, but get moved onto AppContext if that state is needed elsewhere for some reason. Makes it obvious that the component is related to a particular widget/system, and doesn't make sense to use outside of that.
-    - if D: Maybe use a global state-stack, only if you really want to (I would advice against it). A common example is `getGlobalEventSystem` that you'll see everywhere in the im-dom examples.
-    Any UI component, at any time, for any reason, may require keyboard input or mouse input. It is a pain to pass this around. The disadvantage is that it isn't obvious that method relies on the global state stack. It may actually have been better for me to just put the event system as a value in the app context. But I think the tradeoff is fine in these cases. Similarly, any component may need to asyncronously fetch something, or render SVGs, render context menus, play audio, so on and so forth. They may or may not be candidates for a global state stack
-
-6. Immediate mode syncronous (top down, not async) rendering allows for extremely predictable control flow, and coordination between components.
-
-In general, none of the UI will make use of early-returns. They have a time and place (I use them pretty much everywhere actually) but just not within one of these immediate-mode UI components.
-
-
-# Drawbacks
-
-There are however, some issues with this framework. 
-I don't mind them too much, but you might:
-
-1. The code is somewhat verbose. Here's a react component:
-
-```ts
-function Counter() {
-    const [count, setCount] = useState(0);
-    return (
-        <div>
-            <div>The count is {count}. <div>
-            <button onClick={() => setCount(count + 1)}>Increment</button>
-        </div>
-    );
-}
-```
-
-Here's the corresponding component in my framework:
-
-```ts
-
-function newCounterState() {
-    return { count: 0 };
-}
-
-function imCounter(c: ImCache) {
-    const s = imState(c, newCounterState);
-
-    imDivBegin(c); {
-        imDivBegin(c); imStr("The count is "); imStr(c, count); imDivEnd(c);
-        imButtonBegin(c); {
-            const click = imOn(c, EV_ON_CLICK);
-            if (click) {
-                s.count += 1;
+    return div({ class: [cn.blah] }, [
+        "The count is: ",
+        rg.text(s => s.value),
+        rg.c(Button, (c, s) => c.render({
+            label: "" + s.value,
+            onClick: () => {
+                count++;
+                rerenderApp();
             }
+        }),
+        rg.list(ListItem, (s, getNext) => {
+            for (let i = 0; i < count; i++) {
+                getNext().render({ i });
+            }
+        });
+        rg.if(() => count > 10, rg => div({}, [
+            "Gee that's a high count, man"
+        ])),
+        rg.else(rg => div({}, ["Keep clicking lil bro"])),
+        "The current time is",
+        rg.realtime(rg => 
+            rg.text(s => new Date().toIsoString()),
+            rg.style("color", s => getColorForTime(new Date())),
+            rg.class(s => getCssClasForTime(new Date())),
+        )
+    ]);
+}
+```
 
-            imStr(c, "Increment");
-        } imButtonEnd(c);
-    } imDivEnd(c);
+Here, `rg` is short for 'render group'. Any function that takes a `RenderGroup<State>` as a value is effectively a template
+that can be instantiated once at the start, and then inserted into any other component using `rg.c` (the c is short for 'component').
+Users can register tens of little callbacks that reside under various DOM elements, providing styling, css, text and even component
+updates. This is as opposed to having a single `function render()` that needed to manually get each of those DOM element wrappers as variables, and set these things on individual items, which was what the early-stage of this framework looked like. It was very difficult to copy-paste subsections of UI and behaviour from one component to another, so I prefer this lots-of-little-inline-callbacks approach.
+The way this framework works is incredibly simple, and it ticks a lot of the dotpoints I mentioned earlier. 
+- Values _can_ be packaged into objects and passed around.
+- State _can_ be read from and stored anywhere.
+- Rendering does _not_ place strain on the GC, and can be done on every single user interaction.
+- The entire component tree _can_ be rerendered at the monitor's refresh-rate, because almost nothing happens each render! But I didn't think to do this at the time, and I was still just rendering subsets with `rg.realtime`. 
+- Lists of items can be rendered by traversing datastructures arbitrarily instead of materializing them, as long as they are all the same item.
+
+However, the current framework looks nothing like this at all, because of the various little frictions I was encountering while writing code with it:
+
+- List rendering mandated that I make a new list item function
+- If-statement lambdas are not capable of type-narrowing, which introduced various undefined bugs in the code
+- In order to reliably propagate state changes to the rest of the app, I must call 'rerender' whenver I make a change to any state that may be referenced by other things
+- The endless closures everywhere are a pain to look at, and write
+- State cannot be declared as close as possible to where it is actually needed, resulting in monolithic components, just like React
+- Each component maps directly to 1 DOM element. It is very difficult to implement a fragment-like component with this model. 
+- Rerendering a component mandates allocating a props object
+
+In addition to this, there was no good way to start solving some of the other problems that were starting to appear as I 
+moved to making more complicated UIs, like handling keyboard shortcuts, and making sure that events reached the correct component.
+
+
+- How do you ensure that an event only reaches a single component, instead of having the same mouse clicks or hotkeys trampling over one-another? How do you make sure that a child component always recieves an event before a parent component? How about keyboard input?
+    - If the framework were to have a syncronous immediate-mode API, you could just have a global `handled` boolean that you set to true when you handle an event, and then before you handle an event, simply check if someone else has handled it or not:
+```ts
+function imApp(c: ImCache) {
+    initEventSystem();
+
+    imComponentBegin(c); {
+        imComponent2Begin(c); {
+            if (hasInput(shortcut1)) {
+                if (we did the thing) {
+                    eventWasHandled();
+                }
+            }
+        } imComponent2End(c);
+    } imCompoenntEnd(c);
+
+    if (hasInput(shortcut1)) {
+        // do something
+        if (we did the thing) {
+            eventWasHandled();
+        }
+    }
+}
+
+let handled = false;
+function initEventSystem() {
+    handled = true;
+}
+function hasInput(shortcutDescriptor: ShortcutDescriptor): boolean {
+    if (handled) return;
+    if (!globalEventSystemHasInputForShortcut(shortcutDescriptor)) return;
+    return false;
+}
+function eventWasHandled() {
+    handled = true;
 }
 
 ```
 
-You'll notice that there is no JSX - it is purely function calls, and it is quite a lot more to type.
-
-2. It can sometimes be hard to track down a missing `imFnEnd()` call. 
-
-3. Doesn't work too well with HMR for now. I have completely disregarded it, as I almost never use it.
-- Although - this may be an implementation detail? Not sure.
-
-4. Entire app will be rerenderd on events, so that you can do `e.preventDefault()` or similar on them. 
-- Could experiment with flags like `imOn(c, EV_ON_CLICK, PREVENT_DEFAULT)` that allow the framework to automatically 
-do this kind of thing and buffer the events.
+This is the
 
 
