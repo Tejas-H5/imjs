@@ -1,4 +1,4 @@
-// IM-DOM 1.1
+// IM-DOM 1.11
 
 import { assert } from "src/utils/assert";
 import {
@@ -114,24 +114,6 @@ export function finalizeDomAppender(appender: DomAppender<ValidElement>) {
 
         appender.lastIdx = appender.idx;
     }
-
-
-    // TODO: by now everthing that wasnt rendered should be after idx. so we jsut remove those. all g. ?
-
-    // if (
-    //     (appender.childrenChanged === true || appender.idx !== appender.lastIdx) &&
-    //     appender.manualDom === false
-    // ) {
-    //     for (let i = 0; i < appender.lastIdx; i++) {
-    //         const child = appender.children[i];
-    //         if (child.rendered === false) {
-    //             child.root.remove();
-    //         }
-    //     }
-    //
-    //     appender.childrenChanged = false;
-    //     appender.lastIdx = appender.idx;
-    // }
 }
 
 
@@ -166,6 +148,14 @@ export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap>) {
     imBlockEnd(c);
 }
 
+// Divs are so common that I've just made a function dedicated to them
+export function imDivBegin(c: ImCache) {
+    return imEl(c, EL_DIV);
+}
+
+export function imDivEnd(c: ImCache) {
+    return imElEnd(c, EL_DIV);
+}
 
 export function imDomRootBegin(c: ImCache, root: ValidElement) {
     let appender = imGet(c, newDomAppender);

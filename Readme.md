@@ -1,14 +1,12 @@
 # imJS
 
-ImJS is a high-peformance immediate-mode ui framework that aims to significantly simplify programming frontend UIs.
+ImJS is an immediate-mode ui framework that aims to significantly simplify programming frontend UIs.
 This repository is a central place where I aim to put all the related code, tests, utils, and tooling.
 It's a bit annoying to spread this out in various util folders in different projects.
-Also a good place to put tests.
 
 ## Philosophy
 
-See Why.md for more info. 
-There's just too much to put it all here.
+See Why.md for more info. There's just too much yapping to put it all here.
 
 ## Organisation/Architecture
 
