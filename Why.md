@@ -1,55 +1,61 @@
-# Why does this exist
-
-// TODO: editor pass
+# Motivation / Why does this exist
 
 In this day and age, where AI agents can spit out whatever React component you want in a couple of seconds,
-why bother with yet another UI framework? It seems a bit pointless, but it isn't.
+why bother with yet another UI framework?
 
-Over the years, there are a couple of programming ideas that I have learned that have helped me greatly improve the performance, readability and maintainability of my code:
+Over the years, there are several heuristics I have learned that have greatly improved the performance, readability and maintainability of the code I write. Apart from things relating to naming/formatting/code organisation, they are as follows:
 
+- Prefer keeping functions together for as long as possible, and only refactor logic that you will actually reuse, instead of prematurely breaking them up into lots of tiny pieces, unless actually inconvenient to keep them together
+    - https://caseymuratori.com/blog_0015
+    - http://number-none.com/blow/john_carmack_on_inlined_code.html
 - Prefer reusing memory instead of allocating new memory, unless it is inconvenient to do so
     - Prefer iterating datastructures over materializing them
     - Prefer mutability over immutability, unless it is inconvenient/buggy to do so
-- Prefer keeping functions together for as long as possible, and only refactor logic that you will actually reuse, instead of prematurely breaking them up into lots of tiny pieces, unless inconvenient to do so
 - Prefer declaring state as close as possible to where it is actually needed
-- Prefer APIs that provide primitives and operations on those primitives instead of an API that accepts a craptonne of callbacks, unless actually inconvenient to do so
-- Prefer grouping related values into single objects, and pass that object around, instead of passing around lots of values
+- Prefer APIs that provide primitives and operations on those primitives instead of an API that accepts tens of callbacks, unless actually inconvenient to do so
 - Functions with fewer inputs and outputs are simpler, easier to reason about, and easier to maintain
-    - Spamming early returns should only be done in 'leaf' functions with limited scope
-- The code should be the source of truth for as much as possible. 
+    - Prefer grouping related input values into singular objects. Doing so will actually simplify the code
+    - There should mostly only be two types of functions in your codebase:
+        - Massive functions with lots of indentation and complex algorithmic logic, and just 1 return at the end. Possibly guard clauses at the very top if needed.
+        - Simple functions that read sequentially, and make heavy use of early-returns to reduce indentation
+- The code should be the source of truth for itself, as much as possible. 
     - The entire program and possibly even the build script should be written in the same language if at all possible, and DSLs/scripting languages should be avoided unless inconvenient or actually needed
-    - If your program has logic relating to styling, the code should always have some way to read it, and dynamically set it using arbitrary values/state. (this is a dig at css).
-- Only use libraries/dependencies for things that are legitimately difficult or time-consuming to implement/get right yourself, or that you don't really care too much about, unless you believe they are inferior to what you can cook up yourself and this difference actually matters to you
-- Prefer reimplementable ideas over reuseable code. If your code is tightly coupled to a specific language feature, like annotations, decorators, Aspects/pointcuts, async-await, typescript type inference, comptime, etc. it becomes difficult to transfer the knowledge/ideas elsewhere. 
+    - If your program has logic relating to styling, it should just live in the code, so that it can be dynamically driven by any variable in the future
+- Only use libraries/dependencies for things where the productivity it offers or the robustness of it's code is actually worth the hit in build times, CI run times, and increase to the program's size. 
+    - In web, the size might matter a lot more than in native. 100mb of javascript is possibly too much, whereas a 100mb dll isn't anything to be concerned with
+    - Do not use dependencies that the entire industry says they are 'best practice', but all you ever seem to encounter when you use them are the downsides
+- Prefer reimplementable ideas over reuseable code. If your code is tightly coupled to a specific language feature, like annotations, decorators, Aspects/pointcuts, async-await, typescript type inference, comptime/reflection, etc. it becomes difficult to transfer the knowledge/ideas elsewhere. 
+- You can make pretty much anything with procedural code that just makes use of structs and functions.
 
-My experience with web in general, is that the frameworks make it very difficult to adhere to these principles, and the result is that it is far more work to write simple code that is easy to refactor/maintain, and where interactions remain performant. 
+Regardless of wheter you may or may not agree with them, my experience with web in general has been that most of the frameworks make it very difficult for me to make use of these principles. 
 Even simple things like "state management" have tens of frameworks, because the actual UI framework didn't do a particularly good job of it. 
 And they must all need to write themselves in a framework-agnostic way and make adapters for the actual UI frameworks people use.
-In React for example, I can't simply put my state into some global object. It will no longer have any way to know about what updates.
+In React for example, I can't simply put my state into some global object - it should at least be in a React.Context or a `[state, setState]` tuple somewhere so that React can be aware of updates that we make to it. 
+You probably don't want to do this - it is not ideal for performance.
 
-The claim I stake this framework on, is that the main reason why all of these frameworks suck, is that they can't just rerender their UI at the refresh rate of the monitor using `reqestAnimationFrame`. (Unrelated tangent: This is most-likely because they all subscribe to the (stupid) functional-programming notion that functions should be immutable and pure, and as a result, put a giant amount of GC pressure on the javascript runtime every render. If JavaScript actually had value types/structs, React may have actually been more than capable of rendering to a continguous bump-allocator, and I would have had far less of a reason to be writing this). 
-If they _could_ rerender their components at 60fps, the following problems dissapear entirely:
+The claim I stake this framework on, is that if a UI framework could simply rerender their UI at the refresh rate of the monitor using `reqestAnimationFrame`, pretty much every problem associated with writing web frameworks, which currently require lots of 'clever' code to solve, would be completely gone:
 
 - Which library do users need to install to keep track of it's state and notify the right VDom subtree to rerender so that rerenders occur as little as possbile?
     - No need - the entire UI will just update every frame so we don't need to do this
 - Which library do users need to install to track and react to asyncronous state?
     - None. It can be observed directly, just like any state
-- No but really. I want TanStack querying and invalidating of async state its epic your puny C programmin mind prob woudn't get it
+- No but really. I want TanStack querying and invalidating of async state. Also an event system to globally react to these
     - I've not tried it yet, but you can probably just use the framework-agnostic core query client directly
 - How do we integrate with vanillaJS libraries that are external to the state management system but have their own queryable state
     - Nothing special, now that any value anywhere can simply be read from and written to by the UI
 - How do we robustly notify the UI elements that the mouse is no-longer over them, so that they aren't stuck in a hover state because someone used the framework's useState equivelant instead of css :hover ?
     - Now that we're in an animation loop, we _can_ rely on javascript variables though. In this framework, I have an event system that stores which elements we're hovering over in a Set datastructure, and query it every frame. 
-- Which library do users need to install animate the style or other things using values in their code?
+- Which library do users need to install animate the style or pretty much anything else using values in their code?
     - None, you can now just use simple JavaScript and maths. It's pretty insane how far you can get with these two for other things:
         - https://www.youtube.com/watch?v=qjWkNZ0SXfo
         - https://www.dspforaudioprogramming.com
-    so I'm sure it will work just fine here as well
 
 Problems that were originally non-trivial in the existing frameworks that required various external libraries to get right, become far simpler to solve on your own.
 If a UI framework could make this possible in a way that doesn't comprimise too heavily on other things, the ceiling for what a single person can accomplish with just domain-knowledge (knowledge about the programming language itself, and about maths/physics/animation/digital-signal-processing/whatever as opposed to web/css/framework-specific knowledge) just got a lot higher.
 The end-goal of this framework (and every other framework, though I don't think their authors realise it yet) is to maximize the ratio of domain-knowledge:api-knowledge in a conumer's head.
 A framework author's job is not to provide you a mechanism to write the most 'optimal' code, but rather, to defend your ability to write and structure the code the way you wanted to write it in the first place.
+
+In addition to the ability to solving the problems above, and allowing me to write code using the heuristics I opened with, there are some extra requirements I would like for a UI library:
 
 ## First failed attempt
 
@@ -63,6 +69,8 @@ For example, the late-stage of my first UI framework API looked something like t
 type CounterState = {
     value: number;
 };
+
+// I am a big fan of the aesthatic of React functional components. Just not their actual implementation
 
 function ExampleOfABitOfEverything(rg: RenderGroup<CounterState>) {
     rg.preRender(() => console.log("This runs before all the element effects run"));
@@ -104,8 +112,9 @@ function ExampleOfABitOfEverything(rg: RenderGroup<CounterState>) {
     ]);
 }
 ```
+
 While the framework I have arrived at now looks nothing like this, I was still able to make pretty much anything I wanted
-with this. This will be important later.
+with this. This fact will be important later.
 Here, `rg` is short for 'render group'. Any function that takes a `RenderGroup<State>` as a value is effectively a template
 that can be instantiated once at the start, and then inserted into any other component using `rg.c` (the c is short for 'component').
 Users can register tens of little callbacks that reside under various DOM elements, providing styling, css, text and even component
@@ -133,40 +142,43 @@ but introdocues a bug - the order of rendering is no longer dependent of the ite
 In addition to this, there was no good way to start solving some of the other problems that were starting to appear as I 
 moved to making more complicated UIs, like handling keyboard shortcuts, and making sure that keyboard/mouse reached the correct component.
 
-At this point, I was pretty convinced that the idea couldn't be improved any further. 
+At this point, I was pretty convinced that the idea couldn't be improved any further, and I took a break from web dev.
 
 
 ## Immediate mode - Realisation
 
 This was untill I watched around the first 30 or so episodes of [Handmade Hero](https://youtu.be/Ee3EtYb8d1o?list=PLnuhp3Xd9PYTt6svyQPyRO_AAuMWGxPzU). 
-The first couple of episodes were pretty reasonable. Some interesting stuff here or there, I even bought an Xbox controller to follow the input episode (pretty crazy that all those old MS APIs still work to this day). Was fun and interesting, but nothing too mindblowing.
+The first couple of episodes were pretty reasonable. I even bought an Xbox controller to follow the input episode (pretty crazy that all those old MS APIs still work to this day). 
+Was fun and interesting, but nothing too mindblowing.
 Throughout the series, there was one main difference between the code Casey was writing and the code I was writing. 
-As an experienced Unity developer, I knew that in order to have deterministic physics and have cleaner code, it would be beneficial to do your rendering and your updating in two separate functions. So while he simply had `void Render(gameState, input, screen, audio);`, I had something like `void Render(gameState, screen, audio)` and `void Update(input, gameState)`. 
+As an highly experienced Unity developer, I knew that in order to have deterministic physics and have cleaner code, it would be beneficial to do your rendering and your updating in two separate functions. 
+So while he simply had `void Render(*gameState, *input, *screen, *audio);`, I had something like `void Render(*gameState, *screen, *audio)` and `void Update(*input, *gameState)`. 
 This has even helped me out in the past in another project - in order to artifically improve a physics simulation, I was able to rewrite my game loop like:
 ```
 Render();
 for (let i = 0; i < 5; i++) Update(dt / 5);
 ```
-I felt up till that point that this to be a better abstraction. 
+So this must be the better abstration.
 The render was a pure function of the game state, and the upadte was effectively a pure function of the input.
-If you want your code to be clean, this is what it should end up looking like anyway. Right?
-Anyway, I figured this difference didn't really matter too much, and would even make my code better somehow.
-Right up to the point where we started actually prototyping some simple tile maps in episode 28. 
-Almost instantly, there were all sorts of scenarios that naturally arose where it was extremely beneficial for the code inside of the render function to have access to various intermediate values that we had computed in the updating part of the code.
+If you want your code to be clean, this is what it should end up looking like anyway. 
+Eventually all games reach a point where you need to split out the render loop and update loop. Right?
+Anyway, I figured this difference didn't really matter too much, and would even help me out in the long run,
+right up to the point where we started prototying the drawing of some levels in episode 28. 
+Along the way, there were all sorts of scenarios that naturally arose where it was extremely beneficial for the code inside of the render function to have access to various intermediate values that we had computed in the updating part of the code.
 Things like which block we were colliding with, where we moved to, where we were last, even the tilemap itself which was just a static variable was something that I now needed to copy-paste between methods, else I needed to put all of these intermediate computations explicitly as values in the gameState even though they were mostly transient to that frame.
 The intermediate values were particularly bad, because updating the schema of the game's state required a full recompilation instead of just a hot-reload. 
-But even if that was not the case, it was still more typing and busywork than simply accessing the computation that you did.
+But even if that was not the case, it was still more typing and busywork than simply accessing the computation you put into a local variable.
 It was at that point, that I had realised the value in keeping the code for Render and Update in a single place, 
-and it may have been the single most-important thing I took away from the series.
+and it may have been the single most-important thing I took away from the series (I only watched till 30 and got bored after that, sorry).
 It would still be possible to have some sort of rendering command buffer later-on in case I wanted to actually separate the physical act of computing the state and rendering the frame to the screen, but it was extremely beneficial to have some way for the rendering part of the code and the updating part of the code to easily communicate with one-another.
 
-At this point, I remembered an idea I had before my first framework, where an immediate-mode API can be used to render to the DOM.
+At this point, I remembered an idea I had before my first framework, about an immediate-mode API can be used to render to the DOM.
 I had dismissed it immediately, because the DOM nodes need to be cached somehow, and the only way 
 to reasonably do this is to render the exact same number of dom nodes every single frame.
-This would never be useful for any sort of app...
+This is extremely restrictive, and would never be useful for any sort of app...
 
-... or, would it? Now that we understand the true benefit of immediate mode (keeping computation code and rendering code close together), 
-would this idea be useful? If you recall with my first framework, every single component was specified with a static array of DOM elements, and despite that, I was able to pretty much code anything I wanted to, though the code was a bit difficult to maintain at times for unrelated reasons.
+... or, would it? Now that I understand the true benefit of immediate mode (keeping computation code and rendering code close together), 
+would this idea be useful? If you recall with my first framework, every single component was specified with a static array of DOM elements, and despite that, I was able to pretty much code anything I wanted to.
 This means that even though an immediate mode framework is forced to render the same number of things every frame,
 it will be functionally equivelant to something that I already know was useful.
 
@@ -283,6 +295,9 @@ function eventWasHandled() {
 }
 
 ```
+
+It may not have been clear how I can render a dynamic number of items with a system that can only render a static number of things every frame, but the code should have made it a bit more obvious.
+Rather than thinking of a component as something that renders an unknown number of items, we think of the component as rendering a known number of items, plus a known number of for-loops, if-statements, etc. so the number of immediate-mode-state entries underneath a particular node in the immediate mode tree remains constant.
 
 There are more explanations for how it all works in the code itself, so I won't bother with them here.
 
