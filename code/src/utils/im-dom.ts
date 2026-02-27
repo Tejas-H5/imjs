@@ -1,124 +1,246 @@
-// IM-DOM 1.11
+// IM-DOM 1.65
 
 import { assert } from "src/utils/assert";
 import {
-    CACHE_RERENDER_FN,
+    __GetEntries,
+    cacheEntriesAddDestructor,
+    getEntriesParent,
+    getEntriesParentFromEntries,
+    globalStateStackGet,
+    globalStateStackPop,
+    globalStateStackPush,
     imBlockBegin,
     imBlockEnd,
     ImCache,
+    ImCacheEntries,
     imGet,
-    getEntriesParent,
+    imMemo,
     imSet,
     inlineTypeId,
-    cacheEntriesAddDestructor,
-    imMemo,
-    globalStateStackPop,
-    globalStateStackPush,
-    globalStateStackGet,
+    recursivelyEnumerateEntries,
+    rerenderImCache
 } from "./im-core";
+
+///////////////////////////
+// DOM-node management
 
 export type ValidElement = HTMLElement | SVGElement;
 export type AppendableElement = (ValidElement | Text);
+
+// The children of this dom node get diffed and inserted as soon as you call `imEndEl`
+export const FINALIZE_IMMEDIATELY = 0;
+// The diffing and inserting will be deferred to when we do `imDomRootEnd` instead. Useful for portal-like rendering.
+// BTW. wouldn't deferring a region just break all finalize_immediately code anyway though? We should just remove this and
+// defer everything. Some code migration will be required.
+export const FINALIZE_DEFERRED = 1;
+
+export type FinalizationType 
+ = typeof FINALIZE_IMMEDIATELY
+ | typeof FINALIZE_DEFERRED;
+
+// NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
+// However, you do need to store your dom appender children somewhere beforehand for stable references. 
+// That is what the ImCache helps with - but the ImCache does need control-flow annotations to work. eh, It is what it is
 export type DomAppender<E extends AppendableElement> = {
+    label?: string; // purely for debug
+
     root: E;
-    ref: unknown;
-    idx: number;
-    lastIdx: number;
+    keyRef: unknown; // Could be a key, or a dom element. Used to check pairs are linining up corectly.
+
     // Set this to true manually when you want to manage the DOM children yourself.
     // Hopefully that isn't all the time. If it is, then the framework isn't doing you too many favours.
     // Good use case: You have to manage hundreds of thousands of DOM nodes. 
     // From my experimentation, it is etiher MUCH faster to do this yourself instead of relying on the framework, or about the same,
     // depending on how the browser has implemented DOM node rendering.
     manualDom: boolean;
+
+    idx: number;     // Used to iterate the list
+
     // if null, root is a text node. else, it can be appended to.
-    children: (DomAppender<any>[] | null);
-    rendered: boolean;
-    parentIdx: number;
-    childrenChanged: boolean;
+    parent: DomAppender<ValidElement> | null;
+    children: (DomAppender<AppendableElement>[] | null);
+    selfIdx: number; // index of this node in it's own array
+
+    finalizeType: FinalizationType; // if true, the final pass can ignore this.
 };
 
 export function newDomAppender<E extends AppendableElement>(root: E, children: (DomAppender<any>[] | null)): DomAppender<E> {
     return {
         root,
-        ref: null,
+        keyRef: null,
         idx: -1,
+
+        parent: null,
         children,
-        lastIdx: -1,
+        selfIdx: 0,
         manualDom: false,
-        rendered: false,
-        parentIdx: -1,
-        childrenChanged: false,
+        finalizeType: FINALIZE_IMMEDIATELY,
     };
 }
 
-export function appendToDomRoot(appender: DomAppender<any>, child: DomAppender<any>) {
-    assert(appender.children !== null);
+function domAppenderDetatch(
+    parent: DomAppender<ValidElement>,
+    child: DomAppender<AppendableElement>
+) {
+    domAppenderClearParentAndShift(parent, child);
+    child.root.remove();
+}
 
-    const idx = ++appender.idx;
+function domAppenderClearParentAndShift(
+    parent: DomAppender<ValidElement>,
+    child: DomAppender<AppendableElement>
+) {
+    assert(parent.children !== null);
+    assert(parent.children[child.selfIdx] === child);
+    assert(parent.idx <= child.selfIdx); // Dont move a DOM node that has already been appended
+    for (let i = child.selfIdx; i < parent.children.length - 1; i++) {
+        parent.children[i] = parent.children[i + 1];
+        parent.children[i].selfIdx = i;
+    }
+    parent.children.pop();
+    child.parent = null;
+}
 
-    if (idx === appender.children.length) {
-        appender.children.push(child);
-        child.parentIdx = idx;
+export function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<AppendableElement>) {
+    if (a.children !== null) {
+        a.idx++;
+        const idx = a.idx;
 
-        appender.childrenChanged = true;
-    } else if (idx < appender.children.length) {
-        if (appender.children[idx] !== child) {
-            if (child.parentIdx === -1) {
-                // Adding a new item to the list. Push watever was at idx onto the end, put child at idx.
-                const a = appender.children[idx];
-                a.parentIdx = appender.children.length
-                appender.children.push(a);
-                appender.children[idx] = child;
-                child.parentIdx = idx;
+        if (child.parent !== null && child.parent !== a) {
+            const parent = child.parent;
+            domAppenderDetatch(parent, child);
+        }
+
+        if (idx === a.children.length) {
+            // Simply append this element
+            child.parent = a;
+            child.selfIdx = a.children.length;
+            a.children.push(child);
+            a.root.appendChild(child.root);
+        } else if (idx < a.children.length) {
+            const last = a.children[idx];
+            assert(last.parent === a);
+
+            if (last === child) {
+                // no action required. Hopefull, this is the HOT path
             } else {
-                // swap two existing children
-                assert(appender.children[child.parentIdx] === child);
-                appender.children[child.parentIdx] = appender.children[idx];
-                appender.children[child.parentIdx].parentIdx = child.parentIdx;
-                appender.children[idx] = child;
-                appender.children[idx].parentIdx = idx;
+                if (child.parent === a) {
+                    // If child is already here, we'll need to remove it beforehand
+                    domAppenderClearParentAndShift(child.parent, child);
+                }
+                a.root.replaceChild(child.root, last.root);
+                a.children[idx] = child;
+                last.parent = null;
+                child.selfIdx = idx;
+                child.parent = a;
             }
-
-            assert(appender.children[idx].parentIdx === idx);
-            assert(appender.children[child.parentIdx] === child);
-
-            appender.childrenChanged = true;
+        } else {
+            assert(false); // unreachable
         }
-    } else {
-        throw new Error("Unreachable");
     }
+
+    assert(child.parent === a);
+    assert(child.selfIdx === a.idx);
+    assert(child.root.parentNode === a.root);
 }
 
-export function finalizeDomAppender(appender: DomAppender<ValidElement>) {
-    if (
-        appender.children !== null &&
-        (appender.childrenChanged || appender.lastIdx !== appender.idx)
-    )  {
-        appender.childrenChanged = false;
+// Useful for debugging. Should be unused in prod.
+function assertInvariants(appender: DomAppender<ValidElement>) {
+    if (!appender.children) return;
 
-        // TODO: optimize
+    for (let i = 0; i <= appender.idx; i++) {
+        const child = appender.children[i];
+
+        assert(appender.children[child.selfIdx] === child);
+
+        let count = 0;
         for (let i = 0; i <= appender.idx; i++) {
-            const val = appender.children[i];
+            const c2 = appender.children[i];
+            if (c2 === child) count++;
+        }
+        assert(count <= 1);
 
-            const realChildren = appender.root.children;
-            if (i >= realChildren.length) {
-                appender.root.append(val.root);
-            } else if (realChildren[i] !== val.root) {
-                appender.root.insertBefore(val.root, realChildren[i]);
+        assert(child.parent === appender);
+    }
+}
+
+/**
+ TODO: test case
+
+let useDiv1 = false;
+export function imGraphMappingsEditorView(c: ImCache) {
+    imLayoutBegin(c, BLOCK); imButton(c); {
+        imStr(c, "toggle");
+        if (elHasMousePress(c)) useDiv1 = !useDiv1;
+    } imLayoutEnd(c);
+
+    imLayoutBegin(c, COL); imFlex(c); {
+        let div1, div2
+        imLayoutBegin(c, ROW); imFlex(c); {
+            imLayoutBegin(c, COL); imFlex(c); {
+                imStr(c, "Div 1");
+
+                div1 = imLayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
+
+                imStr(c, "Div 1 end");
+            } imLayoutEnd(c);
+            imLayoutBegin(c, COL); imFlex(c); {
+                imStr(c, "Div 2");
+
+                div2 = imLayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
+
+                imStr(c, "Div 2 end");
+            } imLayoutEnd(c);
+        } imLayoutEnd(c);
+
+        const s = imGetInline(c, imGraphMappingsEditorView) ?? imSet(c, {
+            choices: [],
+        }) as any;
+
+        const num = 10;
+        if (useDiv1) {
+            // useDiv1 = false;
+            for (let i = 0; i < num; i++) {
+                s.choices[i] = Math.random() < 0.5;
             }
         }
 
-        for (let i = appender.idx + 1; i < appender.children.length; i++) {
-            appender.children[i].root.remove();
+        imFor(c); for (let i = 0; i < num; i++) {
+            const randomChoice = s.choices[i] ? div1 : div2;
+
+            imDomRootExistingBegin(c, randomChoice); {
+                imLayoutBegin(c, COL); {
+                    addDebugLabelToAppender(c, "bruv " + i);
+                    imStr(c, "Naww: " + i);
+                } imLayoutEnd(c);
+            } imDomRootExistingEnd(c, randomChoice);
+        } imForEnd(c);
+    } imLayoutEnd(c);
+}
+
+*/
+
+function finalizeDomAppender(a: DomAppender<ValidElement>) {
+    // by the time we get here, the dom nodes we want have already been appended in the right order, and
+    // `a.children` should be pretty much identical to what is in the DOM. 
+    // We just need to remove the children we didn't render this time
+    if (a.children !== null && (a.idx + 1 !== a.children.length)) {
+        // Remove remaining children. do so backwards, might be faster
+        for (let i = a.children.length - 1; i >= a.idx + 1; i--) {
+            a.children[i].root.remove();
+            a.children[i].parent = null;
         }
 
-        appender.lastIdx = appender.idx;
+        a.children.length = a.idx + 1;
     }
 }
 
 
-
-export function imEl<K extends keyof HTMLElementTagNameMap>(
+/**
+ * NOTE: SVG elements are actually different from normal HTML elements, and 
+ * will need to be created wtih {@link imElSvgBegin}
+ */
+export function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
@@ -129,58 +251,158 @@ export function imEl<K extends keyof HTMLElementTagNameMap>(
     if (childAppender === undefined) {
         const element = document.createElement(r.val);
         childAppender = imSet(c, newDomAppender(element, []));
-        childAppender.ref = r;
+        childAppender.keyRef = r;
     }
 
+    imBeginDomAppender(c, appender, childAppender);
+
+    return childAppender;
+}
+
+function imBeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
     appendToDomRoot(appender, childAppender);
 
     imBlockBegin(c, newDomAppender, childAppender);
 
     childAppender.idx = -1;
+}
+
+/**
+ * Svg nodes are different from normal DOM nodes, so you'll need to use this function to create them instead.
+ */
+export function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
+    c: ImCache,
+    r: KeyRef<K>
+): DomAppender<SVGElementTagNameMap[K]> {
+    // Make this entry in the current entry list, so we can delete it easily
+    const appender = getEntriesParent(c, newDomAppender);
+
+    let childAppender: DomAppender<SVGElementTagNameMap[K]> | undefined = imGet(c, newDomAppender);
+    if (childAppender === undefined) {
+        const svgElement = document.createElementNS("http://www.w3.org/2000/svg", r.val);
+        // Seems unnecessary. 
+        // svgElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        childAppender = imSet(c, newDomAppender(svgElement, []));
+        childAppender.keyRef = r;
+    }
+
+    imBeginDomAppender(c, appender, childAppender);
 
     return childAppender;
 }
 
-export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap>) {
+
+export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
     const appender = getEntriesParent(c, newDomAppender);
-    assert(appender.ref === r) // make sure we're popping the right thing
-    finalizeDomAppender(appender);
+    assert(appender.keyRef === r) // make sure we're popping the right thing
+
+    if (appender.finalizeType === FINALIZE_IMMEDIATELY) {
+        finalizeDomAppender(appender);
+    }
+
     imBlockEnd(c);
 }
 
-// Divs are so common that I've just made a function dedicated to them
-export function imDivBegin(c: ImCache) {
-    return imEl(c, EL_DIV);
-}
+export const imElSvgEnd = imElEnd;
 
-export function imDivEnd(c: ImCache) {
-    return imElEnd(c, EL_DIV);
-}
 
+/**
+ * Typicaly just used at the very root of the program:
+ *
+ * const globalImCache: ImCache = [];
+ * main(globalImCache);
+ *
+ * function main(c: ImCache) {
+ *      imCacheBegin(c); {
+ *          imDomRootBegin(c, document.body); {
+ *          }
+ *      } imCacheEnd(c);
+ * }
+ */
 export function imDomRootBegin(c: ImCache, root: ValidElement) {
     let appender = imGet(c, newDomAppender);
     if (appender === undefined) {
         appender = imSet(c, newDomAppender(root, []));
-        appender.ref = root;
+        appender.keyRef = root;
     }
 
     imBlockBegin(c, newDomAppender, appender);
+
+    // well we kinda have to. imDomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
+    imFinalizeDeferred(c); 
 
     appender.idx = -1;
 
     return appender;
 }
 
+export function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
+    const appender = elGetAppender(c);
+    appender.label = str;
+}
+
+// Use this whenever you expect to render to a particular dom node from a place in the code that
+// would otherwise not have access to this dom node.
+export function imDomRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
+    // If you want to re-push this DOM node to the immediate mode stack, use imFinalizeDeferred(c).
+    // I.e imElBegin(c, EL_BLAH); imFinalizeDeferred(c); ...
+    // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
+    // This isn't the default, because it breaks some code that expects the node to have been inserted - 
+    // calls to textInput.focus() for example, won't work till the next frame, for example.
+    assert(existing.finalizeType === FINALIZE_DEFERRED);
+
+    imBlockBegin(c, newDomAppender, existing);
+}
+
+export function imDomRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
+    let appender = getEntriesParent(c, newDomAppender);
+    assert(appender === existing);
+    imBlockEnd(c);
+}
+
+export function imFinalizeDeferred(c: ImCache) {
+    elGetAppender(c).finalizeType = FINALIZE_DEFERRED;
+}
+
+
 export function imDomRootEnd(c: ImCache, root: ValidElement) {
     let appender = getEntriesParent(c, newDomAppender);
-    assert(appender.ref === root);
-    finalizeDomAppender(appender);
+    assert(appender.keyRef === root);
+
+    // By finalizing at the very end, we get two things:
+    // - Opportunity to make a 'global key' - a component that can be instantiated anywhere but reuses the same cache entries. 
+    //      a context menu is a good example of a usecase. Every component wants to instantiate it as if it were it's own, but really, 
+    //      only one can be open at a time - there is an opportunity to save resources here and reuse the same context menu every time.
+    // - Allows existing dom appenders to be re-pushed onto the stack, and appended to. 
+    //      Useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
+    //      For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
+    //      but then organising the components becomes a bit annoying.
+
+    const entries = __GetEntries(c);
+
+    // deferred finalization.
+    // NOTE: could be optimized later - since majority of nodes won't have finalization deferred.
+    recursivelyEnumerateEntries(entries, domFinalizeEnumerator);
 
     imBlockEnd(c);
 }
 
+function domFinalizeEnumerator(entries: ImCacheEntries): boolean {
+    // TODO: only if any mutations
+    // TODO: handle global keyed elements
 
-interface Stringifyable {
+    const domAppender = getEntriesParentFromEntries(entries, newDomAppender);
+    if (domAppender !== undefined) {
+        if (domAppender.finalizeType === FINALIZE_DEFERRED) {
+            finalizeDomAppender(domAppender);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+export interface Stringifyable {
     // Allows you to memoize the text on the object reference, and not the literal string itself, as needed.
     // Also, most objects in JavaScript already implement this.
     toString(): string;
@@ -269,14 +491,13 @@ export function elSetClass(
 export function elSetAttr(
     c: ImCache,
     attr: string,
-    val: string | null
+    val: string | null,
+    root = elGet(c),
 ) {
-    const domAppender = getEntriesParent(c, newDomAppender);
-
     if (val !== null) {
-        domAppender.root.setAttribute(attr, val);
+        root.setAttribute(attr, val);
     } else {
-        domAppender.root.removeAttribute(attr);
+        root.removeAttribute(attr);
     }
 
     attrsSet++;
@@ -287,7 +508,7 @@ export function elSetAttributes(c: ImCache, attrs: Record<string, string | strin
     const el = elGet(c);
     for (const key in attrs) {
         let val = attrs[key];
-        if (Array.isArray(val)) val = val.join(" ");
+        if (Array.isArray(val) === true) val = val.join(" ");
         el.setAttribute(key, val);
     }
 }
@@ -319,8 +540,13 @@ export function imOn<K extends keyof HTMLElementEventMap>(
             eventType: null,
             eventValue: null,
             eventListener: (e: HTMLElementEventMap[K]) => {
+                // NOTE: Some of you coming from a non-web background may be puzzled as to why
+                // we are re-rendering the entire app for EVERY event. This is because we always want
+                // the ability to call e.preventDefault() while the event is occuring for any event.
+                // Buffering the events means that we will miss the opportunity to prevent the default event.
+
                 val.eventValue = e;
-                c[CACHE_RERENDER_FN]();
+                rerenderImCache(c);
             },
         };
         state = imSet(c, val);
@@ -345,6 +571,9 @@ export function imOn<K extends keyof HTMLElementEventMap>(
 
     return result;
 }
+
+///////////////////////////
+// Global event system
 
 export function getGlobalEventSystem() {
     return globalStateStackGet(gssEventSystems);
@@ -388,13 +617,16 @@ export type ImKeyboardState = {
     // from knowing about this event.
     keyDown: KeyboardEvent | null;
     keyUp: KeyboardEvent | null;
-    blur: boolean;
+
+    keys: KeysState;
 };
 
 
 export type ImMouseState = {
     lastX: number;
     lastY: number;
+
+    ev: MouseEvent | null;
 
     leftMouseButton: boolean;
     middleMouseButton: boolean;
@@ -422,6 +654,7 @@ export type ImGlobalEventSystem = {
     rerender: () => void;
     keyboard: ImKeyboardState;
     mouse:    ImMouseState;
+    blur:     boolean;
     globalEventHandlers: {
         mousedown:  (e: MouseEvent) => void;
         mousemove:  (e: MouseEvent) => void;
@@ -444,17 +677,18 @@ function findParents(el: ValidElement, elements: Set<ValidElement>) {
     }
 }
 
-
-export function newImGlobalEventSystem(rerenderFn: () => void): ImGlobalEventSystem {
+export function newImGlobalEventSystem(c: ImCache): ImGlobalEventSystem {
     const keyboard: ImKeyboardState = {
         keyDown: null,
         keyUp: null,
-        blur: false,
+        keys: newKeysState(),
     };
 
     const mouse: ImMouseState = {
         lastX: 0,
         lastY: 0,
+
+        ev: null,
 
         leftMouseButton: false,
         middleMouseButton: false,
@@ -474,7 +708,8 @@ export function newImGlobalEventSystem(rerenderFn: () => void): ImGlobalEventSys
         lastMouseOverElement: null,
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    function handleMouseMove(e: MouseEvent) {
+        mouse.ev = e;
         mouse.lastX = mouse.X;
         mouse.lastY = mouse.Y;
         mouse.X = e.clientX;
@@ -491,80 +726,90 @@ export function newImGlobalEventSystem(rerenderFn: () => void): ImGlobalEventSys
         return false
     };
 
+    function updateMouseButtons(e: MouseEvent) {
+        mouse.leftMouseButton   = Boolean(e.buttons & (1 << 0));
+        mouse.rightMouseButton  = Boolean(e.buttons & (2 << 0));
+        mouse.middleMouseButton = Boolean(e.buttons & (3 << 0));
+    }
+
     const eventSystem: ImGlobalEventSystem = {
-        rerender: rerenderFn,
+        rerender: () => rerenderImCache(c),
         keyboard,
         mouse,
+        blur: false,
         // stored, so we can dispose them later if needed.
         globalEventHandlers: {
             mousedown: (e: MouseEvent) => {
-                if (e.button === 0) {
-                    mouse.leftMouseButton = true;
-                } else if (e.button === 1) {
-                    mouse.middleMouseButton = true;
-                } else if (e.button === 2) {
-                    mouse.rightMouseButton = true;
-                }
+                updateMouseButtons(e);
 
                 findParents(e.target as ValidElement, mouse.mouseDownElements);
                 try {
+                    mouse.ev = e;
                     eventSystem.rerender();
                 } finally {
                     mouse.mouseDownElements.clear();
+                    mouse.ev = null;
                 }
             },
             mouseclick: (e) => {
                 findParents(e.target as ValidElement, mouse.mouseClickElements);
                 try {
+                    mouse.ev = e;
                     eventSystem.rerender();
                 } finally {
                     mouse.mouseClickElements.clear();
+                    mouse.ev = null;
                 }
             },
             mousemove: (e) => {
-                if (handleMouseMove(e)) eventSystem.rerender();
+                updateMouseButtons(e);
+
+                if (handleMouseMove(e) === true) {
+                    eventSystem.rerender();
+                    mouse.ev = null;
+                }
             },
             mouseenter: (e) => {
-                if (handleMouseMove(e)) eventSystem.rerender();
+                if (handleMouseMove(e) === true) {
+                    eventSystem.rerender();
+                    mouse.ev = null;
+                }
             },
             mouseup: (e: MouseEvent) => {
-                if (e.button === 0) {
-                    mouse.leftMouseButton = false;
-                } else if (e.button === 1) {
-                    mouse.middleMouseButton = false;
-                } else if (e.button === 2) {
-                    mouse.rightMouseButton = false;
-                }
+                updateMouseButtons(e);
 
                 findParents(e.target as ValidElement, mouse.mouseUpElements);
                 try {
+                    mouse.ev = e;
                     eventSystem.rerender();
                 } finally {
                     mouse.mouseUpElements.clear();
+                    mouse.ev = null;
                 }
-
-                eventSystem.rerender();
             },
             wheel: (e: WheelEvent) => {
                 mouse.scrollWheel += e.deltaX + e.deltaY + e.deltaZ;
                 e.preventDefault();
-                if (!handleMouseMove(e)) {
+                if (!handleMouseMove(e) === true) {
                     // rerender anwyway
                     eventSystem.rerender();
                 }
             },
             keydown: (e: KeyboardEvent) => {
                 keyboard.keyDown = e;
+                updateKeysState(keyboard.keys, e, null, false);
                 eventSystem.rerender();
             },
             keyup: (e: KeyboardEvent) => {
                 keyboard.keyUp = e;
+                updateKeysState(keyboard.keys, null, e, false);
                 eventSystem.rerender();
             },
             blur: () => {
-                resetMouseState(mouse, true);
-                resetKeyboardState(keyboard);
-                keyboard.blur = true;
+                resetImMouseState(mouse);
+                resetImKeyboardState(keyboard);
+                eventSystem.blur = true;
+                updateKeysState(keyboard.keys, null, null, true);
                 eventSystem.rerender();
             }
         },
@@ -573,10 +818,12 @@ export function newImGlobalEventSystem(rerenderFn: () => void): ImGlobalEventSys
     return eventSystem;
 }
 
-function resetKeyboardState(keyboard: ImKeyboardState) {
+function resetImKeyboardState(keyboard: ImKeyboardState) {
     keyboard.keyDown = null
     keyboard.keyUp = null
-    keyboard.blur = false;
+
+    const keys = keyboard.keys;
+    updateKeysState(keys, null, null, true);
 }
 
 /**
@@ -588,7 +835,7 @@ const gssEventSystems: ImGlobalEventSystem[] = [];
 export function imGlobalEventSystemBegin(c: ImCache): ImGlobalEventSystem {
     let state = imGet(c, newImGlobalEventSystem);
     if (state === undefined) {
-        const eventSystem = newImGlobalEventSystem(c[CACHE_RERENDER_FN]);
+        const eventSystem = newImGlobalEventSystem(c);
         addDocumentAndWindowEventListeners(eventSystem);
         cacheEntriesAddDestructor(c, () => removeDocumentAndWindowEventListeners(eventSystem));
         state = imSet(c, eventSystem);
@@ -599,9 +846,13 @@ export function imGlobalEventSystemBegin(c: ImCache): ImGlobalEventSystem {
     return state;
 }
 
-export function imGlobalEventSystemEnd(c: ImCache, eventSystem: ImGlobalEventSystem) {
-    resetKeyboardState(eventSystem.keyboard);
-    resetMouseState(eventSystem.mouse, false);
+export function imGlobalEventSystemEnd(_c: ImCache, eventSystem: ImGlobalEventSystem) {
+    updateMouseState(eventSystem.mouse);
+    updateKeysState(eventSystem.keyboard.keys, null, null, false);
+
+    eventSystem.keyboard.keyDown = null
+    eventSystem.keyboard.keyUp = null
+    eventSystem.blur = false;
 
     globalStateStackPop(gssEventSystems, eventSystem);
 }
@@ -619,10 +870,14 @@ export function imTrackSize(c: ImCache) {
                     // NOTE: resize-observer cannot track the top, right, left, bottom of a rect. Sad.
                     self.size.width = entry.contentRect.width;
                     self.size.height = entry.contentRect.height;
+                    self.resized = true;
                     break;
                 }
 
-                c[CACHE_RERENDER_FN]();
+                if (self.resized === true) {
+                    rerenderImCache(c);
+                    self.resized = false;
+                }
             })
         };
 
@@ -674,7 +929,16 @@ export function imPreventScrollEventPropagation(c: ImCache) {
     return state;
 }
 
-export function resetMouseState(mouse: ImMouseState, clearPersistedStateAsWell: boolean) {
+export function updateMouseState(mouse: ImMouseState) {
+    mouse.dX = 0;
+    mouse.dY = 0;
+    mouse.lastX = mouse.X;
+    mouse.lastY = mouse.Y;
+
+    mouse.scrollWheel = 0;
+}
+
+export function resetImMouseState(mouse: ImMouseState) {
     mouse.dX = 0;
     mouse.dY = 0;
     mouse.lastX = mouse.X;
@@ -682,11 +946,9 @@ export function resetMouseState(mouse: ImMouseState, clearPersistedStateAsWell: 
 
     mouse.scrollWheel = 0;
 
-    if (clearPersistedStateAsWell === true) {
-        mouse.leftMouseButton = false;
-        mouse.middleMouseButton = false;
-        mouse.rightMouseButton = false;
-    }
+    mouse.leftMouseButton = false;
+    mouse.middleMouseButton = false;
+    mouse.rightMouseButton = false;
 }
 
 export function addDocumentAndWindowEventListeners(eventSystem: ImGlobalEventSystem) {
@@ -713,13 +975,14 @@ export function removeDocumentAndWindowEventListeners(eventSystem: ImGlobalEvent
     window.removeEventListener("blur", eventSystem.globalEventHandlers.blur);
 }
 
+///////////////////////////
+// Various KeyRef entries
 
-///////// Keys
-
-// We can now memoize on an object reference instead of a string.
+// We can now memoize on an object reference instead of a string. This improves performance.
 // You shouldn't be creating these every frame - just reusing these constants below
 type KeyRef<K> = { val: K };
 
+// HTML elements
 export const EL_A = { val: "a" } as const;
 export const EL_ABBR = { val: "abbr" } as const;
 export const EL_ADDRESS = { val: "address" } as const;
@@ -833,6 +1096,76 @@ export const EL_VAR = { val: "var" } as const;
 export const EL_VIDEO = { val: "video" } as const;
 export const EL_WBR = { val: "wbr" } as const;
 
+// HTML svg elements
+export const EL_SVG_A = { val: "a" } as const;
+export const EL_SVG_ANIMATE = { val: "animate" } as const;
+export const EL_SVG_ANIMATEMOTION = { val: "animateMotion" } as const;
+export const EL_SVG_ANIMATETRANSFORM = { val: "animateTransform" } as const;
+export const EL_SVG_CIRCLE = { val: "circle" } as const;
+export const EL_SVG_CLIPPATH = { val: "clipPath" } as const;
+export const EL_SVG_DEFS = { val: "defs" } as const;
+export const EL_SVG_DESC = { val: "desc" } as const;
+export const EL_SVG_ELLIPSE = { val: "ellipse" } as const;
+export const EL_SVG_FEBLEND = { val: "feBlend" } as const;
+export const EL_SVG_FECOLORMATRIX = { val: "feColorMatrix" } as const;
+export const EL_SVG_FECOMPONENTTRANSFER = { val: "feComponentTransfer" } as const;
+export const EL_SVG_FECOMPOSITE = { val: "feComposite" } as const;
+export const EL_SVG_FECONVOLVEMATRIX = { val: "feConvolveMatrix" } as const;
+export const EL_SVG_FEDIFFUSELIGHTING = { val: "feDiffuseLighting" } as const;
+export const EL_SVG_FEDISPLACEMENTMAP = { val: "feDisplacementMap" } as const;
+export const EL_SVG_FEDISTANTLIGHT = { val: "feDistantLight" } as const;
+export const EL_SVG_FEDROPSHADOW = { val: "feDropShadow" } as const;
+export const EL_SVG_FEFLOOD = { val: "feFlood" } as const;
+export const EL_SVG_FEFUNCA = { val: "feFuncA" } as const;
+export const EL_SVG_FEFUNCB = { val: "feFuncB" } as const;
+export const EL_SVG_FEFUNCG = { val: "feFuncG" } as const;
+export const EL_SVG_FEFUNCR = { val: "feFuncR" } as const;
+export const EL_SVG_FEGAUSSIANBLUR = { val: "feGaussianBlur" } as const;
+export const EL_SVG_FEIMAGE = { val: "feImage" } as const;
+export const EL_SVG_FEMERGE = { val: "feMerge" } as const;
+export const EL_SVG_FEMERGENODE = { val: "feMergeNode" } as const;
+export const EL_SVG_FEMORPHOLOGY = { val: "feMorphology" } as const;
+export const EL_SVG_FEOFFSET = { val: "feOffset" } as const;
+export const EL_SVG_FEPOINTLIGHT = { val: "fePointLight" } as const;
+export const EL_SVG_FESPECULARLIGHTING = { val: "feSpecularLighting" } as const;
+export const EL_SVG_FESPOTLIGHT = { val: "feSpotLight" } as const;
+export const EL_SVG_FETILE = { val: "feTile" } as const;
+export const EL_SVG_FETURBULENCE = { val: "feTurbulence" } as const;
+export const EL_SVG_FILTER = { val: "filter" } as const;
+export const EL_SVG_FOREIGNOBJECT = { val: "foreignObject" } as const;
+export const EL_SVG_G = { val: "g" } as const;
+export const EL_SVG_IMAGE = { val: "image" } as const;
+export const EL_SVG_LINE = { val: "line" } as const;
+export const EL_SVG_LINEARGRADIENT = { val: "linearGradient" } as const;
+export const EL_SVG_MARKER = { val: "marker" } as const;
+export const EL_SVG_MASK = { val: "mask" } as const;
+export const EL_SVG_METADATA = { val: "metadata" } as const;
+export const EL_SVG_MPATH = { val: "mpath" } as const;
+export const EL_SVG_PATH = { val: "path" } as const;
+export const EL_SVG_PATTERN = { val: "pattern" } as const;
+export const EL_SVG_POLYGON = { val: "polygon" } as const;
+export const EL_SVG_POLYLINE = { val: "polyline" } as const;
+export const EL_SVG_RADIALGRADIENT = { val: "radialGradient" } as const;
+export const EL_SVG_RECT = { val: "rect" } as const;
+export const EL_SVG_SCRIPT = { val: "script" } as const;
+export const EL_SVG_SET = { val: "set" } as const;
+export const EL_SVG_STOP = { val: "stop" } as const;
+export const EL_SVG_STYLE = { val: "style" } as const;
+/**
+ * For larger svg-based components with lots of moving parts, 
+ * consider {@link imSvgContext}, or creating something on your end that is similar.
+ */
+export const EL_SVG = { val: "svg" } as const;; 
+export const EL_SVG_SWITCH = { val: "switch" } as const;
+export const EL_SVG_SYMBOL = { val: "symbol" } as const;
+export const EL_SVG_TEXT = { val: "text" } as const;
+export const EL_SVG_TEXTPATH = { val: "textPath" } as const;
+export const EL_SVG_TITLE = { val: "title" } as const;
+export const EL_SVG_TSPAN = { val: "tspan" } as const;
+export const EL_SVG_USE = { val: "use" } as const;
+export const EL_SVG_VIEW = { val: "view" } as const;
+
+
 // KeyRef<keyof GlobalEventHandlersEventMap>
 export const EV_ABORT = { val: "abort" } as const;
 export const EV_ANIMATIONCANCEL = { val: "animationcancel" } as const;
@@ -877,8 +1210,16 @@ export const EV_FORMDATA = { val: "formdata" } as const;
 export const EV_GOTPOINTERCAPTURE = { val: "gotpointercapture" } as const;
 export const EV_INPUT = { val: "input" } as const;
 export const EV_INVALID = { val: "invalid" } as const;
+/** 
+ * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
+ * TODO: fix
+ **/
 export const EV_KEYDOWN = { val: "keydown" } as const;
 export const EV_KEYPRESS = { val: "keypress" } as const;
+/** 
+ * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
+ * TODO: fix
+ **/
 export const EV_KEYUP = { val: "keyup" } as const;
 export const EV_LOAD = { val: "load" } as const;
 export const EV_LOADEDDATA = { val: "loadeddata" } as const;
@@ -939,3 +1280,316 @@ export const EV_WEBKITTRANSITIONEND = { val: "webkittransitionend" } as const;
 export const EV_WHEEL = { val: "wheel" } as const;
 export const EV_FULLSCREENCHANGE = { val: "fullscreenchange" };
 export const EV_FULLSCREENERROR = { val: "fullscreenerror" };
+
+///////////////////////////
+// Keyboard input tracking
+
+export function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
+    let i2 = 0;
+    for (let i = 0; i < arr.length; i++) {
+        if (predicate(arr[i], i)) arr[i2++] = arr[i];
+    }
+    arr.length = i2;
+}
+
+// TODO: use keycode if supported
+
+type PressedSymbols<T extends string> = {
+    pressed: T[];
+    held: T[];
+    repeated: T[];
+    released: T[];
+};
+
+export type KeysState = {
+    keys:    PressedSymbols<NormalizedKey>;
+    letters: PressedSymbols<string>;
+};
+
+export function newKeysState(): KeysState {
+    return {
+        keys: {
+            pressed:  [],
+            held:     [],
+            released: [],
+            repeated: [],
+        },
+        letters: {
+            pressed:  [],
+            held:     [],
+            released: [],
+            repeated: [],
+        }
+    };
+}
+
+const KEY_EVENT_NOTHING  = 0;
+const KEY_EVENT_PRESSED  = 1;
+const KEY_EVENT_RELEASED = 2;
+const KEY_EVENT_REPEATED = 3;
+const KEY_EVENT_BLUR     = 4;
+
+
+// https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+// There are a LOT of them. So I won't bother holding state for every possible key like usual
+// TODO: try using keyCode if available, then fall back on key
+export type NormalizedKey = string & { __Key: void };
+
+export function getNormalizedKey(key: string): NormalizedKey {
+    if (key.length === 1) {
+        key = key.toUpperCase();
+
+        switch (key) {
+            case "!": key = "1"; break;
+            case "@": key = "2"; break;
+            case "#": key = "3"; break;
+            case "$": key = "4"; break;
+            case "%": key = "5"; break;
+            case "^": key = "6"; break;
+            case "&": key = "7"; break;
+            case "*": key = "8"; break;
+            case "(": key = "9"; break;
+            case ")": key = "0"; break;
+            case "_": key = "-"; break;
+            case "+": key = "+"; break;
+            case "{": key = "["; break;
+            case "}": key = "]"; break;
+            case "|": key = "\\"; break;
+            case ":": key = ";"; break;
+            case "\"": key = "'"; break;
+            case "<": key = ","; break;
+            case ">": key = "."; break;
+            case "?": key = "/"; break;
+            case "~": key = "`"; break;
+        }
+    }
+
+    return key as NormalizedKey;
+}
+
+function updatePressedSymbols<T extends string>(
+    s: PressedSymbols<T>,
+    ev: number,
+    key: T,
+) {
+    for (let i = 0; i < s.pressed.length; i++) {
+        s.held.push(s.pressed[i]);
+    }
+    s.pressed.length = 0;
+    s.repeated.length = 0;
+    s.released.length = 0;
+
+    switch (ev) {
+        case KEY_EVENT_PRESSED: {
+            // NOTE: the main issue with this input mechanism, is that 
+            // Shift + Click on some browsers will open a context menu that can't be detected. (or at least, I don't know how to detect it).
+            // This can result in KEY_EVENT_RELEASED never being sent. 
+            // The compromise made here is that we only ever have one of any key in these arrays.
+            // The keys _may_ get stuck down, but if the user does the natural thing, press this key again,
+            // it will get released, and all is good.
+
+            if (s.pressed.indexOf(key) === -1) {
+                s.pressed.push(key);
+            }
+        } break;
+        case KEY_EVENT_REPEATED: {
+            if (s.repeated.indexOf(key) === -1) {
+                s.repeated.push(key);
+            }
+        } break;
+        case KEY_EVENT_RELEASED: {
+            filterInPlace(s.held, heldKey => heldKey !== key);
+            if (s.released.indexOf(key) !== -1) {
+                s.released.push(key);
+            }
+        } break;
+        case KEY_EVENT_BLUR: {
+            s.pressed.length = 0;
+            s.released.length = 0;
+            s.repeated.length = 0;
+            s.held.length = 0;
+        } break;
+        case KEY_EVENT_NOTHING: {
+        } break;
+    }
+}
+
+function updateKeysStateInternal(
+    keysState: KeysState,
+    ev: number,
+    key: string,
+) {
+    updatePressedSymbols(keysState.keys, ev, getNormalizedKey(key));
+    updatePressedSymbols(keysState.letters, ev, key);
+}
+
+export function updateKeysState(
+    keysState: KeysState,
+    keyDown: KeyboardEvent | null,
+    keyUp: KeyboardEvent | null,
+    blur: boolean,
+) {
+    let key = "";
+    let ev  = KEY_EVENT_NOTHING
+    if (keyDown !== null) {
+        key = keyDown.key;
+        if (keyDown.repeat === true) {
+            ev = KEY_EVENT_REPEATED;
+        } else {
+            ev = KEY_EVENT_PRESSED;
+        }
+    } else if (keyUp !== null) {
+        key = keyUp.key;
+        ev = KEY_EVENT_RELEASED;
+    } else if (blur === true) {
+        ev = KEY_EVENT_BLUR;
+        key = "";
+    } else {
+        ev = KEY_EVENT_NOTHING;
+        key = "";
+    }
+
+    updateKeysStateInternal(keysState, ev, key);
+
+    if (key === "Control" || key === "Meta") {
+        updateKeysStateInternal(keysState, ev, "Modifier");
+    }
+}
+
+export function isKeyPressed(keysState: KeysState, key: NormalizedKey): boolean {
+    const keys = keysState.keys;
+    for (let i = 0; i < keys.pressed.length; i++) {
+        if (keys.pressed[i] === key) return true;
+    }
+    return false;
+}
+
+export function isKeyRepeated(keysState: KeysState, key: NormalizedKey): boolean {
+    const keys = keysState.keys;
+    for (let i = 0; i < keys.repeated.length; i++) {
+        if (keys.repeated[i] === key) return true;
+    }
+    return false;
+}
+
+export function isKeyPressedOrRepeated(keysState: KeysState, key: NormalizedKey): boolean {
+    if (isKeyPressed(keysState, key)) return true;
+    if (isKeyRepeated(keysState, key)) return true;
+    return false;
+}
+
+export function isKeyReleased(keysState: KeysState, key: NormalizedKey): boolean {
+    const keys = keysState.keys;
+    for (let i = 0; i < keys.released.length; i++) {
+        if (keys.released[i] === key) return true;
+    }
+    return false;
+}
+
+export function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
+    const keys = keysState.keys;
+    for (let i = 0; i < keys.held.length; i++) {
+        if (keys.held[i] === key) return true;
+    }
+    return false;
+}
+
+
+export function isLetterPressed(keysState: KeysState, letter: string): boolean {
+    const letters = keysState.letters;
+    for (let i = 0; i < letters.pressed.length; i++) {
+        if (letters.pressed[i] === letter) return true;
+    }
+    return false;
+}
+
+export function isLetterRepeated(keysState: KeysState, letter: string): boolean {
+    const letters = keysState.letters;
+    for (let i = 0; i < letters.repeated.length; i++) {
+        if (letters.repeated[i] === letter) return true;
+    }
+    return false;
+}
+
+export function isLetterPressedOrRepeated(keysState: KeysState, letter: string): boolean {
+    if (isLetterPressed(keysState, letter)) return true;
+    if (isLetterRepeated(keysState, letter)) return true;
+    return false;
+}
+
+export function isLetterReleased(keysState: KeysState, letter: string): boolean {
+    const letters = keysState.letters;
+    for (let i = 0; i < letters.released.length; i++) {
+        if (letters.released[i] === letter) return true;
+    }
+    return false;
+}
+
+export function isLetterHeld(keysState: KeysState, letter: string): boolean {
+    const letters = keysState.letters;
+    for (let i = 0; i < letters.held.length; i++) {
+        if (letters.held[i] === letter) return true;
+    }
+    return false;
+}
+
+export const KEY_1             = getNormalizedKey("1");
+export const KEY_2             = getNormalizedKey("2");
+export const KEY_3             = getNormalizedKey("3");
+export const KEY_4             = getNormalizedKey("4");
+export const KEY_5             = getNormalizedKey("5");
+export const KEY_6             = getNormalizedKey("6");
+export const KEY_7             = getNormalizedKey("7");
+export const KEY_8             = getNormalizedKey("8");
+export const KEY_9             = getNormalizedKey("9");
+export const KEY_0             = getNormalizedKey("0");
+export const KEY_MINUS         = getNormalizedKey("-");
+export const KEY_EQUALS        = getNormalizedKey("=");
+export const KEY_Q             = getNormalizedKey("Q");
+export const KEY_W             = getNormalizedKey("W");
+export const KEY_E             = getNormalizedKey("E");
+export const KEY_R             = getNormalizedKey("R");
+export const KEY_T             = getNormalizedKey("T");
+export const KEY_Y             = getNormalizedKey("Y");
+export const KEY_U             = getNormalizedKey("U");
+export const KEY_I             = getNormalizedKey("I");
+export const KEY_O             = getNormalizedKey("O");
+export const KEY_P             = getNormalizedKey("P");
+export const KEY_OPEN_BRACKET  = getNormalizedKey("[");
+export const KEY_CLOSE_BRACKET = getNormalizedKey("]");
+export const KEY_BACKSLASH     = getNormalizedKey("\\");
+export const KEY_A             = getNormalizedKey("A");
+export const KEY_S             = getNormalizedKey("S");
+export const KEY_D             = getNormalizedKey("D");
+export const KEY_F             = getNormalizedKey("F");
+export const KEY_G             = getNormalizedKey("G");
+export const KEY_H             = getNormalizedKey("H");
+export const KEY_J             = getNormalizedKey("J");
+export const KEY_K             = getNormalizedKey("K");
+export const KEY_L             = getNormalizedKey("L");
+export const KEY_SEMICOLON     = getNormalizedKey(";");
+export const KEY_QUOTE         = getNormalizedKey("'");
+export const KEY_Z             = getNormalizedKey("Z");
+export const KEY_X             = getNormalizedKey("X");
+export const KEY_C             = getNormalizedKey("C");
+export const KEY_V             = getNormalizedKey("V");
+export const KEY_B             = getNormalizedKey("B");
+export const KEY_N             = getNormalizedKey("N");
+export const KEY_M             = getNormalizedKey("M");
+export const KEY_COMMA         = getNormalizedKey(",");
+export const KEY_PERIOD        = getNormalizedKey(".");
+export const KEY_FORWAR_SLASH  = getNormalizedKey("/");
+
+export const KEY_SHIFT = getNormalizedKey("Shift");
+export const KEY_CTRL  = getNormalizedKey("Control");
+export const KEY_META  = getNormalizedKey("Meta");
+export const KEY_ALT   = getNormalizedKey("Alt");
+export const KEY_MOD   = getNormalizedKey("Modifier"); // Either CTRL or META
+
+export const KEY_SPACE       = getNormalizedKey(" ");
+export const KEY_ENTER       = getNormalizedKey("Enter");
+export const KEY_BACKSPACE   = getNormalizedKey("Backspace");
+export const KEY_ARROW_UP    = getNormalizedKey("ArrowUp");
+export const KEY_ARROW_DOWN  = getNormalizedKey("ArrowDown");
+export const KEY_ARROW_LEFT  = getNormalizedKey("ArrowLeft");
+export const KEY_ARROW_RIGHT = getNormalizedKey("ArrowRight");
