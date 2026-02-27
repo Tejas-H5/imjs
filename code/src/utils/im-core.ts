@@ -1,4 +1,4 @@
-// IM-CORE 1.072
+// IM-CORE 1.074
 // NOTE: I'm currently working on 3 different apps with this framework,
 // so even though I thought it was mostly finished, the API appears to still be changing slightly.
 // Majority of the last changes have just been updates to the documentation though
@@ -104,7 +104,7 @@ export const CACHE_ITEMS_ITERATED_LAST_FRAME    = 19; // Useful performance metr
 export const CACHE_TOTAL_DESTRUCTORS            = 20; // Useful memory leak indicator
 export const CACHE_TOTAL_MAP_ENTRIES            = 21; // Useful memory leak indicator
 export const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 22; // Useful memory leak indicator
-export const CACHE_HMR_ENABLED                  = 23; 
+export const CACHE_HMR_ENABLED                  = 23;  // TODO: Delete HMR - we'll come back and try this again later
 export const CACHE_HMR_STATE_INCOMPATIBLE       = 24;
 export const CACHE_RENDER_FN_CHANGES            = 25;
 export const CACHE_ENTRIES_START                = 26;
@@ -170,7 +170,7 @@ export const USE_REQUEST_ANIMATION_FRAME = 1 << 1;
  *
  * If you want to avoid the animation loop for whatever reason, pass in the {@link USE_MANUAL_RERENDERING} flag instead.
  *  - You'll need to manually call c[CACHE_RERENDER_FN]() whenever any state anywhere changes.
- *  - Methods that previously reported a deltaTime will report a constant 0.0333_ instead.
+ *  - Methods that previously reported a deltaTime will report a constant 1/30 instead.
  * 
  * NOTE: the rerender function and the `useEventLoop` parameter are completely ignored after the first render, and this will never change.
  */
@@ -223,7 +223,7 @@ export function imCacheBegin(
     if (c[CACHE_RERENDER_FN_INNER] !== renderFn) {
         c[CACHE_RERENDER_FN_INNER] = renderFn;
 
-        // In a production APP, this should remain 1.
+        // In a production app, this should remain 1.
         // In a dev environment with HMR enabled, it should be incrementing each
         // time HMR causes the render function to reload.
         const id = c[CACHE_RENDER_FN_CHANGES] + 1;
@@ -248,7 +248,7 @@ export function imCacheBegin(
                 }
                 c[CACHE_IS_EVENT_RERENDER] = false;
             }
-        }
+        };
 
 
         if ((flags & USE_MANUAL_RERENDERING) !== 0) {
@@ -364,6 +364,21 @@ const INTERNAL_TYPE_TRY_BLOCK = 5;
 const INTERNAL_TYPE_CACHE = 6;
 const INTERNAL_TYPE_SWITCH_BLOCK = 7;
 
+// Some common errors will get their own dedicated throw Error insead of a simple assert + comment
+function internalTypeToString(internalType: number): string {
+    switch (internalType) {
+        case INTERNAL_TYPE_NORMAL_BLOCK:      return "INTERNAL_TYPE_NORMAL_BLOCK";
+        case INTERNAL_TYPE_CONDITIONAL_BLOCK: return "INTERNAL_TYPE_CONDITIONAL_BLOCK";
+        case INTERNAL_TYPE_ARRAY_BLOCK:       return "INTERNAL_TYPE_ARRAY_BLOCK";
+        case INTERNAL_TYPE_KEYED_BLOCK:       return "INTERNAL_TYPE_KEYED_BLOCK";
+        case INTERNAL_TYPE_TRY_BLOCK:         return "INTERNAL_TYPE_TRY_BLOCK";
+        case INTERNAL_TYPE_CACHE:             return "INTERNAL_TYPE_CACHE";
+        case INTERNAL_TYPE_SWITCH_BLOCK:      return "INTERNAL_TYPE_SWITCH_BLOCK";
+    }
+
+    return "Custom user type: " + internalType
+}
+
 export function imCacheEntriesBegin<T>(
     c: ImCache,
     entries: ImCacheEntries,
@@ -410,11 +425,11 @@ export function imCacheEntriesBegin<T>(
 }
 
 function __imPush(c: ImCache, entries: ImCacheEntries) {
-    c[CACHE_IDX] += 1;
-    if (c[CACHE_IDX] < c.length) {
-        c[c[CACHE_IDX]] = entries;
-    } else {
+    const idx = ++c[CACHE_IDX];
+    if (idx === c.length) {
         c.push(entries);
+    } else {
+        c[idx] = entries;
     }
 
     c[CACHE_CURRENT_ENTRIES] = entries;
@@ -477,7 +492,7 @@ export function imGet<T>(
 
     // [type, value][type,value],[typ....
     // ^----------->^
-    entries[ENTRIES_IDX] += 2; 
+    entries[ENTRIES_IDX] += 2;
 
     const idx = entries[ENTRIES_IDX];
     if (idx === ENTRIES_ITEMS_START) {
@@ -775,9 +790,11 @@ export function __GetEntries(c: ImCache): ImCacheEntries {
 export function imBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
     const entries = c[CACHE_CURRENT_ENTRIES];
 
-    // Opening and closing blocks may not be lining up right.
-    // You may have missed or inserted some blocks by accident.
-    assert(entries[ENTRIES_INTERNAL_TYPE] === internalType);
+    if (entries[ENTRIES_INTERNAL_TYPE] !== internalType) {
+        const message = `Opening and closing blocks may not be lining up right. You may have missed or inserted some blocks by accident. `
+            + "expected " + internalTypeToString(entries[ENTRIES_INTERNAL_TYPE]) + ", got " + internalTypeToString(internalType);
+        throw new Error(message)
+    }
 
     let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
     if (map !== undefined) {
@@ -840,7 +857,6 @@ export function __imBlockDerivedBegin(c: ImCache, internalType: number): ImCache
 // } imDivEnd(c);
 // ```
 // Each of those methods that 'augment' the call to `imDiv` may have their own initialization logic.
-// TODO: When HMR updates the render function, we should recursively set entries[ENTRIES_COMPLETED_ONE_RENDER] = false, so it can return true one more time.
 export function isFirstishRender(c: ImCache): boolean {
     const entries = c[CACHE_CURRENT_ENTRIES];
     return entries[ENTRIES_COMPLETED_ONE_RENDER] === false;
@@ -1050,7 +1066,6 @@ export const MEMO_FIRST_RENDER = 2;
  */
 export const MEMO_FIRST_RENDER_CONDITIONAL = 3;
 
-
 export type ImMemoResult
     = typeof MEMO_NOT_CHANGED
     | typeof MEMO_FIRST_RENDER
@@ -1095,17 +1110,13 @@ export type ImMemoResult
  * without extracing value1Changed, value2Changed, etc. variables since this is not short-circuiting like the || operator.
  * 
  * ```ts
- * if (
- *      imMemo(c, value1) |
- *      imMemo(c, value2) |
- *      imMemo(c, value3) |
- *      imMemo(c, value4) 
- * ) {
+ * if (imMemo(c, value1) | imMemo(c, value2) | imMemo(c, value3) | imMemo(c, value4)) {
+ *      // Something
  * }
  * ```
  */
 export function imMemo(c: ImCache, val: unknown): ImMemoResult {
-    /*
+    /**
      * NOTE: I had previously implemented imMemo() and imMemoEnd():
      *
      * ```ts
@@ -1114,7 +1125,7 @@ export function imMemo(c: ImCache, val: unknown): ImMemoResult {
      * } imMemoEnd();
      * ```
      * It can be done, but I've found that it's a terrible idea in practice.
-     * I had initially thought {@link imMemo} was bad too, but it has 
+     * I had initially thought {@link imMemo} was bad too, but it has turned out to be very useful.
      * turned out to be very useful, more so even, than imMemo2(c, ...manyArgs)
      */
 
@@ -1395,3 +1406,4 @@ export function startRenderingWithHMR(
 
     return hmr;
 }
+

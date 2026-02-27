@@ -18,7 +18,7 @@ import {
     imSet,
     inlineTypeId,
     recursivelyEnumerateEntries,
-    rerenderImCache
+    rerenderImCache,
 } from "./im-core";
 
 ///////////////////////////
@@ -345,7 +345,7 @@ export function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
 // would otherwise not have access to this dom node.
 export function imDomRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     // If you want to re-push this DOM node to the immediate mode stack, use imFinalizeDeferred(c).
-    // I.e imElBegin(c, EL_BLAH); imFinalizeDeferred(c); ...
+    // I.e imElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
     // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
     // This isn't the default, because it breaks some code that expects the node to have been inserted - 
     // calls to textInput.focus() for example, won't work till the next frame, for example.
