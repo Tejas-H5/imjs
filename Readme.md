@@ -10,6 +10,8 @@ See Why.md for more info. There's just too much yapping to put it all here.
 
 ## Organisation/Architecture
 
+I recommend that you just copy-paste these files into wherever you want, and then use them.
+It will be some time till I figure out how to make an NPM package.
 Unlike what the name suggests, this project is actually TypeScript-first.
 
 - im-core.ts
@@ -21,9 +23,8 @@ Unlike what the name suggests, this project is actually TypeScript-first.
         whereas things like the DOM do.
 - im-dom.ts
     - A bridge between im-js and the DOM. Contains something vaguely resembling a diffing algorithm, but isn't quite a diffing algorithm.
-- im-dom-ui.ts
-    - Optional - contains implementations for various UI primitives, like text inputs/areas, checkboxes, scroll views, layouting, etc.
-      You may be more knowledgeable about UI, and may decide to make your own instead.
+- im-ui/
+    - Optional - contains a cohesive UI system with implementations for various UI primitives, like text inputs/areas, checkboxes, scroll views, layouting, etc. I will be constantly adding to this and improving it as I make more stuff. You may be more knowledgeable about UI, and may decide to make your own instead.
 - tests/
     - testing-framework.ts
         - Contains the custom testing framework. It contains features like `.branch()`, which allows us to test more cases

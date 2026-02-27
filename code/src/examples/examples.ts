@@ -24,7 +24,7 @@ import {
     inlineTypeId,
     isFirstishRender,
     USE_MANUAL_RERENDERING,
-    USE_ANIMATION_FRAME,
+    USE_REQUEST_ANIMATION_FRAME,
     getDeltaTimeSeconds,
     imCacheBegin,
     imCacheEnd

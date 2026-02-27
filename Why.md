@@ -1,7 +1,6 @@
 # Motivation / Why does this exist
 
-In this day and age, where AI agents can spit out whatever React component you want in a couple of seconds,
-why bother with yet another UI framework?
+In this day and age, where AI agents can spit out whatever React component you want in a couple of seconds, why bother with yet another UI framework?
 
 Over the years, there are several heuristics I have learned that have greatly improved the performance, readability and maintainability of the code I write. Apart from things relating to naming/formatting/code organisation, they are as follows:
 
@@ -54,8 +53,6 @@ Problems that were originally non-trivial in the existing frameworks that requir
 If a UI framework could make this possible in a way that doesn't comprimise too heavily on other things, the ceiling for what a single person can accomplish with just domain-knowledge (knowledge about the programming language itself, and about maths/physics/animation/digital-signal-processing/whatever as opposed to web/css/framework-specific knowledge) just got a lot higher.
 The end-goal of this framework (and every other framework, though I don't think their authors realise it yet) is to maximize the ratio of domain-knowledge:api-knowledge in a conumer's head.
 A framework author's job is not to provide you a mechanism to write the most 'optimal' code, but rather, to defend your ability to write and structure the code the way you wanted to write it in the first place.
-
-In addition to the ability to solving the problems above, and allowing me to write code using the heuristics I opened with, there are some extra requirements I would like for a UI library:
 
 ## First failed attempt
 
