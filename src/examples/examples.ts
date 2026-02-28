@@ -520,7 +520,8 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                     gridState.gridRows++;
                 }
 
-                const { values, gridRows, gridCols } = gridState;
+                const { values, gridRows: gridRowsState, gridCols } = gridState;
+                const gridRows = Math.floor(gridRowsState / 10) * 10;
 
                 imElBegin(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
 
@@ -541,6 +542,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                         imFor(c); for (let col = 0; col < gridCols; col++) {
                             imElBegin(c, EL_DIV); imRelative(c); imSize(c, 50, PX, 50, PX); imAspectRatio(c, 1, 1); {
                                 if (isFirstishRender(c)) elSetStyle(c, "display", " inline-block");
+                                if (isFirstishRender(c)) elSetStyle(c, "backgroundColor", `rgba(0, 0, 0)`);
 
                                 const idx = col + gridCols * row;
 
@@ -562,9 +564,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                                 const valRounded = Math.round(val * 255) / 255;
                                 const styleChanged = imMemo(c, valRounded);
                                 if (styleChanged) {
-                                    const r = elGet(c);
-                                    r.style.backgroundColor = `rgba(0, 0, 0, ${val})`;
-                                    elSetStyle(c, "backgroundColor", `rgba(0, 0, 0, ${val})`);
+                                    elSetStyle(c, "opacity", "" + valRounded);
                                 }
 
                                 imElBegin(c, EL_DIV); {
