@@ -1,6 +1,6 @@
 import { ImCache, imMemo, isFirstishRender } from "src/utils/im-core";
 import { EL_TEXTAREA, elSetAttr, elSetClass, elSetStyle, elSetTextSafetyRemoved, imElBegin, imElEnd } from "src/utils/im-dom";
-import { BLOCK, imLayoutBegin, imLayoutEnd, INLINE, cn, cssVars, newCssBuilder } from "./ui-core";
+import { BLOCK, imLayoutBegin, imLayoutEnd, INLINE, cssVars, newCssBuilder, imHandleLongWords, imRelative, imSize, PERCENT, NA } from "./ui-core";
 import { setInputValue } from "./dom-utils";
 
 export function getLineBeforePos(text: string, pos: number): string {
@@ -70,28 +70,22 @@ export function imTextAreaBegin(c: ImCache, {
 
     const root = imLayoutBegin(c, BLOCK); {
         if (isFirstishRender(c)) {
-            elSetClass(c, cn.flex1);
-            elSetClass(c, cn.row);
-            elSetClass(c, cn.h100);
-            elSetClass(c, cn.overflowYAuto);
+            elSetStyle(c, "display",   "flex");
+            elSetStyle(c, "flex",      "1");
+            elSetStyle(c, "height",    "100%");
+            elSetStyle(c, "overflowY", "auto");
             elSetClass(c, cnTextAreaRoot);
         }
 
         // This is now always present.
-        imLayoutBegin(c, BLOCK); {
+        imLayoutBegin(c, BLOCK); imHandleLongWords(c); imRelative(c); imSize(c, 100, PERCENT, 0, NA); {
             if (isFirstishRender(c)) {
-                elSetClass(c, cn.handleLongWords);
-                elSetClass(c, cn.relative);
-                elSetClass(c, cn.w100);
-                elSetClass(c, cn.hFitContent);
-                elSetStyle(c, "minHeight", "100%");
+                elSetStyle(c, "height", "fit-content");
             }
 
             if (imMemo(c, isOneLine)) {
-                elSetClass(c, cn.preWrap, !isOneLine)
-                elSetClass(c, cn.pre, !!isOneLine)
-                elSetClass(c, cn.overflowHidden, isOneLine)
-                elSetClass(c, cn.noWrap, !!isOneLine);
+                elSetStyle(c, "whiteSpace", isOneLine ? "nowrap" : "pre-wrap");
+                elSetStyle(c, "overflow", isOneLine ? "hidden" : "");
             }
 
             // This is a facade that gives the text area the illusion of auto-sizing!
@@ -121,8 +115,19 @@ export function imTextAreaBegin(c: ImCache, {
 
             textArea = imElBegin(c, EL_TEXTAREA).root; {
                 if (isFirstishRender(c)) {
-                    elSetAttr(c, "class", [cn.allUnset, cn.absoluteFill, cn.preWrap, cn.w100, cn.h100].join(" "));
-                    elSetAttr(c, "style", "background-color: transparent; color: transparent; overflow-y: hidden; padding: 0px");
+                    elSetStyle(c, "all", "unset");
+                    elSetStyle(c, "position", "absolute");
+                    elSetStyle(c, "top", "0");
+                    elSetStyle(c, "left", "0");
+                    elSetStyle(c, "bottom", "0");
+                    elSetStyle(c, "right", "0");
+                    elSetStyle(c, "whiteSpace", "pre-wrap");
+                    elSetStyle(c, "width", "100%");
+                    elSetStyle(c, "height", "100%");
+                    elSetStyle(c, "backgroundColor", "rgba(0, 0, 0, 0)");
+                    elSetStyle(c, "color", "rgba(0, 0, 0, 0)");
+                    elSetStyle(c, "overflowY", "hidden");
+                    elSetStyle(c, "padding", "0");
                 }
 
                 if (imMemo(c, value)) {

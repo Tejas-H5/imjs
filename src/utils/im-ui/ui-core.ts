@@ -353,6 +353,13 @@ export function imZIndex(c: ImCache, z: number) {
     }
 }
 
+export function imHandleLongWords(c: ImCache) {
+    if (isFirstishRender(c)) {
+        elSetStyle(c, "overflowWrap", "anywhere");
+        elSetStyle(c, "wordBreak", "normal");
+    }
+}
+
 ///////////////////////////
 // Colours
 

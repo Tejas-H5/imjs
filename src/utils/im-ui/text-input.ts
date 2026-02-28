@@ -1,6 +1,5 @@
 import { EL_INPUT, elSetAttr, elSetClass, EV_BLUR, EV_INPUT, getGlobalEventSystem, imElBegin, imElEnd, imOn } from "src/utils/im-dom";
-import { newCssBuilder } from "./css-builder";
-import { imFlex, cssVars } from "./ui-core";
+import { imFlex, cssVars, newCssBuilder } from "./ui-core";
 import { ImCache, imMemo, isFirstishRender } from "src/utils/im-core";
 import { imTextAreaBegin, imTextAreaEnd } from "./editable-text-area";
 

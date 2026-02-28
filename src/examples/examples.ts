@@ -46,7 +46,7 @@ import {
     getGlobalEventSystem,
     imDomRootBegin,
     imDomRootEnd,
-    imEl,
+    imElBegin,
     imElEnd,
     imGlobalEventSystemBegin,
     imGlobalEventSystemEnd,
@@ -73,7 +73,7 @@ let numAnimations = 0;
 let rerenders = 0;
 
 function imExamples(c: ImCache) {
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         if (isFirstishRender(c)) {
             elSetStyle(c, "display", "flex");
             elSetStyle(c, "gap", "10px");
@@ -96,21 +96,21 @@ function imExamples(c: ImCache) {
             if (elHasMousePress(c)) currentExample = 3;
         } imButtonEnd(c);
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             if (isFirstishRender(c)) {
                 elSetStyle(c, "flex", "1");
             }
         } imElEnd(c, EL_DIV);
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, "[" + rerenders + " rerenders ]");
         } imElEnd(c, EL_DIV);
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, "[" + c.length + " stack size ]");
         } imElEnd(c, EL_DIV);
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, "[" + numAnimations + " animation in progress ]");
         } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
@@ -126,10 +126,10 @@ function imExamples(c: ImCache) {
     } imSwitchEnd(c);
 }
 
-function imMain(c: ImCache) {
+export function imExampleMain(c: ImCache) {
     rerenders++;
 
-    imCacheBegin(c, imMain, USE_MANUAL_RERENDERING); {
+    imCacheBegin(c, imExampleMain, USE_MANUAL_RERENDERING); {
         imDomRootBegin(c, document.body); {
             const ev = imGlobalEventSystemBegin(c); {
                 imExamples(c);
@@ -140,13 +140,13 @@ function imMain(c: ImCache) {
 
 
 function imMemoExampleView(c: ImCache) {
-    imEl(c, EL_H1); {
+    imElBegin(c, EL_H1); {
         imStr(c, "Im memo changes");
     } imElEnd(c, EL_H1);
 
     let i = 0;
     imFor(c); for (const change of changeEvents) {
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, i++);
             imStr(c, ":");
             imStr(c, change);
@@ -155,8 +155,8 @@ function imMemoExampleView(c: ImCache) {
 
     imDivider(c);
 
-    imEl(c, EL_DIV); { imStr(c, `toggleA: ${toggleA}, toggleB: ${toggleB}`); } imElEnd(c, EL_DIV);
-    imEl(c, EL_DIV); { imStr(c, `expected: ${toggleA ? (toggleB ? "A" : "B") : (toggleB ? "C" : "D")}`); } imElEnd(c, EL_DIV);
+    imElBegin(c, EL_DIV); { imStr(c, `toggleA: ${toggleA}, toggleB: ${toggleB}`); } imElEnd(c, EL_DIV);
+    imElBegin(c, EL_DIV); { imStr(c, `expected: ${toggleA ? (toggleB ? "A" : "B") : (toggleB ? "C" : "D")}`); } imElEnd(c, EL_DIV);
 
     if (imIf(c) && toggleA) {
         if (imIf(c) && toggleB) {
@@ -165,7 +165,7 @@ function imMemoExampleView(c: ImCache) {
                     changeEvents.push("A");
                 }
 
-                imEl(c, EL_DIV); imStr(c, "A"); imElEnd(c, EL_DIV);
+                imElBegin(c, EL_DIV); imStr(c, "A"); imElEnd(c, EL_DIV);
             } imIfEnd(c);
         } else {
             imIfElse(c);
@@ -174,7 +174,7 @@ function imMemoExampleView(c: ImCache) {
                 changeEvents.push("B");
             }
 
-            imEl(c, EL_DIV); imStr(c, "B"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, "B"); imElEnd(c, EL_DIV);
         } imIfEnd(c);
     } else {
         imIfElse(c);
@@ -183,7 +183,7 @@ function imMemoExampleView(c: ImCache) {
                 changeEvents.push("C");
             }
 
-            imEl(c, EL_DIV); imStr(c, "C"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, "C"); imElEnd(c, EL_DIV);
         } else {
             imIfElse(c);
 
@@ -191,27 +191,27 @@ function imMemoExampleView(c: ImCache) {
                 changeEvents.push("D");
             }
 
-            imEl(c, EL_DIV); imStr(c, "D"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, "D"); imElEnd(c, EL_DIV);
         } imIfEnd(c);
     } imIfEnd(c);
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         imStr(c, "Bro");
         imStr(c, "!");
     } imElEnd(c, EL_DIV);
 }
 
 function imErrorBoundaryExampleView(c: ImCache) {
-    imEl(c, EL_H1); imStr(c, "Error boundary example"); imElEnd(c, EL_H1);
+    imElBegin(c, EL_H1); imStr(c, "Error boundary example"); imElEnd(c, EL_H1);
 
     imDivider(c);
 
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         const tryState = imTry(c); try {
             const { err, recover } = tryState;
 
             if (imIf(c) && err) {
-                imEl(c, EL_DIV); imStr(c, "Your component encountered an error:"); imElEnd(c, EL_DIV);
-                imEl(c, EL_DIV); imStr(c, err); imElEnd(c, EL_DIV);
+                imElBegin(c, EL_DIV); imStr(c, "Your component encountered an error:"); imElEnd(c, EL_DIV);
+                imElBegin(c, EL_DIV); imStr(c, err); imElEnd(c, EL_DIV);
                 // Why don't we do this for the root of the program xDD)"); imElEnd(c, EL_DIV);
 
                 imButton(c); {
@@ -237,7 +237,7 @@ function imErrorBoundaryExampleView(c: ImCache) {
 }
 
 function imRealtimeExampleView(c: ImCache) {
-    imEl(c, EL_H1); imStr(c, "Realtime animations example"); imElEnd(c, EL_H1);
+    imElBegin(c, EL_H1); imStr(c, "Realtime animations example"); imElEnd(c, EL_H1);
 
     imDivider(c);
 
@@ -246,7 +246,7 @@ function imRealtimeExampleView(c: ImCache) {
         currentExampleState = imSet(c, { example: 1 })
     }
 
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         if (isFirstishRender(c)) {
             elSetStyle(c, "display", "flex");
             elSetStyle(c, "gap", "10px");
@@ -264,7 +264,7 @@ function imRealtimeExampleView(c: ImCache) {
 
     imDivider(c);
 
-    const root = imEl(c, EL_DIV); {
+    const root = imElBegin(c, EL_DIV); {
         root.manualDom = true;
 
         // You can avoid all this by simply rerendering your whole app.
@@ -275,7 +275,7 @@ function imRealtimeExampleView(c: ImCache) {
             const val = {
                 renderTime: 0,
                 c: [] as ImCache,
-                entries: [] as ImCacheEntries,
+                entries: [] as unknown as ImCacheEntries,
                 isAnimating: false,
                 rerenders: 0,
                 itemsIterated: 0,
@@ -283,13 +283,13 @@ function imRealtimeExampleView(c: ImCache) {
                 pingPong: (c: ImCache, phase: number) => {
                     const t = val.t;
 
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         if (isFirstishRender(c)) {
                             elSetStyle(c, "height", SIZE + "px");
                             elSetStyle(c, "position", "relative");
                         }
 
-                        imEl(c, EL_DIV); {
+                        imElBegin(c, EL_DIV); {
                             if (isFirstishRender(c)) {
                                 elSetStyle(c, "backgroundColor", "black");
                                 elSetStyle(c, "backgroundColor", "black");
@@ -312,27 +312,27 @@ function imRealtimeExampleView(c: ImCache) {
 
                     const isParentInConditionalPathwayStill = val.entries.length > 0 && val.entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
 
-                    imCacheBegin(c, val.animation, USE_ANIMATION_FRAME); {
+                    imCacheBegin(c, val.animation, USE_REQUEST_ANIMATION_FRAME); {
                         imDomRootBegin(c, root.root); {
                             const ev = imGlobalEventSystemBegin(c); {
-                                imEl(c, EL_DIV); {
+                                imElBegin(c, EL_DIV); {
                                     if (isFirstishRender(c)) {
                                         elSetStyle(c, "display", "flex");
                                         elSetStyle(c, "gap", "10px");
                                     }
 
-                                    imEl(c, EL_DIV); imStr(c, Math.round(val.renderTime) + "ms"); imElEnd(c, EL_DIV);
-                                    imEl(c, EL_DIV); imStr(c, val.rerenders + " rerenders"); imElEnd(c, EL_DIV);
-                                    imEl(c, EL_DIV); imStr(c, val.itemsIterated + " rerenders"); imElEnd(c, EL_DIV);
-                                    imEl(c, EL_DIV); imStr(c, stylesSet + " styles set"); imElEnd(c, EL_DIV);
-                                    imEl(c, EL_DIV); imStr(c, classesSet + " classes set"); imElEnd(c, EL_DIV);
-                                    imEl(c, EL_DIV); imStr(c, attrsSet + " attrs set"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, Math.round(val.renderTime) + "ms"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, val.rerenders + " rerenders"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, val.itemsIterated + " rerenders"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, stylesSet + " styles set"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, classesSet + " classes set"); imElEnd(c, EL_DIV);
+                                    imElBegin(c, EL_DIV); imStr(c, attrsSet + " attrs set"); imElEnd(c, EL_DIV);
                                 } imElEnd(c, EL_DIV);
 
-                                imEl(c, EL_DIV); {
+                                imElBegin(c, EL_DIV); {
                                     imSwitch(c, currentExampleState.example); switch (currentExampleState.example) {
                                         case 0: {
-                                            imEl(c, EL_H1); imStr(c, "Snake sine thing idx"); imElEnd(c, EL_H1);
+                                            imElBegin(c, EL_H1); imStr(c, "Snake sine thing idx"); imElEnd(c, EL_H1);
 
                                             imDivider(c);
 
@@ -342,7 +342,7 @@ function imRealtimeExampleView(c: ImCache) {
                                             }
                                         } break;
                                         case 1: {
-                                            imEl(c, EL_H1); imStr(c, "Old framework example page bro I have spent a large percentage of my life on thhis page. .. :("); imElEnd(c, EL_H1);
+                                            imElBegin(c, EL_H1); imStr(c, "Old framework example page bro I have spent a large percentage of my life on thhis page. .. :("); imElEnd(c, EL_H1);
 
                                             imDivider(c);
 
@@ -400,25 +400,25 @@ function imWallClockView(c: ImCache, t: number) {
     if (s.val < -1) s.val = -1;
 
     // The retained-mode code is actually more compact here!
-    imEl(c, EL_DIV); {
-        imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             const entries = c[CACHE_CURRENT_ENTRIES];
             imStr(c, "Removed: " + entries[ENTRIES_REMOVE_LEVEL]);
             imStr(c, "In conditional path: " + entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY]);
             imMemo(c, 1);
         } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         imStr(c, "brownian motion: " + s + "");
     } imElEnd(c, EL_DIV);
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         imStr(c, "FPS: " + (1 / dt).toPrecision(2) + "");
     } imElEnd(c, EL_DIV);
 
     let n = s.val < 0 ? 1 : 2;
     n = 2; // TODO: revert
     imFor(c); for (let i = 0; i < n; i++) {
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, new Date().toISOString());
         } imElEnd(c, EL_DIV);
     } imForEnd(c);
@@ -434,44 +434,44 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
     const tryState = imTry(c); try {
         const { err, recover } = tryState;
         if (imIf(c) && !err) {
-            imEl(c, EL_DIV); {
+            imElBegin(c, EL_DIV); {
                 if (imButtonWasClicked(c, "Click me!")) {
                     alert("noo");
                 }
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     imStr(c, "Hello world! ");
                 } imElEnd(c, EL_DIV);
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     imStr(c, "Lets goo");
                 } imElEnd(c, EL_DIV);
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     imStr(c, "Count: " + s.count);
                 } imElEnd(c, EL_DIV);
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     imStr(c, "Period: " + s.period);
                 } imElEnd(c, EL_DIV);
 
                 // sheesh. cant win with these people...
                 if (imIf(c) && s.count > 1000) {
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         imStr(c, "The count is too damn high!!");
                     } imElEnd(c, EL_DIV);
                 } else if (imIfElse(c) && s.count < 1000) {
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         imStr(c, "The count is too damn low !!");
                     } imElEnd(c, EL_DIV);
                 } else {
                     imIfElse(c);
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         imStr(c, "The count is too perfect!!");
                     } imElEnd(c, EL_DIV);
                 } imIfEnd(c);
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     if (isFirstishRender(c)) {
                         elSetAttr(c, "style", "height: 5px; background-color: black");
                     }
                 } imElEnd(c, EL_DIV);
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     if (isFirstishRender(c)) {
                         elSetAttr(c, "style", "padding: 10px; border: 1px solid black; display: inline-block");
                     }
@@ -487,14 +487,14 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
             } imElEnd(c, EL_DIV);
 
 
-            imEl(c, EL_DIV); {
+            imElBegin(c, EL_DIV); {
                 if (isFirstishRender(c)) {
                     elSetStyle(c, "display", "flex");
                     elSetStyle(c, "height", "4em");
                 }
 
                 const n = 20;
-                let pingPong; pingPong = imGet(c, inlineTypeId(imEl));
+                let pingPong; pingPong = imGet(c, inlineTypeId(imElBegin));
                 if (!pingPong) pingPong = imSet(c, { pos: 0, dir: 1 });
 
                 if (pingPong.pos === 0) {
@@ -507,7 +507,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                 }
 
                 imFor(c); for (let i = 0; i <= n; i++) {
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         if (isFirstishRender(c)) {
                             elSetStyle(c, "flex", "1");
                             elSetStyle(c, "height", "100%");
@@ -529,16 +529,16 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                 const dt = 0.03;
                 const { values, gridRows, gridCols } = gridState;
 
-                imEl(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
+                imElBegin(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
 
                 imFor(c); for (let row = 0; row < gridRows; row++) {
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         if (isFirstishRender(c)) {
                             elSetAttr(c, "style", "display: flex;");
                         }
 
                         imFor(c); for (let col = 0; col < gridCols; col++) {
-                            imEl(c, EL_DIV); {
+                            imElBegin(c, EL_DIV); {
                                 if (isFirstishRender(c)) {
                                     elSetStyle(c, "position", " relative");
                                     elSetStyle(c, "display", " inline-block");
@@ -588,11 +588,11 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                     } imElEnd(c, EL_DIV);
                 } imForEnd(c);
             } else if (imIfElse(c) && s.grid === GRID_MOST_OPTIMAL) {
-                imEl(c, EL_DIV); imStr(c,
+                imElBegin(c, EL_DIV); imStr(c,
                     "[Theoretical best performance upperbound with our current approach]  Grid size: " + gridState.gridRows * gridState.gridCols
                 ); imElEnd(c, EL_DIV);
 
-                const root = imEl(c, EL_DIV); {
+                const root = imElBegin(c, EL_DIV); {
                     root.manualDom = true;
 
                     const dt = 0.02;
@@ -683,7 +683,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                 } imElEnd(c, EL_DIV);
             } imIfEnd(c);
 
-            imEl(c, EL_DIV); {
+            imElBegin(c, EL_DIV); {
                 if (isFirstishRender(c)) {
                     elSetAttr(c, "style", `position: fixed; bottom: 10px; left: 10px`);
                 }
@@ -702,21 +702,21 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
         } else {
             imIfElse(c);
 
-            imEl(c, EL_DIV); {
+            imElBegin(c, EL_DIV); {
                 if (isFirstishRender(c)) {
                     elSetAttr(c, "style", `display: absolute;top:0;bottom:0;left:0;right:0;`);
                 }
 
-                imEl(c, EL_DIV); {
+                imElBegin(c, EL_DIV); {
                     if (isFirstishRender(c)) {
                         elSetAttr(c, "style", `display: flex; flex-direction: column; align-items: center; justify-content: center;`);
                     }
 
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         imStr(c, "An error occured: " + err);
                     }
                     imElEnd(c, EL_DIV);
-                    imEl(c, EL_DIV); {
+                    imElBegin(c, EL_DIV); {
                         imStr(c, "Click below to retry.")
                     }
                     imElEnd(c, EL_DIV);
@@ -759,19 +759,19 @@ function newTreeNode(
 function imTreeNodeView(c: ImCache, n: TreeNode, selected: TreeNode | null, depth: number) {
     const isSelected = n === selected;
 
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         if (isFirstishRender(c)) {
             elSetStyle(c, "display", "flex");
         }
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             if (imMemo(c, depth)) {
                 elSetStyle(c, "width", (50 * depth) + "px");
             }
         } imElEnd(c, EL_DIV);
 
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             if (imMemo(c, isSelected)) {
                 elSetStyle(c, "width", "3ch");
                 elSetStyle(c, "textAlign", "center");
@@ -782,10 +782,10 @@ function imTreeNodeView(c: ImCache, n: TreeNode, selected: TreeNode | null, dept
 
         } imElEnd(c, EL_DIV);
 
-        imEl(c, EL_DIV); {
+        imElBegin(c, EL_DIV); {
             imStr(c, n.value);
 
-            imEl(c, EL_SPAN); {
+            imElBegin(c, EL_SPAN); {
                 if (imMemo(c, isSelected)) {
                     elSetStyle(c, "display", "inline-block");
                     elSetStyle(c, "width", "3px");
@@ -803,7 +803,7 @@ function imTreeNodeView(c: ImCache, n: TreeNode, selected: TreeNode | null, dept
 }
 
 function imTreeExampleView(c: ImCache) {
-    imEl(c, EL_H1); imStr(c, "Tree viewer example"); imElEnd(c, EL_H1);
+    imElBegin(c, EL_H1); imStr(c, "Tree viewer example"); imElEnd(c, EL_H1);
 
     imDivider(c);
 
@@ -899,7 +899,7 @@ function imTreeExampleView(c: ImCache) {
         }
     }
 
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         if (isFirstishRender(c)) {
             elSetStyle(c, "fontFamily", "monospace");
             elSetStyle(c, "fontSize", "30px");
@@ -914,12 +914,12 @@ function imTreeExampleView(c: ImCache) {
 function imSlider(c: ImCache, labelText: string): number | null {
     let result: number | null = null;
 
-    const root = imEl(c, EL_DIV); {
-        imEl(c, EL_LABEL); {
+    const root = imElBegin(c, EL_DIV); {
+        imElBegin(c, EL_LABEL); {
             if (imMemo(c, labelText)) elSetAttr(c, "for", labelText);
             imStr(c, labelText);
         }; imElEnd(c, EL_LABEL);
-        const input = imEl(c, EL_INPUT); {
+        const input = imElBegin(c, EL_INPUT); {
             if (isFirstishRender(c)) {
                 elSetAttr(c, "width", "1000px");
                 elSetAttr(c, "type", "range");
@@ -996,7 +996,7 @@ function newGridState() {
 }
 
 function imButton(c: ImCache) {
-    return imEl(c, EL_BUTTON);
+    return imElBegin(c, EL_BUTTON);
 }
 
 function imButtonWasClicked(c: ImCache, text: string): boolean {
@@ -1014,7 +1014,7 @@ function imButtonEnd(c: ImCache) {
     imElEnd(c, EL_BUTTON);
 }
 function imDivider(c: ImCache) {
-    imEl(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         if (isFirstishRender(c)) {
             elSetStyle(c, "height", "2px");
             elSetStyle(c, "backgroundColor", "black");
@@ -1022,5 +1022,3 @@ function imDivider(c: ImCache) {
     } imElEnd(c, EL_DIV);
 }
 
-const cGlobal: ImCache = [];
-imMain(cGlobal);
