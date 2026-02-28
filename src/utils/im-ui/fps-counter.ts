@@ -1,7 +1,7 @@
 import {
-    CACHE_ITEMS_ITERATED_LAST_FRAME,
-    CACHE_TOTAL_DESTRUCTORS,
-    CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME,
+    getItemsIterated,
+    getTotalDestructors,
+    getTotalMapEntries,
     ImCache,
     imGet,
     imSet,
@@ -69,9 +69,9 @@ export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
 }
 
 export function imExtraDiagnosticInfo(c: ImCache) {
-    const itemsIterated  = c[CACHE_ITEMS_ITERATED_LAST_FRAME];
-    const numDestructors = c[CACHE_TOTAL_DESTRUCTORS];
-    const numMapEntries  = c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME];
+    const itemsIterated  = getItemsIterated(c);
+    const numDestructors = getTotalDestructors(c);
+    const numMapEntries  = getTotalMapEntries(c);
 
     imLayoutBegin(c, BLOCK); {
         imStr(c, itemsIterated);

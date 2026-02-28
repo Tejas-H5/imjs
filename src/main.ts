@@ -1,5 +1,5 @@
 import { imExampleMain } from "./examples/examples";
-import { ImCache } from "./utils/im-core";
+import { newImCache } from "./utils/im-core";
 
-const globalCache: ImCache = [];
+const globalCache = newImCache();
 imExampleMain(globalCache);

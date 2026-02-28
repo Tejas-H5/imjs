@@ -1,13 +1,16 @@
 // NOTE: this rewrite went better than expected. it will most likely replace what we have right now.
 
-import { imFpsCounterSimple, imExtraDiagnosticInfo, imRelative, imSize, PX, imAspectRatio } from "src/utils/im-ui";
+import { imAspectRatio, imExtraDiagnosticInfo, imFpsCounterSimple, imRelative, imSize, PX } from "src/utils/im-ui";
 import {
-    CACHE_CURRENT_ENTRIES,
-    CACHE_ITEMS_ITERATED,
-    CACHE_NEEDS_RERENDER,
-    ENTRIES_IS_IN_CONDITIONAL_PATHWAY,
-    ENTRIES_REMOVE_LEVEL,
+    getCurrentCacheEntries,
+    getDeltaTimeSeconds,
+    getEntriesIsInConditionalPathway,
+    getEntriesRemoveLevel,
+    getFpsCounterState,
+    getStackLength,
     ImCache,
+    imCacheBegin,
+    imCacheEnd,
     ImCacheEntries,
     imFor,
     imForEnd,
@@ -23,15 +26,9 @@ import {
     imTryCatch,
     imTryEnd,
     inlineTypeId,
+    isEventRerender,
     isFirstishRender,
-    USE_MANUAL_RERENDERING,
-    USE_REQUEST_ANIMATION_FRAME,
-    getDeltaTimeSeconds,
-    imCacheBegin,
-    imCacheEnd,
-    getFpsCounterState,
-    CACHE_ANIMATE_FN_STILL_ANIMATING,
-    CACHE_IS_EVENT_RERENDER
+    markNeedsRererender
 } from "../utils/im-core";
 import {
     attrsSet,
@@ -42,7 +39,6 @@ import {
     EL_INPUT,
     EL_LABEL,
     EL_SPAN,
-    elGet,
     elHasMouseOver,
     elHasMousePress,
     elSetAttr,
@@ -55,7 +51,7 @@ import {
     imGlobalEventSystemBegin,
     imGlobalEventSystemEnd,
     imStr,
-    stylesSet,
+    stylesSet
 } from "../utils/im-dom";
 
 let toggleA = false;
@@ -103,7 +99,7 @@ function imExamples(c: ImCache) {
         } imElEnd(c, EL_DIV);
 
         imElBegin(c, EL_DIV); {
-            imStr(c, "[" + c.length + " stack size ]");
+            imStr(c, "[" + getStackLength(c) + " stack size ]");
         } imElEnd(c, EL_DIV);
 
         imElBegin(c, EL_DIV); {
@@ -268,32 +264,19 @@ function imRealtimeExampleView(c: ImCache) {
 
     imDivider(c);
 
-    const root = imElBegin(c, EL_DIV); {
+    imElBegin(c, EL_DIV); {
         const SIZE = 1;
 
         let state; state = imGet(c, imRealtimeExampleView);
         if (!state) {
             const val = {
                 renderTime: 0,
-                c: [] as ImCache,
-                entries: [] as unknown as ImCacheEntries,
                 isAnimating: false,
                 rerenders: 0,
                 itemsIterated: 0,
                 t: 0,
             };
             state = imSet(c, val);
-        }
-
-        state.entries = c[CACHE_CURRENT_ENTRIES];
-        const isAnimating = state.entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
-
-        if (imMemo(c, isAnimating) && !state.isAnimating) {
-            console.log("started animating");
-            state.isAnimating = true;
-            numAnimations++;
-            c[CACHE_NEEDS_RERENDER] = true;
-            c[CACHE_ANIMATE_FN_STILL_ANIMATING] = true;
         }
 
         imElBegin(c, EL_DIV); {
@@ -347,9 +330,9 @@ function imWallClockView(c: ImCache, t: number) {
     // The retained-mode code is actually more compact here!
     imElBegin(c, EL_DIV); {
         imElBegin(c, EL_DIV); {
-            const entries = c[CACHE_CURRENT_ENTRIES];
-            imStr(c, "Removed: " + entries[ENTRIES_REMOVE_LEVEL]);
-            imStr(c, "In conditional path: " + entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY]);
+            const entries = getCurrentCacheEntries(c);
+            imStr(c, "Removed: " + getEntriesRemoveLevel(entries));
+            imStr(c, "In conditional path: " + getEntriesIsInConditionalPathway(entries));
             imMemo(c, 1);
         } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
@@ -396,7 +379,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
     let s = imGet(c, newAppState);
     if (!s) {
         s = imSet(c, newAppState());
-        s.rerender = () => c[CACHE_NEEDS_RERENDER] = true;
+        s.rerender = () => markNeedsRererender(c);
     }
 
     let gridState = imGet(c, newGridState);
@@ -509,7 +492,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
             if (imIf(c) && s.grid === GRID_FRAMEWORK) {
                 const dt = getDeltaTimeSeconds(c); 0.03;
 
-                const budgetMsLower = 8;
+                const budgetMsLower = 4;
                 const budgetMsUpper = budgetMsLower + 1;
 
                 const fps = getFpsCounterState(c);
@@ -525,7 +508,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
 
                 imElBegin(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
 
-                if (!c[CACHE_IS_EVENT_RERENDER]) {
+                if (!isEventRerender(c)) {
                     for (let i = 0; i < 10; i++) {
                         const randomRow = Math.floor(Math.random() * gridRows);
                         const randomCol = Math.floor(Math.random() * gridCols);
@@ -564,7 +547,7 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                                 const valRounded = Math.round(val * 255) / 255;
                                 const styleChanged = imMemo(c, valRounded);
                                 if (styleChanged) {
-                                    elSetStyle(c, "opacity", "" + valRounded);
+                                    // elSetStyle(c, "opacity", "" + valRounded);
                                 }
 
                                 imElBegin(c, EL_DIV); {

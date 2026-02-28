@@ -1,4 +1,4 @@
-// IM-DOM 1.65
+// IM-DOM 1.66
 
 import { assert } from "src/utils/assert";
 import {
@@ -17,7 +17,6 @@ import {
     imMemo,
     imSet,
     inlineTypeId,
-    recursivelyEnumerateEntries,
     rerenderImCache,
 } from "./im-core";
 
@@ -34,9 +33,9 @@ export const FINALIZE_IMMEDIATELY = 0;
 // defer everything. Some code migration will be required.
 export const FINALIZE_DEFERRED = 1;
 
-export type FinalizationType 
- = typeof FINALIZE_IMMEDIATELY
- | typeof FINALIZE_DEFERRED;
+export type FinalizationType
+    = typeof FINALIZE_IMMEDIATELY
+    | typeof FINALIZE_DEFERRED;
 
 // NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
 // However, you do need to store your dom appender children somewhere beforehand for stable references. 
@@ -58,13 +57,22 @@ export type DomAppender<E extends AppendableElement> = {
 
     // if null, root is a text node. else, it can be appended to.
     parent: DomAppender<ValidElement> | null;
+    domRoot: DomAppender<ValidElement> | null;
     children: (DomAppender<AppendableElement>[] | null);
     selfIdx: number; // index of this node in it's own array
 
     finalizeType: FinalizationType; // if true, the final pass can ignore this.
+    // Dedicated finalization list instead of recursing through every element at the end.
+    // This is because deferring the finalization of an element is very uncommon, so I don't
+    // want to eat the performance penalty of the recursion just to finalize 2 things
+    deferList: DomAppender<ValidElement>[] | undefined;
 };
 
-export function newDomAppender<E extends AppendableElement>(root: E, children: (DomAppender<any>[] | null)): DomAppender<E> {
+export function newDomAppender<E extends AppendableElement>(
+    root: E,
+    domRoot: DomAppender<ValidElement> | null,
+    children: (DomAppender<any>[] | null)
+): DomAppender<E> {
     return {
         root,
         keyRef: null,
@@ -75,6 +83,10 @@ export function newDomAppender<E extends AppendableElement>(root: E, children: (
         selfIdx: 0,
         manualDom: false,
         finalizeType: FINALIZE_IMMEDIATELY,
+
+        // If null, it will get set to itself later.
+        domRoot: domRoot,
+        deferList: domRoot === null ? [] : undefined,
     };
 }
 
@@ -137,11 +149,13 @@ export function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender
         } else {
             assert(false); // unreachable
         }
-    }
 
-    assert(child.parent === a);
-    assert(child.selfIdx === a.idx);
-    assert(child.root.parentNode === a.root);
+        assert(child.parent === a);
+        assert(child.selfIdx === a.idx);
+
+        // turns out to be quite an expensive assertion, so I've commented it out for now
+        // assert(child.root.parentNode === a.root);
+    }
 }
 
 // Useful for debugging. Should be unused in prod.
@@ -250,7 +264,7 @@ export function imElBegin<K extends keyof HTMLElementTagNameMap>(
     let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = imGet(c, newDomAppender);
     if (childAppender === undefined) {
         const element = document.createElement(r.val);
-        childAppender = imSet(c, newDomAppender(element, []));
+        childAppender = imSet(c, newDomAppender(element, appender.domRoot, []));
         childAppender.keyRef = r;
     }
 
@@ -282,7 +296,7 @@ export function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
         const svgElement = document.createElementNS("http://www.w3.org/2000/svg", r.val);
         // Seems unnecessary. 
         // svgElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        childAppender = imSet(c, newDomAppender(svgElement, []));
+        childAppender = imSet(c, newDomAppender(svgElement, appender.domRoot, []));
         childAppender.keyRef = r;
     }
 
@@ -298,6 +312,10 @@ export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyo
 
     if (appender.finalizeType === FINALIZE_IMMEDIATELY) {
         finalizeDomAppender(appender);
+    } else if (appender.finalizeType === FINALIZE_DEFERRED) {
+        const deferList = appender.domRoot!.deferList;
+        assert(!!deferList);
+        deferList.push(appender);
     }
 
     imBlockEnd(c);
@@ -322,16 +340,20 @@ export const imElSvgEnd = imElEnd;
 export function imDomRootBegin(c: ImCache, root: ValidElement) {
     let appender = imGet(c, newDomAppender);
     if (appender === undefined) {
-        appender = imSet(c, newDomAppender(root, []));
+        appender = imSet(c, newDomAppender(root, null, []));
+        appender.domRoot = appender;
         appender.keyRef = root;
     }
 
     imBlockBegin(c, newDomAppender, appender);
 
     // well we kinda have to. imDomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
-    imFinalizeDeferred(c); 
+    imFinalizeDeferred(c);
 
     appender.idx = -1;
+    
+    assert(!!appender.deferList);
+    appender.deferList.length = 0;
 
     return appender;
 }
@@ -378,11 +400,13 @@ export function imDomRootEnd(c: ImCache, root: ValidElement) {
     //      For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
     //      but then organising the components becomes a bit annoying.
 
-    const entries = __GetEntries(c);
-
     // deferred finalization.
-    // NOTE: could be optimized later - since majority of nodes won't have finalization deferred.
-    recursivelyEnumerateEntries(entries, domFinalizeEnumerator);
+    const deferList = appender.domRoot!.deferList;
+    assert(!!deferList);
+    for (let i = 0; i < deferList.length; i++) {
+        const item = deferList[i];
+        finalizeDomAppender(item);
+    }
 
     imBlockEnd(c);
 }
@@ -413,8 +437,14 @@ export interface Stringifyable {
  * `imStr`.
  */
 export function imStr(c: ImCache, value: Stringifyable): Text {
+    const domAppender = getEntriesParent(c, newDomAppender);
+
     let textNodeLeafAppender; textNodeLeafAppender = imGet(c, inlineTypeId(imStr));
-    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(document.createTextNode(""), null));
+    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(
+        document.createTextNode(""),
+        domAppender,
+        null
+    ));
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
     let lastValue = imGet(c, inlineTypeId(document.createTextNode));
@@ -423,7 +453,6 @@ export function imStr(c: ImCache, value: Stringifyable): Text {
         textNodeLeafAppender.root.nodeValue = value.toString();
     }
 
-    const domAppender = getEntriesParent(c, newDomAppender);
     appendToDomRoot(domAppender, textNodeLeafAppender);
 
     return textNodeLeafAppender.root;
@@ -431,8 +460,14 @@ export function imStr(c: ImCache, value: Stringifyable): Text {
 
 // TODO: not scaleable for the same reason imState isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
 export function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
+    const domAppender = getEntriesParent(c, newDomAppender);
+
     let textNodeLeafAppender; textNodeLeafAppender = imGet(c, inlineTypeId(imStr));
-    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(document.createTextNode(""), null));
+    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(
+        document.createTextNode(""),
+        domAppender.domRoot,
+        null
+    ));
 
     const formatterChanged = imMemo(c, formatter);
 
@@ -443,7 +478,6 @@ export function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string)
         textNodeLeafAppender.root.nodeValue = formatter(value);
     }
 
-    const domAppender = getEntriesParent(c, newDomAppender);
     appendToDomRoot(domAppender, textNodeLeafAppender);
 
     return textNodeLeafAppender.root;
@@ -653,18 +687,18 @@ export type ImMouseState = {
 export type ImGlobalEventSystem = {
     rerender: () => void;
     keyboard: ImKeyboardState;
-    mouse:    ImMouseState;
-    blur:     boolean;
+    mouse: ImMouseState;
+    blur: boolean;
     globalEventHandlers: {
-        mousedown:  (e: MouseEvent) => void;
-        mousemove:  (e: MouseEvent) => void;
+        mousedown: (e: MouseEvent) => void;
+        mousemove: (e: MouseEvent) => void;
         mouseenter: (e: MouseEvent) => void;
-        mouseup:    (e: MouseEvent) => void;
+        mouseup: (e: MouseEvent) => void;
         mouseclick: (e: MouseEvent) => void;
-        wheel:      (e: WheelEvent) => void;
-        keydown:    (e: KeyboardEvent) => void;
-        keyup:      (e: KeyboardEvent) => void;
-        blur:       () => void;
+        wheel: (e: WheelEvent) => void;
+        keydown: (e: KeyboardEvent) => void;
+        keyup: (e: KeyboardEvent) => void;
+        blur: () => void;
     };
 }
 
@@ -727,8 +761,8 @@ export function newImGlobalEventSystem(c: ImCache): ImGlobalEventSystem {
     };
 
     function updateMouseButtons(e: MouseEvent) {
-        mouse.leftMouseButton   = Boolean(e.buttons & (1 << 0));
-        mouse.rightMouseButton  = Boolean(e.buttons & (2 << 0));
+        mouse.leftMouseButton = Boolean(e.buttons & (1 << 0));
+        mouse.rightMouseButton = Boolean(e.buttons & (2 << 0));
         mouse.middleMouseButton = Boolean(e.buttons & (3 << 0));
     }
 
@@ -894,7 +928,7 @@ export function imTrackSize(c: ImCache) {
 }
 
 function newPreventScrollEventPropagationState() {
-    return { 
+    return {
         isBlocking: true,
         scrollY: 0,
     };
@@ -913,7 +947,7 @@ export function imPreventScrollEventPropagation(c: ImCache) {
         };
 
         el.addEventListener("wheel", handler);
-        cacheEntriesAddDestructor(c, () =>  el.removeEventListener("wheel", handler));
+        cacheEntriesAddDestructor(c, () => el.removeEventListener("wheel", handler));
 
         state = imSet(c, val);
     }
@@ -1155,7 +1189,7 @@ export const EL_SVG_STYLE = { val: "style" } as const;
  * For larger svg-based components with lots of moving parts, 
  * consider {@link imSvgContext}, or creating something on your end that is similar.
  */
-export const EL_SVG = { val: "svg" } as const;; 
+export const EL_SVG = { val: "svg" } as const;;
 export const EL_SVG_SWITCH = { val: "switch" } as const;
 export const EL_SVG_SYMBOL = { val: "symbol" } as const;
 export const EL_SVG_TEXT = { val: "text" } as const;
@@ -1302,32 +1336,32 @@ type PressedSymbols<T extends string> = {
 };
 
 export type KeysState = {
-    keys:    PressedSymbols<NormalizedKey>;
+    keys: PressedSymbols<NormalizedKey>;
     letters: PressedSymbols<string>;
 };
 
 export function newKeysState(): KeysState {
     return {
         keys: {
-            pressed:  [],
-            held:     [],
+            pressed: [],
+            held: [],
             released: [],
             repeated: [],
         },
         letters: {
-            pressed:  [],
-            held:     [],
+            pressed: [],
+            held: [],
             released: [],
             repeated: [],
         }
     };
 }
 
-const KEY_EVENT_NOTHING  = 0;
-const KEY_EVENT_PRESSED  = 1;
+const KEY_EVENT_NOTHING = 0;
+const KEY_EVENT_PRESSED = 1;
 const KEY_EVENT_RELEASED = 2;
 const KEY_EVENT_REPEATED = 3;
-const KEY_EVENT_BLUR     = 4;
+const KEY_EVENT_BLUR = 4;
 
 
 // https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
@@ -1430,7 +1464,7 @@ export function updateKeysState(
     blur: boolean,
 ) {
     let key = "";
-    let ev  = KEY_EVENT_NOTHING
+    let ev = KEY_EVENT_NOTHING
     if (keyDown !== null) {
         key = keyDown.key;
         if (keyDown.repeat === true) {
@@ -1533,63 +1567,63 @@ export function isLetterHeld(keysState: KeysState, letter: string): boolean {
     return false;
 }
 
-export const KEY_1             = getNormalizedKey("1");
-export const KEY_2             = getNormalizedKey("2");
-export const KEY_3             = getNormalizedKey("3");
-export const KEY_4             = getNormalizedKey("4");
-export const KEY_5             = getNormalizedKey("5");
-export const KEY_6             = getNormalizedKey("6");
-export const KEY_7             = getNormalizedKey("7");
-export const KEY_8             = getNormalizedKey("8");
-export const KEY_9             = getNormalizedKey("9");
-export const KEY_0             = getNormalizedKey("0");
-export const KEY_MINUS         = getNormalizedKey("-");
-export const KEY_EQUALS        = getNormalizedKey("=");
-export const KEY_Q             = getNormalizedKey("Q");
-export const KEY_W             = getNormalizedKey("W");
-export const KEY_E             = getNormalizedKey("E");
-export const KEY_R             = getNormalizedKey("R");
-export const KEY_T             = getNormalizedKey("T");
-export const KEY_Y             = getNormalizedKey("Y");
-export const KEY_U             = getNormalizedKey("U");
-export const KEY_I             = getNormalizedKey("I");
-export const KEY_O             = getNormalizedKey("O");
-export const KEY_P             = getNormalizedKey("P");
-export const KEY_OPEN_BRACKET  = getNormalizedKey("[");
+export const KEY_1 = getNormalizedKey("1");
+export const KEY_2 = getNormalizedKey("2");
+export const KEY_3 = getNormalizedKey("3");
+export const KEY_4 = getNormalizedKey("4");
+export const KEY_5 = getNormalizedKey("5");
+export const KEY_6 = getNormalizedKey("6");
+export const KEY_7 = getNormalizedKey("7");
+export const KEY_8 = getNormalizedKey("8");
+export const KEY_9 = getNormalizedKey("9");
+export const KEY_0 = getNormalizedKey("0");
+export const KEY_MINUS = getNormalizedKey("-");
+export const KEY_EQUALS = getNormalizedKey("=");
+export const KEY_Q = getNormalizedKey("Q");
+export const KEY_W = getNormalizedKey("W");
+export const KEY_E = getNormalizedKey("E");
+export const KEY_R = getNormalizedKey("R");
+export const KEY_T = getNormalizedKey("T");
+export const KEY_Y = getNormalizedKey("Y");
+export const KEY_U = getNormalizedKey("U");
+export const KEY_I = getNormalizedKey("I");
+export const KEY_O = getNormalizedKey("O");
+export const KEY_P = getNormalizedKey("P");
+export const KEY_OPEN_BRACKET = getNormalizedKey("[");
 export const KEY_CLOSE_BRACKET = getNormalizedKey("]");
-export const KEY_BACKSLASH     = getNormalizedKey("\\");
-export const KEY_A             = getNormalizedKey("A");
-export const KEY_S             = getNormalizedKey("S");
-export const KEY_D             = getNormalizedKey("D");
-export const KEY_F             = getNormalizedKey("F");
-export const KEY_G             = getNormalizedKey("G");
-export const KEY_H             = getNormalizedKey("H");
-export const KEY_J             = getNormalizedKey("J");
-export const KEY_K             = getNormalizedKey("K");
-export const KEY_L             = getNormalizedKey("L");
-export const KEY_SEMICOLON     = getNormalizedKey(";");
-export const KEY_QUOTE         = getNormalizedKey("'");
-export const KEY_Z             = getNormalizedKey("Z");
-export const KEY_X             = getNormalizedKey("X");
-export const KEY_C             = getNormalizedKey("C");
-export const KEY_V             = getNormalizedKey("V");
-export const KEY_B             = getNormalizedKey("B");
-export const KEY_N             = getNormalizedKey("N");
-export const KEY_M             = getNormalizedKey("M");
-export const KEY_COMMA         = getNormalizedKey(",");
-export const KEY_PERIOD        = getNormalizedKey(".");
-export const KEY_FORWAR_SLASH  = getNormalizedKey("/");
+export const KEY_BACKSLASH = getNormalizedKey("\\");
+export const KEY_A = getNormalizedKey("A");
+export const KEY_S = getNormalizedKey("S");
+export const KEY_D = getNormalizedKey("D");
+export const KEY_F = getNormalizedKey("F");
+export const KEY_G = getNormalizedKey("G");
+export const KEY_H = getNormalizedKey("H");
+export const KEY_J = getNormalizedKey("J");
+export const KEY_K = getNormalizedKey("K");
+export const KEY_L = getNormalizedKey("L");
+export const KEY_SEMICOLON = getNormalizedKey(";");
+export const KEY_QUOTE = getNormalizedKey("'");
+export const KEY_Z = getNormalizedKey("Z");
+export const KEY_X = getNormalizedKey("X");
+export const KEY_C = getNormalizedKey("C");
+export const KEY_V = getNormalizedKey("V");
+export const KEY_B = getNormalizedKey("B");
+export const KEY_N = getNormalizedKey("N");
+export const KEY_M = getNormalizedKey("M");
+export const KEY_COMMA = getNormalizedKey(",");
+export const KEY_PERIOD = getNormalizedKey(".");
+export const KEY_FORWAR_SLASH = getNormalizedKey("/");
 
 export const KEY_SHIFT = getNormalizedKey("Shift");
-export const KEY_CTRL  = getNormalizedKey("Control");
-export const KEY_META  = getNormalizedKey("Meta");
-export const KEY_ALT   = getNormalizedKey("Alt");
-export const KEY_MOD   = getNormalizedKey("Modifier"); // Either CTRL or META
+export const KEY_CTRL = getNormalizedKey("Control");
+export const KEY_META = getNormalizedKey("Meta");
+export const KEY_ALT = getNormalizedKey("Alt");
+export const KEY_MOD = getNormalizedKey("Modifier"); // Either CTRL or META
 
-export const KEY_SPACE       = getNormalizedKey(" ");
-export const KEY_ENTER       = getNormalizedKey("Enter");
-export const KEY_BACKSPACE   = getNormalizedKey("Backspace");
-export const KEY_ARROW_UP    = getNormalizedKey("ArrowUp");
-export const KEY_ARROW_DOWN  = getNormalizedKey("ArrowDown");
-export const KEY_ARROW_LEFT  = getNormalizedKey("ArrowLeft");
+export const KEY_SPACE = getNormalizedKey(" ");
+export const KEY_ENTER = getNormalizedKey("Enter");
+export const KEY_BACKSPACE = getNormalizedKey("Backspace");
+export const KEY_ARROW_UP = getNormalizedKey("ArrowUp");
+export const KEY_ARROW_DOWN = getNormalizedKey("ArrowDown");
+export const KEY_ARROW_LEFT = getNormalizedKey("ArrowLeft");
 export const KEY_ARROW_RIGHT = getNormalizedKey("ArrowRight");
