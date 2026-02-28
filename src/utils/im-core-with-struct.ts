@@ -32,8 +32,8 @@ import { assert } from "src/utils/assert";
  * Allows us to cache state for our immediate mode callsites.
  * Initialize this on your end with `const cache: ImCache = [];`. It's just an array
  */
-// export type ImCache = unknown & { readonly __ImCache: unique symbol; }; // Opaque struct. 
-export type ImCache = {
+// /** export **/ type ImCache = unknown & { readonly __ImCache: unique symbol; }; // Opaque struct. 
+/** export **/ type ImCache = {
     idx:                       number;
     currentEntries:            ImCacheEntries;
     currentWaitingForSet:      boolean;
@@ -61,7 +61,7 @@ export type ImCache = {
     stack: ImCacheEntries[];
 };
 
-export type ImCacheEntries = {
+/** export **/ type ImCacheEntries = {
     idx:                           number;
     lastIdx:                       number;
     internalType:                  number;
@@ -79,7 +79,7 @@ export type ImCacheEntries = {
     items: unknown[]
 };
 
-export type FpsCounterState = {
+/** export **/ type FpsCounterState = {
     renderCount: number;
     lastRenderCount: number;
     renderStart: number;
@@ -88,7 +88,7 @@ export type FpsCounterState = {
     renderMs: number;
 }
 
-export function newFpsCounterState(): FpsCounterState {
+/** export **/ function newFpsCounterState(): FpsCounterState {
     return {
         renderCount: 0,
         lastRenderCount: 0,
@@ -99,7 +99,7 @@ export function newFpsCounterState(): FpsCounterState {
     }
 }
 
-export function fpsMarkRenderingStart(fps: FpsCounterState) {
+/** export **/ function fpsMarkRenderingStart(fps: FpsCounterState) {
     const t = performance.now();;
 
     fps.renderMs = fps.renderEnd - fps.renderStart;
@@ -109,24 +109,24 @@ export function fpsMarkRenderingStart(fps: FpsCounterState) {
     fps.renderCount = 0;
 }
 
-export function fpsMarkRenderingEnd(fps: FpsCounterState) {
+/** export **/ function fpsMarkRenderingEnd(fps: FpsCounterState) {
     fps.renderEnd = performance.now();
 }
 
 
 
-export const REMOVE_LEVEL_NONE = 1;
+/** export **/ const REMOVE_LEVEL_NONE = 1;
 // This is the default remove level for im-blocks, im-arrays, im-if/else conditionals, and im-switch.
 // The increase in performance far oughtweighs any memory problems.
-export const REMOVE_LEVEL_DETATCHED = 2;
+/** export **/ const REMOVE_LEVEL_DETATCHED = 2;
 // This is the default for im-keyed map entries. This is because we can key components on arbitrary values. 
 // It is common (and intended behaviour) to use object references directly as keys.
 // However, if those objects are constantly created and destroyed, this can pose a problem for REMOVE_LEVEL_DETATCHED. 
 // Using REMOVE_LEVEL_DESTROYED instead allows the map to clean up and remove those keys, so 
 // that the size of the map isn't constantly increasing.
-export const REMOVE_LEVEL_DESTROYED = 3;
+/** export **/ const REMOVE_LEVEL_DESTROYED = 3;
 
-export type RemovedLevel
+/** export **/ type RemovedLevel
     = typeof REMOVE_LEVEL_NONE
     | typeof REMOVE_LEVEL_DETATCHED   
     | typeof REMOVE_LEVEL_DESTROYED;
@@ -143,7 +143,7 @@ export type RemovedLevel
 // - in which case you can just use {@link imInlineTypeId}. As long as a function
 // has been uniquely used within a particular entry list at a particular slot, the 
 // likelyhood of out-of-order rendering errors will reduce to almost 0.
-export type TypeId<T> = (...args: any[]) => T;
+/** export **/ type TypeId<T> = (...args: any[]) => T;
 
 /**
  * Used when the return type of the typeId function has nothing to do with the contents of the state.
@@ -155,17 +155,17 @@ export type TypeId<T> = (...args: any[]) => T;
  * if (!pingPong) pingPong = imSet(c, { t: 0 });
  * ```
  */
-export function inlineTypeId<T = undefined>(fn: Function) {
+/** export **/ function inlineTypeId<T = undefined>(fn: Function) {
     return fn as TypeId<T>;
 }
 
 // Can be any valid object reference. Or string, but avoid string if you can - string comparisons are slower than object comparisons
-export type ValidKey = string | number | Function | object | boolean | null | unknown;
+/** export **/ type ValidKey = string | number | Function | object | boolean | null | unknown;
 
-export const USE_MANUAL_RERENDERING = 1 << 0;
-export const USE_REQUEST_ANIMATION_FRAME = 1 << 1;
+/** export **/ const USE_MANUAL_RERENDERING = 1 << 0;
+/** export **/ const USE_REQUEST_ANIMATION_FRAME = 1 << 1;
 
-export function newImCache(): ImCache {
+/** export **/ function newImCache(): ImCache {
     const rootEntries = newImCacheEntries(INTERNAL_TYPE_CACHE, imCacheBegin, null);
 
     const c: ImCache = {
@@ -200,7 +200,7 @@ export function newImCache(): ImCache {
     return c;
 }
 
-export function newImCacheEntries(
+/** export **/ function newImCacheEntries(
     internalType: number,
     parentType: TypeId<unknown>,
     parentValue: unknown,
@@ -224,39 +224,39 @@ export function newImCacheEntries(
     };
 }
 
-export function getItemsIterated(c: ImCache): number {
+/** export **/ function getItemsIterated(c: ImCache): number {
     return c.itemsIterated;
 }
 
-export function getTotalMapEntries(c: ImCache): number {
+/** export **/ function getTotalMapEntries(c: ImCache): number {
     return c.totalMapEntriesLastFrame;
 }
 
-export function getTotalDestructors(c: ImCache): number {
+/** export **/ function getTotalDestructors(c: ImCache): number {
     return c.totalDestructors;
 }
 
-export function isEventRerender(c: ImCache) {
+/** export **/ function isEventRerender(c: ImCache) {
     return c.isEventRerender;
 }
 
-export function markNeedsRererender(c: ImCache) {
+/** export **/ function markNeedsRererender(c: ImCache) {
     c.needsRerender = true;
 }
 
-export function getCurrentCacheEntries(c: ImCache) {
+/** export **/ function getCurrentCacheEntries(c: ImCache) {
     return c.currentEntries;
 }
 
-export function getEntriesRemoveLevel(entries: ImCacheEntries) {
+/** export **/ function getEntriesRemoveLevel(entries: ImCacheEntries) {
     return entries.removeLevel;
 }
 
-export function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
+/** export **/ function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
     return entries.isInConditionalPathway;
 }
 
-export function getStackLength(c: ImCache) {
+/** export **/ function getStackLength(c: ImCache) {
     return c.stack.length;
 }
 
@@ -276,7 +276,7 @@ export function getStackLength(c: ImCache) {
  * 
  * NOTE: the rerender function and the `useEventLoop` parameter are completely ignored after the first render, and this will never change.
  */
-export function imCacheBegin(
+/** export **/ function imCacheBegin(
     c: ImCache,
     renderFn: (c: ImCache) => void,
     flags: typeof USE_REQUEST_ANIMATION_FRAME | typeof USE_MANUAL_RERENDERING = USE_REQUEST_ANIMATION_FRAME
@@ -372,20 +372,20 @@ export function imCacheBegin(
 }
 
 // TODO: possibly redundant, remove if we can
-export function getFpsCounterState(c: ImCache): FpsCounterState {
+/** export **/ function getFpsCounterState(c: ImCache): FpsCounterState {
     assert(c.fpsCounterState != null);
     return c.fpsCounterState;
 }
 
 // Enqueues a cache rerender. 
 // Usually to process an event without waiting for the next animation frame
-export function rerenderImCache(c: ImCache) {
+/** export **/ function rerenderImCache(c: ImCache) {
     c.rerenderFn(c);
 }
 
 function noOp() {}
 
-export function imCacheEnd(c: ImCache) {
+/** export **/ function imCacheEnd(c: ImCache) {
     imCacheEntriesEnd(c);
 
     const startIdx = -1;
@@ -438,7 +438,7 @@ function internalTypeToString(internalType: number): string {
     return "Custom user type: " + internalType
 }
 
-export function imCacheEntriesBegin<T>(
+/** export **/ function imCacheEntriesBegin<T>(
     c: ImCache,
     entries: ImCacheEntries,
     parentTypeId: TypeId<T>,
@@ -480,7 +480,7 @@ function __imPush(c: ImCache, entries: ImCacheEntries) {
     c.currentEntries = entries;
 }
 
-export function imCacheEntriesEnd(c: ImCache) {
+/** export **/ function imCacheEntriesEnd(c: ImCache) {
     __imPop(c);
 }
 
@@ -524,7 +524,7 @@ function __imPop(c: ImCache): ImCacheEntries {
  * An assertion will throw if this is not the case.
  * NOTE: This function is a fundamental primitive that most of the other methods in this framework are built with.
  */
-export function imGet<T>(
+/** export **/ function imGet<T>(
     c: ImCache,
     typeId: TypeId<T>,
     initialValue: T | undefined = undefined
@@ -586,7 +586,7 @@ export function imGet<T>(
  * if (imSetRequired(c) || valueChanged) imSet(c, value);
  * ```
  */
-export function imSetRequired(c: ImCache): boolean {
+/** export **/ function imSetRequired(c: ImCache): boolean {
     return c.currentWaitingForSet;
 }
 
@@ -599,7 +599,7 @@ export function imSetRequired(c: ImCache): boolean {
  * const = imGetInline(c, fn) ?? imSet(c, { blah });
  * ```
  */
-export function imGetInline(
+/** export **/ function imGetInline(
     c: ImCache,
     typeIdInline: TypeId<unknown>,
 ): undefined {
@@ -613,14 +613,14 @@ export function imGetInline(
  * A shorthand for a pattern that is very common.
  * NOTE: if your state gains dependencies, you can just use imGet and imSet directly, as intended.
  */
-export function imState<T>(c: ImCache, fn: () => T): T {
+/** export **/ function imState<T>(c: ImCache, fn: () => T): T {
     let val = imGet(c, fn);
     if (val === undefined) val = imSet(c, fn());
     return val;
 }
 
 // NOTE: currently unused, consider removing
-export function getEntryAt<T>(entries: ImCacheEntries, idx: number, typeId: TypeId<T>): T {
+/** export **/ function getEntryAt<T>(entries: ImCacheEntries, idx: number, typeId: TypeId<T>): T {
     const type = entries.items[idx];
     if (type !== typeId) {
         throw new Error("Didn't find <typeId::" + typeId.name + "> at " + idx);
@@ -630,14 +630,14 @@ export function getEntryAt<T>(entries: ImCacheEntries, idx: number, typeId: Type
     return val as T;
 }
 
-export function getEntriesParent<T>(c: ImCache, typeId: TypeId<T>): T {
+/** export **/ function getEntriesParent<T>(c: ImCache, typeId: TypeId<T>): T {
     // If this assertion fails, then you may have forgotten to pop some things you've pushed onto the stack
     const entries = c.currentEntries;
     assert(entries.parentType === typeId);
     return entries.parentValue as T;
 }
 
-export function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: TypeId<T>): T | undefined {
+/** export **/ function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: TypeId<T>): T | undefined {
     if (entries.parentType === typeId) {
         return entries.parentValue as T;
     }
@@ -645,7 +645,7 @@ export function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: 
 }
 
 
-export function imSet<T>(c: ImCache, val: T): T {
+/** export **/ function imSet<T>(c: ImCache, val: T): T {
     const entries = c.currentEntries;
     const idx = entries.idx;
     entries.items[idx + 1] = val;
@@ -653,7 +653,7 @@ export function imSet<T>(c: ImCache, val: T): T {
     return val;
 }
 
-export type ListMapBlock = { rendered: boolean; entries: ImCacheEntries; };
+/** export **/ type ListMapBlock = { rendered: boolean; entries: ImCacheEntries; };
 
 /**
  * Creates an entry in the _Parent's_ keyed elements map.
@@ -716,16 +716,16 @@ function __imBlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLeve
  * } imForEnd(c);
  * ```
  */
-export function imKeyedBegin(c: ImCache, key: ValidKey) {
+/** export **/ function imKeyedBegin(c: ImCache, key: ValidKey) {
     __imBlockKeyedBegin(c, key, REMOVE_LEVEL_DESTROYED);
 }
 
-export function imKeyedEnd(c: ImCache) {
+/** export **/ function imKeyedEnd(c: ImCache) {
     __imBlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
 // You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
-export function cacheEntriesAddDestructor(c: ImCache, destructor: () => void) {
+/** export **/ function cacheEntriesAddDestructor(c: ImCache, destructor: () => void) {
     const entries = c.currentEntries;
     let destructors = entries.destructors;
     if (destructors === undefined) {
@@ -743,7 +743,7 @@ function imCacheEntriesOnRemove(entries: ImCacheEntries) {
     }
 }
 
-export function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
+/** export **/ function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
     const shouldEnumerate = fn(entries);
     if (shouldEnumerate) {
         for (let i = 0; i < entries.items.length; i += 2) {
@@ -804,7 +804,7 @@ function imCacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
 }
 
 // This is the typeId for a list of cache entries.
-export function imBlockBegin<T>(
+/** export **/ function imBlockBegin<T>(
     c: ImCache,
     parentTypeId: TypeId<T>,
     parent: T,
@@ -820,12 +820,12 @@ export function imBlockBegin<T>(
     return entries;
 }
 
-export function __GetEntries(c: ImCache): ImCacheEntries {
+/** export **/ function __GetEntries(c: ImCache): ImCacheEntries {
     const entries = c.currentEntries;
     return entries;
 }
 
-export function imBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
+/** export **/ function imBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
     const entries = c.currentEntries;
 
     if (entries.internalType !== internalType) {
@@ -876,7 +876,7 @@ export function imBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORM
     imCacheEntriesEnd(c);
 }
 
-export function __imBlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
+/** export **/ function __imBlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
     const entries = c.currentEntries;
     const parentType = entries.parentType;
     const parent = entries.parentValue;
@@ -894,12 +894,12 @@ export function __imBlockDerivedBegin(c: ImCache, internalType: number): ImCache
 // } imDivEnd(c);
 // ```
 // Each of those methods that 'augment' the call to `imDiv` may have their own initialization logic.
-export function isFirstishRender(c: ImCache): boolean {
+/** export **/ function isFirstishRender(c: ImCache): boolean {
     const entries = c.currentEntries;
     return entries.completedOneRender === false;
 }
 
-export function __imBlockDerivedEnd(c: ImCache, internalType: number) {
+/** export **/ function __imBlockDerivedEnd(c: ImCache, internalType: number) {
     // The DOM appender will automatically update and diff the children if they've changed.
     // However we can't just do
     // ```
@@ -975,29 +975,29 @@ export function __imBlockDerivedEnd(c: ImCache, internalType: number) {
  * This means the framework has no way of telling the difference between the else-if block
  * and the else block (else blocks and else-if blocks are handled the same internally).
  */
-export function imIf(c: ImCache): true {
+/** export **/ function imIf(c: ImCache): true {
     __imBlockArrayBegin(c);
     __imBlockConditionalBegin(c);
     return true;
 }
 
-export function imIfElse(c: ImCache): true {
+/** export **/ function imIfElse(c: ImCache): true {
     __imBlockConditionalEnd(c);
     __imBlockConditionalBegin(c);
     return true;
 }
 
-export function imIfEnd(c: ImCache) {
+/** export **/ function imIfEnd(c: ImCache) {
     __imBlockConditionalEnd(c);
     __imBlockArrayEnd(c);
 }
 
 // All roads lead to rome (TM) design pattern. not sure if good idea or shit idea
-export const imEndIf = imIfEnd;
-export const imElse = imIfElse;
-export const imEndSwitch = imSwitchEnd;
-export const imEndFor = imForEnd;
-export const imCatch = imTryCatch;
+/** export **/ const imEndIf = imIfEnd;
+/** export **/ const imElse = imIfElse;
+/** export **/ const imEndSwitch = imSwitchEnd;
+/** export **/ const imEndFor = imForEnd;
+/** export **/ const imCatch = imTryCatch;
 
 /**
  * Example usage:
@@ -1022,7 +1022,7 @@ export const imCatch = imTryCatch;
  *      with none of the same state.
  * 
  */
-export function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
+/** export **/ function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
     __imBlockDerivedBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
     // I expect the keys to a switch statement to be constants that are known at 'compile time', 
     // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
@@ -1031,7 +1031,7 @@ export function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
     __imBlockKeyedBegin(c, key, cached ? REMOVE_LEVEL_DETATCHED : REMOVE_LEVEL_DESTROYED);
 }
 
-export function imSwitchEnd(c: ImCache) {
+/** export **/ function imSwitchEnd(c: ImCache) {
     __imBlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
     __imBlockDerivedEnd(c, INTERNAL_TYPE_SWITCH_BLOCK);
 }
@@ -1055,11 +1055,11 @@ function __imBlockConditionalEnd(c: ImCache) {
     __imBlockDerivedEnd(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
 }
 
-export function imFor(c: ImCache) {
+/** export **/ function imFor(c: ImCache) {
     __imBlockArrayBegin(c);
 }
 
-export function imForEnd(c: ImCache) {
+/** export **/ function imForEnd(c: ImCache) {
     __imBlockArrayEnd(c);
 }
 
@@ -1088,22 +1088,22 @@ function __imBlockArrayEnd(c: ImCache) {
 // This is the initial value, so that anything, even `undefined`, can trigger imMemo
 const IM_MEMO_FIRST_EVER = {};
 
-export const MEMO_NOT_CHANGED = 0;
+/** export **/ const MEMO_NOT_CHANGED = 0;
 /** returned by {@link imMemo} if the value changed */
-export const MEMO_CHANGED = 1;
+/** export **/ const MEMO_CHANGED = 1;
 /** 
  * returned by {@link imMemo} if this is simply the first render. 
  * Most of the time the distinction is not important, but sometimes,
  * you want to happen on a change but NOT the initial renderer.
  */
-export const MEMO_FIRST_RENDER = 2;
+/** export **/ const MEMO_FIRST_RENDER = 2;
 /** 
  * returned by {@link imMemo} if this is is caused by the component
  * re-entering the conditional rendering codepath.
  */
-export const MEMO_FIRST_RENDER_CONDITIONAL = 3;
+/** export **/ const MEMO_FIRST_RENDER_CONDITIONAL = 3;
 
-export type ImMemoResult
+/** export **/ type ImMemoResult
     = typeof MEMO_NOT_CHANGED
     | typeof MEMO_FIRST_RENDER
     | typeof MEMO_CHANGED
@@ -1152,7 +1152,7 @@ export type ImMemoResult
  * }
  * ```
  */
-export function imMemo(c: ImCache, val: unknown): ImMemoResult {
+/** export **/ function imMemo(c: ImCache, val: unknown): ImMemoResult {
     /**
      * NOTE: I had previously implemented imMemo() and imMemoEnd():
      *
@@ -1185,7 +1185,7 @@ export function imMemo(c: ImCache, val: unknown): ImMemoResult {
     return result;
 }
 
-export type TryState = {
+/** export **/ type TryState = {
     entries: ImCacheEntries;
     err: any | null;
     recover: () => void;
@@ -1203,7 +1203,7 @@ export type TryState = {
  * } imTryEnd(c, tryState); 
  * ```
  */
-export function imTry(c: ImCache): TryState {
+/** export **/ function imTry(c: ImCache): TryState {
     const entries = __imBlockDerivedBegin(c, INTERNAL_TYPE_TRY_BLOCK);
 
     let tryState = imGet(c, imTry);
@@ -1225,7 +1225,7 @@ export function imTry(c: ImCache): TryState {
     return tryState;
 }
 
-export function imTryCatch(c: ImCache, tryState: TryState, err: any) {
+/** export **/ function imTryCatch(c: ImCache, tryState: TryState, err: any) {
     tryState.unwoundThisFrame = true;
 
     if (tryState.err != null) {
@@ -1243,7 +1243,7 @@ export function imTryCatch(c: ImCache, tryState: TryState, err: any) {
     c.currentEntries = c.stack[idx - 1];
 }
 
-export function imTryEnd(c: ImCache, tryState: TryState) {
+/** export **/ function imTryEnd(c: ImCache, tryState: TryState) {
     if (tryState.unwoundThisFrame === true) {
         // nothing to end.
         assert(c.stack[c.idx + 1] === tryState.entries);
@@ -1254,12 +1254,12 @@ export function imTryEnd(c: ImCache, tryState: TryState) {
     }
 }
 
-export function getDeltaTimeSeconds(c: ImCache): number {
+/** export **/ function getDeltaTimeSeconds(c: ImCache): number {
     return c.animationDeltaTimeSeconds;
 }
 
 // Events can trigger rerenders in the same frame.
-export function getRenderCount(c: ImCache) {
+/** export **/ function getRenderCount(c: ImCache) {
     return c.renderCount;
 }
 
@@ -1296,7 +1296,7 @@ export function getRenderCount(c: ImCache) {
  * ----------------------------------------------------------------------------------------------------------------------------
  *
  */
-export function globalStateStackPush<T>(gss: T[], item: T) {
+/** export **/ function globalStateStackPush<T>(gss: T[], item: T) {
     // I've put a limit on the context depth to 100. But really, anything > 1 is already a niche usecase, and anything > 2 may never happen in practice ... 
     if (gss.length > 100) {
         throw new Error("Looks like you're forgetting to pop items from your global state array. tsk tsk tsk. ");
@@ -1305,14 +1305,14 @@ export function globalStateStackPush<T>(gss: T[], item: T) {
     gss.push(item);
 }
 
-export function globalStateStackGet<T>(gss: T[]): T {
+/** export **/ function globalStateStackGet<T>(gss: T[]): T {
     // No context item was pushed
     assert(gss.length > 0);
 
     return gss[gss.length - 1];
 }
 
-export function globalStateStackPop<T>(gss: T[], item: T): T {
+/** export **/ function globalStateStackPop<T>(gss: T[], item: T): T {
     const currentItem = globalStateStackGet(gss);
 
     // Item may have changed mid-render, which definitely shouldn't ever happen, and is indicative of some other issue.

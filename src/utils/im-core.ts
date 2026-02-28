@@ -23,20 +23,20 @@ import { assert } from "src/utils/assert";
 //    imIf, imSwitch, imFor and other basic control-flow stuff. I should probably just make this 
 //    static analysis tool - it would speed up the process...
 
-export const ENTRIES_IDX                             = 0;
-export const ENTRIES_LAST_IDX                        = 1;
-export const ENTRIES_INTERNAL_TYPE                   = 2;
-export const ENTRIES_PARENT_TYPE                     = 3;
-export const ENTRIES_PARENT_VALUE                    = 4;
-export const ENTRIES_COMPLETED_ONE_RENDER            = 5;
-export const ENTRIES_KEYED_MAP                       = 6;
-export const ENTRIES_REMOVE_LEVEL                    = 7;
-export const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 8;
-export const ENTRIES_IS_DERIVED                      = 9;
-export const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 10;
-export const ENTRIES_DESTRUCTORS                     = 11;
-export const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 12;
-export const ENTRIES_ITEMS_START                     = 13;
+export const ENTRIES_REMOVE_LEVEL                    = 1;
+export const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 2;
+export const ENTRIES_IS_DERIVED                      = 3;
+export const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
+export const ENTRIES_DESTRUCTORS                     = 5;
+export const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
+export const ENTRIES_KEYED_MAP                       = 7;
+export const ENTRIES_PARENT_TYPE                     = 8;
+export const ENTRIES_PARENT_VALUE                    = 9;
+export const ENTRIES_INTERNAL_TYPE                   = 10;
+export const ENTRIES_COMPLETED_ONE_RENDER            = 11;
+export const ENTRIES_LAST_IDX                        = 12;
+export const ENTRIES_IDX                             = 13;
+export const ENTRIES_ITEMS_START                     = 14;
 
 export function newImCache(): ImCache {
     return [];
@@ -120,28 +120,31 @@ export function fpsMarkRenderingEnd(fps: FpsCounterState) {
 }
 
 
-export const CACHE_IDX                          = 0;
-export const CACHE_CURRENT_ENTRIES              = 1;
-export const CACHE_CURRENT_WAITING_FOR_SET      = 2;
-export const CACHE_FPS_COUNTER_STATE            = 3; // Useful for debugging performance in general, and running expensive computations over multiple frames
-export const CACHE_ROOT_ENTRIES                 = 4;
-export const CACHE_NEEDS_RERENDER               = 5;
-export const CACHE_RERENDER_FN                  = 6;
-export const CACHE_RERENDER_FN_INNER            = 7;
-export const CACHE_IS_RENDERING                 = 8;
-export const CACHE_IS_EVENT_RERENDER            = 9;
-export const CACHE_RENDER_COUNT                 = 10;
-export const CACHE_ANIMATE_FN                   = 11;
-export const CACHE_ANIMATE_FN_STILL_ANIMATING   = 12;
-export const CACHE_ANIMATION_TIME_LAST          = 13;
-export const CACHE_ANIMATION_TIME               = 14;
-export const CACHE_ANIMATION_DELTA_TIME_SECONDS = 15;
-export const CACHE_ITEMS_ITERATED               = 16;
-export const CACHE_ITEMS_ITERATED_LAST_FRAME    = 17; // Useful performance metric
-export const CACHE_TOTAL_DESTRUCTORS            = 18; // Useful memory leak indicator
-export const CACHE_TOTAL_MAP_ENTRIES            = 19; // Useful memory leak indicator
-export const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 20; // Useful memory leak indicator
-export const CACHE_RENDER_FN_CHANGES            = 21;
+// Fields have been reordered such that those we touch more frequently appear lower, closer to the
+// ENTRIES_START field. I am hoping that this will trick the CPU cache into loading more cache entries...
+// A similar hack is being done for ENTRIES_BLAH
+export const CACHE_FPS_COUNTER_STATE            = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
+export const CACHE_RERENDER_FN                  = 1;
+export const CACHE_ANIMATE_FN                   = 2;
+export const CACHE_ANIMATE_FN_STILL_ANIMATING   = 3;
+export const CACHE_ANIMATION_TIME_LAST          = 4;
+export const CACHE_ANIMATION_TIME               = 5;
+export const CACHE_ANIMATION_DELTA_TIME_SECONDS = 6;
+export const CACHE_TOTAL_DESTRUCTORS            = 7; // Useful memory leak indicator
+export const CACHE_RENDER_FN_CHANGES            = 8;
+export const CACHE_RERENDER_FN_INNER            = 9;
+export const CACHE_IS_EVENT_RERENDER            = 10;
+export const CACHE_NEEDS_RERENDER               = 11;
+export const CACHE_ITEMS_ITERATED               = 12;
+export const CACHE_IS_RENDERING                 = 13;
+export const CACHE_TOTAL_MAP_ENTRIES            = 14; // Useful memory leak indicator
+export const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 15; // Useful memory leak indicator
+export const CACHE_ITEMS_ITERATED_LAST_FRAME    = 16; // Useful performance metric
+export const CACHE_RENDER_COUNT                 = 17;
+export const CACHE_CURRENT_WAITING_FOR_SET      = 18;
+export const CACHE_ROOT_ENTRIES                 = 19;
+export const CACHE_CURRENT_ENTRIES              = 20;
+export const CACHE_IDX                          = 21;
 export const CACHE_ENTRIES_START                = 22;
 
 
