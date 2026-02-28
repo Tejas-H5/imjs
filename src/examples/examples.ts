@@ -1,5 +1,6 @@
 // NOTE: this rewrite went better than expected. it will most likely replace what we have right now.
 
+import { imFpsCounterSimple, imExtraDiagnosticInfo, imRelative, imSize, PX, imAspectRatio } from "src/utils/im-ui";
 import {
     CACHE_CURRENT_ENTRIES,
     CACHE_ITEMS_ITERATED,
@@ -27,7 +28,10 @@ import {
     USE_REQUEST_ANIMATION_FRAME,
     getDeltaTimeSeconds,
     imCacheBegin,
-    imCacheEnd
+    imCacheEnd,
+    getFpsCounterState,
+    CACHE_ANIMATE_FN_STILL_ANIMATING,
+    CACHE_IS_EVENT_RERENDER
 } from "../utils/im-core";
 import {
     attrsSet,
@@ -54,20 +58,12 @@ import {
     stylesSet,
 } from "../utils/im-dom";
 
-// TODO:
-//      - [ ] recreate our random-stuff.ts
-// - Performance testing
-//      - [ ] Variadic memo
-//      - [ ] Making c1 a global variable
-//      - [ ] Namespaced imports
-
-
 let toggleA = false;
 let toggleB = false;
 
 const changeEvents: string[] = [];
 
-let currentExample = 3;
+let currentExample = 2;
 let numAnimations = 0;
 
 let rerenders = 0;
@@ -111,7 +107,15 @@ function imExamples(c: ImCache) {
         } imElEnd(c, EL_DIV);
 
         imElBegin(c, EL_DIV); {
-            imStr(c, "[" + numAnimations + " animation in progress ]");
+            imStr(c, "[" + numAnimations + " animations in progress ]");
+        } imElEnd(c, EL_DIV);
+
+        imElBegin(c, EL_DIV); {
+            imStr(c, "[");
+            const fps = getFpsCounterState(c);
+            imFpsCounterSimple(c, fps);
+            imExtraDiagnosticInfo(c);
+            imStr(c, "]");
         } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
 
@@ -129,7 +133,7 @@ function imExamples(c: ImCache) {
 export function imExampleMain(c: ImCache) {
     rerenders++;
 
-    imCacheBegin(c, imExampleMain, USE_MANUAL_RERENDERING); {
+    imCacheBegin(c, imExampleMain); {
         imDomRootBegin(c, document.body); {
             const ev = imGlobalEventSystemBegin(c); {
                 imExamples(c);
@@ -265,13 +269,10 @@ function imRealtimeExampleView(c: ImCache) {
     imDivider(c);
 
     const root = imElBegin(c, EL_DIV); {
-        root.manualDom = true;
+        const SIZE = 1;
 
-        // You can avoid all this by simply rerendering your whole app.
         let state; state = imGet(c, imRealtimeExampleView);
         if (!state) {
-            const SIZE = 1;
-
             const val = {
                 renderTime: 0,
                 c: [] as ImCache,
@@ -280,97 +281,10 @@ function imRealtimeExampleView(c: ImCache) {
                 rerenders: 0,
                 itemsIterated: 0,
                 t: 0,
-                pingPong: (c: ImCache, phase: number) => {
-                    const t = val.t;
-
-                    imElBegin(c, EL_DIV); {
-                        if (isFirstishRender(c)) {
-                            elSetStyle(c, "height", SIZE + "px");
-                            elSetStyle(c, "position", "relative");
-                        }
-
-                        imElBegin(c, EL_DIV); {
-                            if (isFirstishRender(c)) {
-                                elSetStyle(c, "backgroundColor", "black");
-                                elSetStyle(c, "backgroundColor", "black");
-                                elSetStyle(c, "position", "absolute");
-                                elSetStyle(c, "top", "0");
-                                elSetStyle(c, "bottom", "0");
-                                elSetStyle(c, "aspectRatio", "10 / 1");
-                            }
-
-                            const pingPong = 0.5 * (1 + Math.sin((1 * ((t / 1000) + phase)) % (2 * Math.PI)));
-                            elSetStyle(c, "left", "calc(" + (pingPong * 100) + "% - " + SIZE * 10 * (pingPong) + "px)");
-                        } imElEnd(c, EL_DIV);
-
-                    } imElEnd(c, EL_DIV);
-                },
-                animation: (c: ImCache) => {
-                    val.rerenders++;
-
-                    let t0 = performance.now();
-
-                    const isParentInConditionalPathwayStill = val.entries.length > 0 && val.entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
-
-                    imCacheBegin(c, val.animation, USE_REQUEST_ANIMATION_FRAME); {
-                        imDomRootBegin(c, root.root); {
-                            const ev = imGlobalEventSystemBegin(c); {
-                                imElBegin(c, EL_DIV); {
-                                    if (isFirstishRender(c)) {
-                                        elSetStyle(c, "display", "flex");
-                                        elSetStyle(c, "gap", "10px");
-                                    }
-
-                                    imElBegin(c, EL_DIV); imStr(c, Math.round(val.renderTime) + "ms"); imElEnd(c, EL_DIV);
-                                    imElBegin(c, EL_DIV); imStr(c, val.rerenders + " rerenders"); imElEnd(c, EL_DIV);
-                                    imElBegin(c, EL_DIV); imStr(c, val.itemsIterated + " rerenders"); imElEnd(c, EL_DIV);
-                                    imElBegin(c, EL_DIV); imStr(c, stylesSet + " styles set"); imElEnd(c, EL_DIV);
-                                    imElBegin(c, EL_DIV); imStr(c, classesSet + " classes set"); imElEnd(c, EL_DIV);
-                                    imElBegin(c, EL_DIV); imStr(c, attrsSet + " attrs set"); imElEnd(c, EL_DIV);
-                                } imElEnd(c, EL_DIV);
-
-                                imElBegin(c, EL_DIV); {
-                                    imSwitch(c, currentExampleState.example); switch (currentExampleState.example) {
-                                        case 0: {
-                                            imElBegin(c, EL_H1); imStr(c, "Snake sine thing idx"); imElEnd(c, EL_H1);
-
-                                            imDivider(c);
-
-                                            const NUM = 500 / SIZE;
-                                            for (let i = 0; i < NUM; i++) {
-                                                val.pingPong(c, getDeltaTimeSeconds(c) * i / NUM);
-                                            }
-                                        } break;
-                                        case 1: {
-                                            imElBegin(c, EL_H1); imStr(c, "Old framework example page bro I have spent a large percentage of my life on thhis page. .. :("); imElEnd(c, EL_H1);
-
-                                            imDivider(c);
-
-                                            imOldRandomStuffExampleApplication(c, getDeltaTimeSeconds(c));
-                                        } break;
-                                    } imSwitchEnd(c);
-                                } imElEnd(c, EL_DIV);
-                            } imGlobalEventSystemEnd(c, ev);
-                        } imDomRootEnd(c, root.root);
-                    } imCacheEnd(c);
-
-                    if (!isParentInConditionalPathwayStill) {
-                        numAnimations--;
-                    }
-
-                    val.itemsIterated = c[CACHE_ITEMS_ITERATED];
-
-                    {
-                        const t = performance.now();
-                        val.renderTime = t - t0;
-                    }
-                }
             };
-
             state = imSet(c, val);
         }
 
-        // Need at least 1 imGet to be in the 
         state.entries = c[CACHE_CURRENT_ENTRIES];
         const isAnimating = state.entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
 
@@ -379,9 +293,40 @@ function imRealtimeExampleView(c: ImCache) {
             state.isAnimating = true;
             numAnimations++;
             c[CACHE_NEEDS_RERENDER] = true;
+            c[CACHE_ANIMATE_FN_STILL_ANIMATING] = true;
         }
 
-        state.animation(state.c);
+        imElBegin(c, EL_DIV); {
+            if (isFirstishRender(c)) {
+                elSetStyle(c, "display", "flex");
+                elSetStyle(c, "gap", "10px");
+            }
+
+            imElBegin(c, EL_DIV); imStr(c, Math.round(state.renderTime) + "ms"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, state.rerenders + " rerenders"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, state.itemsIterated + " rerenders"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, stylesSet + " styles set"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, classesSet + " classes set"); imElEnd(c, EL_DIV);
+            imElBegin(c, EL_DIV); imStr(c, attrsSet + " attrs set"); imElEnd(c, EL_DIV);
+        } imElEnd(c, EL_DIV);
+
+        imElBegin(c, EL_DIV); {
+            imSwitch(c, currentExampleState.example); switch (currentExampleState.example) {
+                case 0: {
+                    imElBegin(c, EL_H1); imStr(c, "Snake sine thing idx"); imElEnd(c, EL_H1);
+
+                    imDivider(c);
+
+                    const NUM = 500 / SIZE;
+                    for (let i = 0; i < NUM; i++) {
+                        pingPong(c, getDeltaTimeSeconds(c) * i / NUM, 100, state.t);
+                    }
+                } break;
+                case 1: {
+                    imOldRandomStuffExampleApplication(c, getDeltaTimeSeconds(c));
+                } break;
+            } imSwitchEnd(c);
+        } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
 }
 
@@ -411,9 +356,6 @@ function imWallClockView(c: ImCache, t: number) {
     imElBegin(c, EL_DIV); {
         imStr(c, "brownian motion: " + s + "");
     } imElEnd(c, EL_DIV);
-    imElBegin(c, EL_DIV); {
-        imStr(c, "FPS: " + (1 / dt).toPrecision(2) + "");
-    } imElEnd(c, EL_DIV);
 
     let n = s.val < 0 ? 1 : 2;
     n = 2; // TODO: revert
@@ -424,12 +366,53 @@ function imWallClockView(c: ImCache, t: number) {
     } imForEnd(c);
 }
 
+
+
+function pingPong(c: ImCache, phase: number, size: number, t: number) {
+    imElBegin(c, EL_DIV); {
+        if (isFirstishRender(c)) {
+            elSetStyle(c, "height", size + "px");
+            elSetStyle(c, "position", "relative");
+        }
+
+        imElBegin(c, EL_DIV); {
+            if (isFirstishRender(c)) {
+                elSetStyle(c, "backgroundColor", "black");
+                elSetStyle(c, "backgroundColor", "black");
+                elSetStyle(c, "position", "absolute");
+                elSetStyle(c, "top", "0");
+                elSetStyle(c, "bottom", "0");
+                elSetStyle(c, "aspectRatio", "10 / 1");
+            }
+
+            const pingPong = 0.5 * (1 + Math.sin((1 * ((t / 1000) + phase)) % (2 * Math.PI)));
+            elSetStyle(c, "left", "calc(" + (pingPong * 100) + "% - " + size * 10 * (pingPong) + "px)");
+        } imElEnd(c, EL_DIV);
+
+    } imElEnd(c, EL_DIV);
+};
+
 function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
     let s = imGet(c, newAppState);
     if (!s) {
         s = imSet(c, newAppState());
         s.rerender = () => c[CACHE_NEEDS_RERENDER] = true;
     }
+
+    let gridState = imGet(c, newGridState);
+    if (!gridState) gridState = imSet(c, newGridState());
+
+    imElBegin(c, EL_H1); {
+        imStr(c, "Rendering ");
+        imStr(c, gridState.gridRows);
+        imStr(c, " rows x ");
+        imStr(c, gridState.gridCols);
+        imStr(c, " cols = ~");
+        imStr(c, gridState.gridRows * gridState.gridCols);
+        imStr(c, " DOM nodes, excluding the UI around it");
+    } imElEnd(c, EL_H1);
+
+    imDivider(c);
 
     const tryState = imTry(c); try {
         const { err, recover } = tryState;
@@ -522,14 +505,32 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                 } imForEnd(c);
             } imElEnd(c, EL_DIV);
 
-            let gridState = imGet(c, newGridState);
-            if (!gridState) gridState = imSet(c, newGridState());
 
             if (imIf(c) && s.grid === GRID_FRAMEWORK) {
-                const dt = 0.03;
+                const dt = getDeltaTimeSeconds(c); 0.03;
+
+                const budgetMsLower = 8;
+                const budgetMsUpper = budgetMsLower + 1;
+
+                const fps = getFpsCounterState(c);
+                // Let's see how many things we can render in 4 to 5 ms
+                if (fps.renderMs > budgetMsUpper) {
+                    gridState.gridRows--;
+                } else if (fps.renderMs < budgetMsLower) {
+                    gridState.gridRows++;
+                }
+
                 const { values, gridRows, gridCols } = gridState;
 
                 imElBegin(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
+
+                if (!c[CACHE_IS_EVENT_RERENDER]) {
+                    for (let i = 0; i < 10; i++) {
+                        const randomRow = Math.floor(Math.random() * gridRows);
+                        const randomCol = Math.floor(Math.random() * gridCols);
+                        gridState.values[randomRow * gridCols + randomCol] = 1;
+                    }
+                }
 
                 imFor(c); for (let row = 0; row < gridRows; row++) {
                     imElBegin(c, EL_DIV); {
@@ -538,15 +539,8 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                         }
 
                         imFor(c); for (let col = 0; col < gridCols; col++) {
-                            imElBegin(c, EL_DIV); {
-                                if (isFirstishRender(c)) {
-                                    elSetStyle(c, "position", " relative");
-                                    elSetStyle(c, "display", " inline-block");
-                                    elSetStyle(c, "width", " 100px");
-                                    elSetStyle(c, "height", " 100px");
-                                    elSetStyle(c, "aspectRatio", "1 / 1");
-                                    elSetStyle(c, "border", " 1px solid red");
-                                }
+                            imElBegin(c, EL_DIV); imRelative(c); imSize(c, 50, PX, 50, PX); imAspectRatio(c, 1, 1); {
+                                if (isFirstishRender(c)) elSetStyle(c, "display", " inline-block");
 
                                 const idx = col + gridCols * row;
 
@@ -569,20 +563,20 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                                 const styleChanged = imMemo(c, valRounded);
                                 if (styleChanged) {
                                     const r = elGet(c);
-                                    // r.style.backgroundColor = `rgba(0, 0, 0, ${val})`;
+                                    r.style.backgroundColor = `rgba(0, 0, 0, ${val})`;
                                     elSetStyle(c, "backgroundColor", `rgba(0, 0, 0, ${val})`);
                                 }
 
-                                // imEl(c, EL_DIV); {
-                                //     if (imIsFirstishRender()) {
-                                //         setStyle("position", "absolute");
-                                //         setStyle("top", "25%");
-                                //         setStyle("left", "25%");
-                                //         setStyle("right", "25%");
-                                //         setStyle("bottom", "25%");
-                                //         setStyle("backgroundColor", "white");
-                                //     }
-                                // } imEnd();
+                                imElBegin(c, EL_DIV); {
+                                    if (isFirstishRender(c)) {
+                                        elSetStyle(c, "position", "absolute");
+                                        elSetStyle(c, "top", "25%");
+                                        elSetStyle(c, "left", "25%");
+                                        elSetStyle(c, "right", "25%");
+                                        elSetStyle(c, "bottom", "25%");
+                                        elSetStyle(c, "backgroundColor", "white");
+                                    }
+                                } imElEnd(c, EL_DIV);
                             } imElEnd(c, EL_DIV);
                         } imForEnd(c);
                     } imElEnd(c, EL_DIV);
@@ -984,10 +978,8 @@ function newAppState() {
 
 function newGridState() {
     // TODO: revert
-    let gridRows = 1000;
-    let gridCols = 100;
-    // let gridRows = 10;
-    // let gridCols = 10;
+    let gridRows = 10;
+    let gridCols = 20;
     const values: number[] = [];
 
     resize(values, gridRows, gridCols);
