@@ -194,6 +194,9 @@ export function inlineTypeId<T = undefined>(fn: Function) {
 // Can be any valid object reference. Or string, but avoid string if you can - string comparisons are slower than object comparisons
 export type ValidKey = string | number | Function | object | boolean | null | unknown;
 
+// Any immediate mode function that takes in the cache, and nothing else.
+export type ImCacheRerenderFn = (c: ImCache) => void;
+
 /** 
  * Initiates the render loop. 
  *
@@ -201,7 +204,7 @@ export type ValidKey = string | number | Function | object | boolean | null | un
  * The main point of this framework is that rerendering your components as an animation eliminates and simplifies various problems, 
  * so it's pretty pointless if you have to start issuing manual rerenders.
  */
-export function imCacheBegin(c: ImCache, renderFn: (c: ImCache) => void) {
+export function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     if (c.length === 0) {
         c.length = CACHE_ENTRIES_START;
         c.fill(undefined);
@@ -507,7 +510,7 @@ export function imGet<T>(
 
     if (idx < entries.length) {
         if (entries[idx] !== typeId) {
-            const errorMessage = "Expected to populate this cache entry with a different type. Your begin/end pairs probably aren't lining up right";
+            const errorMessage = "Expected to populate this cache entry with a different type. Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state";
             console.error(errorMessage, entries[idx], typeId);
             throw new Error(errorMessage);
         }

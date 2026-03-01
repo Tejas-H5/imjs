@@ -11,7 +11,7 @@ export * from "./link.ts";
 export * from "./range-slider.ts";
 export * from "./scroll-container.ts";
 export * from "./slider.ts";
-export * from "./test-harness.ts";
+export * from "./testing-harness.ts";
 export * from "./text-input.ts";
 
 export * from "./dom-utils.ts";

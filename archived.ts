@@ -121,3 +121,21 @@
 //     return hmr;
 // }
 //
+
+
+
+// TODO: Where do I put this? might need later.
+function newSessionStorageCache<T extends object>(key: string) {
+    let value: Partial<T> = {};
+    let error: unknown;
+    try {
+        value = JSON.parse(sessionStorage.getItem(key) ?? "{}");
+    } catch (e) { error = e } // ignored
+
+    const update = (fn: (state: Partial<T>) => void) => {
+        fn(value);
+        sessionStorage.setItem(key, JSON.stringify(value));
+    }
+
+    return { value, update, error };
+}

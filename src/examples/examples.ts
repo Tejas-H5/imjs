@@ -1,4 +1,4 @@
-import { cssVars, EM, imAlign, imAspectRatio, imButtonIsClicked, imExtraDiagnosticInfo, imFixed, imFlex, imFpsCounterSimple, imLayoutBegin, imLayoutEnd, imRelative, imSize, imSliderInput, NA, PX, ROW } from "src/utils/im-ui";
+import { COL, cssVars, EM, imAlign, imAspectRatio, imButtonIsClicked, imExtraDiagnosticInfo, imFixed, imFlex, imFpsCounterSimple, imLayoutBegin, imLayoutEnd, imRelative, imSize, imSliderInput, NA, PERCENT, PX, ROW } from "src/utils/im-ui";
 import {
     getCurrentCacheEntries,
     getDeltaTimeSeconds,
@@ -52,6 +52,7 @@ import {
     imStr,
     stylesSet
 } from "../utils/im-dom";
+import { imVisualTestHarness, newVisualTest, VisualTest } from "src/utils/im-ui/visual-testing-harness";
 
 let toggleA = false;
 let toggleB = false;
@@ -123,13 +124,19 @@ function imExamples(c: ImCache) {
     } imLayoutEnd(c);
 }
 
+const tests: VisualTest[] = [
+    newVisualTest("imMemo example", imMemoExampleView),
+];
+
 export function imExampleMain(c: ImCache) {
     rerenders++;
 
     imCacheBegin(c, imExampleMain); {
         imDomRootBegin(c, document.body); {
             const ev = imGlobalEventSystemBegin(c); {
-                imExamples(c);
+                imLayoutBegin(c, COL); imFixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+                    imVisualTestHarness(c, tests);
+                } imLayoutEnd(c);
             } imGlobalEventSystemEnd(c, ev);
         } imDomRootEnd(c, document.body);
     } imCacheEnd(c);
