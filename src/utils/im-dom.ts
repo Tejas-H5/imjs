@@ -1,4 +1,4 @@
-// IM-DOM 1.67
+// IM-DOM 1.68
 
 import { assert } from "src/utils/assert";
 import {
@@ -408,6 +408,9 @@ export function imDomRootEnd(c: ImCache, root: ValidElement) {
         finalizeDomAppender(item);
     }
 
+    // Finally, finalize the root
+    finalizeDomAppender(appender);
+
     imBlockEnd(c);
 }
 
@@ -688,17 +691,17 @@ export type ImGlobalEventSystem = {
     rerender: () => void;
     keyboard: ImKeyboardState;
     mouse: ImMouseState;
-    blur: boolean;
+    blur:  boolean;
     globalEventHandlers: {
-        mousedown: (e: MouseEvent) => void;
-        mousemove: (e: MouseEvent) => void;
+        mousedown:  (e: MouseEvent) => void;
+        mousemove:  (e: MouseEvent) => void;
         mouseenter: (e: MouseEvent) => void;
-        mouseup: (e: MouseEvent) => void;
+        mouseup:    (e: MouseEvent) => void;
         mouseclick: (e: MouseEvent) => void;
-        wheel: (e: WheelEvent) => void;
-        keydown: (e: KeyboardEvent) => void;
-        keyup: (e: KeyboardEvent) => void;
-        blur: () => void;
+        wheel:      (e: WheelEvent) => void;
+        keydown:    (e: KeyboardEvent) => void;
+        keyup:      (e: KeyboardEvent) => void;
+        blur:       () => void;
     };
 }
 
@@ -891,7 +894,7 @@ export function imGlobalEventSystemEnd(_c: ImCache, eventSystem: ImGlobalEventSy
     globalStateStackPop(gssEventSystems, eventSystem);
 }
 
-export function imTrackSize(c: ImCache) {
+export function imTrackSize(c: ImCache, rerender = false) {
     let state; state = imGet(c, inlineTypeId(imTrackSize));
     if (state === undefined) {
         const root = elGet(c);
@@ -899,6 +902,7 @@ export function imTrackSize(c: ImCache) {
         const self = {
             size: { width: 0, height: 0, },
             resized: false,
+            shouldRerender: false,
             observer: new ResizeObserver((entries) => {
                 for (const entry of entries) {
                     // NOTE: resize-observer cannot track the top, right, left, bottom of a rect. Sad.
@@ -909,7 +913,7 @@ export function imTrackSize(c: ImCache) {
                 }
 
                 if (self.resized === true) {
-                    rerenderImCache(c);
+                    if (self.shouldRerender) rerenderImCache(c);
                     self.resized = false;
                 }
             })
@@ -922,6 +926,8 @@ export function imTrackSize(c: ImCache) {
 
         state = imSet(c, self);
     }
+
+    state.shouldRerender = rerender;
 
     return state;
 

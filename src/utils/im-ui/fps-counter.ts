@@ -68,19 +68,19 @@ export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
     imLayoutBegin(c, BLOCK); imStr(c, Math.round(renderMs) + "ms/" + Math.round(frameMs) + "ms"); imLayoutEnd(c);
 }
 
-export function imExtraDiagnosticInfo(c: ImCache) {
+export function imExtraDiagnosticInfo(c: ImCache, verbose = false) {
     const itemsIterated  = getItemsIterated(c);
     const numDestructors = getTotalDestructors(c);
     const numMapEntries  = getTotalMapEntries(c);
 
     imLayoutBegin(c, BLOCK); {
         imStr(c, itemsIterated);
-        imStr(c, "i ");
+        imStr(c, verbose ? " immediate mode state entries, " : "i ");
 
         // If either of these just keep increasing forever, you have a memory leak.
         imStr(c, numDestructors);
-        imStr(c, "d ");
+        imStr(c, verbose ? " destructors, " : "d ");
         imStr(c, numMapEntries);
-        imStr(c, "m");
+        imStr(c, verbose ? " map entries" : "m");
     } imLayoutEnd(c);
 }

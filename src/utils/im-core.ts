@@ -1,4 +1,4 @@
-// IM-CORE 1.075
+// IM-CORE 1.076
 // NOTE: I'm currently working on 3 different apps with this framework,
 // so even though I thought it was mostly finished, the API appears to still be changing slightly.
 // Majority of the last changes have just been updates to the documentation though
@@ -23,27 +23,55 @@ import { assert } from "src/utils/assert";
 //    imIf, imSwitch, imFor and other basic control-flow stuff. I should probably just make this 
 //    static analysis tool - it would speed up the process...
 
-export const ENTRIES_REMOVE_LEVEL                    = 1;
-export const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 2;
-export const ENTRIES_IS_DERIVED                      = 3;
-export const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
-export const ENTRIES_DESTRUCTORS                     = 5;
-export const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
-export const ENTRIES_KEYED_MAP                       = 7;
-export const ENTRIES_PARENT_TYPE                     = 8;
-export const ENTRIES_PARENT_VALUE                    = 9;
-export const ENTRIES_INTERNAL_TYPE                   = 10;
-export const ENTRIES_COMPLETED_ONE_RENDER            = 11;
-export const ENTRIES_LAST_IDX                        = 12;
-export const ENTRIES_IDX                             = 13;
-export const ENTRIES_ITEMS_START                     = 14;
+
+// I no longer export these - It should be easy to toggle between the array implementation and the object
+// implementation, so only getters and setters get exported
+const CACHE_FPS_COUNTER_STATE            = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
+const CACHE_RERENDER_FN                  = 1;
+const CACHE_ANIMATE_FN                   = 2;
+const CACHE_ANIMATE_FN_STILL_ANIMATING   = 3;
+const CACHE_ANIMATION_TIME_LAST          = 4;
+const CACHE_ANIMATION_TIME               = 5;
+const CACHE_ANIMATION_DELTA_TIME_SECONDS = 6;
+const CACHE_TOTAL_DESTRUCTORS            = 7; // Useful memory leak indicator
+const CACHE_RENDER_FN_CHANGES            = 8;
+const CACHE_RERENDER_FN_INNER            = 9;
+const CACHE_IS_EVENT_RERENDER            = 10;
+const CACHE_NEEDS_RERENDER               = 11;
+const CACHE_ITEMS_ITERATED               = 12;
+const CACHE_IS_RENDERING                 = 13;
+const CACHE_TOTAL_MAP_ENTRIES            = 14; // Useful memory leak indicator
+const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 15; // Useful memory leak indicator
+const CACHE_ITEMS_ITERATED_LAST_FRAME    = 16; // Useful performance metric
+const CACHE_RENDER_COUNT                 = 17;
+const CACHE_CURRENT_WAITING_FOR_SET      = 18;
+const CACHE_ROOT_ENTRIES                 = 19;
+const CACHE_CURRENT_ENTRIES              = 20;
+const CACHE_IDX                          = 21;
+const CACHE_ENTRIES_START                = 22;
+
+
+const ENTRIES_REMOVE_LEVEL                    = 1;
+const ENTRIES_IS_IN_CONDITIONAL_PATHWAY       = 2;
+const ENTRIES_IS_DERIVED                      = 3;
+const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
+const ENTRIES_DESTRUCTORS                     = 5;
+const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
+const ENTRIES_KEYED_MAP                       = 7;
+const ENTRIES_PARENT_TYPE                     = 8;
+const ENTRIES_PARENT_VALUE                    = 9;
+const ENTRIES_INTERNAL_TYPE                   = 10;
+const ENTRIES_COMPLETED_ONE_RENDER            = 11;
+const ENTRIES_LAST_IDX                        = 12;
+const ENTRIES_IDX                             = 13;
+const ENTRIES_ITEMS_START                     = 14;
 
 export function newImCache(): ImCache {
     return [];
 }
 
 export function getItemsIterated(c: ImCache): number {
-    return c[CACHE_ITEMS_ITERATED];
+    return c[CACHE_ITEMS_ITERATED_LAST_FRAME];
 }
 
 export function getTotalMapEntries(c: ImCache): number {
@@ -119,35 +147,6 @@ export function fpsMarkRenderingEnd(fps: FpsCounterState) {
     fps.renderEnd = performance.now();
 }
 
-
-// Fields have been reordered such that those we touch more frequently appear lower, closer to the
-// ENTRIES_START field. I am hoping that this will trick the CPU cache into loading more cache entries...
-// A similar hack is being done for ENTRIES_BLAH
-export const CACHE_FPS_COUNTER_STATE            = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
-export const CACHE_RERENDER_FN                  = 1;
-export const CACHE_ANIMATE_FN                   = 2;
-export const CACHE_ANIMATE_FN_STILL_ANIMATING   = 3;
-export const CACHE_ANIMATION_TIME_LAST          = 4;
-export const CACHE_ANIMATION_TIME               = 5;
-export const CACHE_ANIMATION_DELTA_TIME_SECONDS = 6;
-export const CACHE_TOTAL_DESTRUCTORS            = 7; // Useful memory leak indicator
-export const CACHE_RENDER_FN_CHANGES            = 8;
-export const CACHE_RERENDER_FN_INNER            = 9;
-export const CACHE_IS_EVENT_RERENDER            = 10;
-export const CACHE_NEEDS_RERENDER               = 11;
-export const CACHE_ITEMS_ITERATED               = 12;
-export const CACHE_IS_RENDERING                 = 13;
-export const CACHE_TOTAL_MAP_ENTRIES            = 14; // Useful memory leak indicator
-export const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 15; // Useful memory leak indicator
-export const CACHE_ITEMS_ITERATED_LAST_FRAME    = 16; // Useful performance metric
-export const CACHE_RENDER_COUNT                 = 17;
-export const CACHE_CURRENT_WAITING_FOR_SET      = 18;
-export const CACHE_ROOT_ENTRIES                 = 19;
-export const CACHE_CURRENT_ENTRIES              = 20;
-export const CACHE_IDX                          = 21;
-export const CACHE_ENTRIES_START                = 22;
-
-
 export const REMOVE_LEVEL_NONE = 1;
 // This is the default remove level for im-blocks, im-arrays, im-if/else conditionals, and im-switch.
 // The increase in performance far oughtweighs any memory problems.
@@ -195,28 +194,14 @@ export function inlineTypeId<T = undefined>(fn: Function) {
 // Can be any valid object reference. Or string, but avoid string if you can - string comparisons are slower than object comparisons
 export type ValidKey = string | number | Function | object | boolean | null | unknown;
 
-export const USE_MANUAL_RERENDERING = 1 << 0;
-export const USE_REQUEST_ANIMATION_FRAME = 1 << 1;
-
-/**
- * Pass in {@link USE_REQUEST_ANIMATION_FRAME} to get the intended experience - 
- * The animatin loop will make the following things significantly easier:
- *  - Animating that one thing
- *  - Writing robust javascript interaction logic that doesn't keep getting stuck in a particular bugged 
- *      state due to callbacks not being fired when you thought they would
- *  - 'reacting' to any state from anywhere. VanillaJS objects, your own data stores, api responses, you name it
+/** 
+ * Initiates the render loop. 
  *
- * If you want to avoid the animation loop for whatever reason, pass in the {@link USE_MANUAL_RERENDERING} flag instead.
- *  - You'll need to manually call c[CACHE_RERENDER_FN]() whenever any state anywhere changes.
- *  - Methods that previously reported a deltaTime will report a constant 1/30 instead.
- * 
- * NOTE: the rerender function and the `useEventLoop` parameter are completely ignored after the first render, and this will never change.
+ * NOTE: I used to have an option here to allow 'manual rerendering', but I've since removed it.
+ * The main point of this framework is that rerendering your components as an animation eliminates and simplifies various problems, 
+ * so it's pretty pointless if you have to start issuing manual rerenders.
  */
-export function imCacheBegin(
-    c: ImCache,
-    renderFn: (c: ImCache) => void,
-    flags: typeof USE_REQUEST_ANIMATION_FRAME | typeof USE_MANUAL_RERENDERING = USE_REQUEST_ANIMATION_FRAME
-) {
+export function imCacheBegin(c: ImCache, renderFn: (c: ImCache) => void) {
     if (c.length === 0) {
         c.length = CACHE_ENTRIES_START;
         c.fill(undefined);
@@ -240,15 +225,7 @@ export function imCacheBegin(
         // Deltatime should naturally reach 0 on 'rerenders'. Not sure how it will work for manual rendering.
         c[CACHE_ANIMATION_TIME] = 0;
         c[CACHE_ANIMATION_TIME_LAST] = 0;
-
-        if ((flags & USE_MANUAL_RERENDERING) !== 0) {
-            // Nothing - for now
-        } else if ((flags & USE_REQUEST_ANIMATION_FRAME) !== 0) {
-            c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
-        } else {
-            throw new Error("Invalid flags");
-        }
-
+        c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
         c[CACHE_RENDER_FN_CHANGES]      = 0;
         c[CACHE_ANIMATE_FN_STILL_ANIMATING] = true;
     }
@@ -281,37 +258,30 @@ export function imCacheBegin(
             }
         };
 
-
-        if ((flags & USE_MANUAL_RERENDERING) !== 0) {
-            c[CACHE_ANIMATE_FN]   = noOp;
-        } else if ((flags & USE_REQUEST_ANIMATION_FRAME) !== 0) {
-            const animateFn = (t: number) => {
-                if (c[CACHE_ANIMATE_FN_STILL_ANIMATING] === false) {
-                    return;
-                }
-
-                if (c[CACHE_IS_RENDERING] === true) {
-                    // This will make debugging a lot easier. Otherwise the animation will play while
-                    // we're breakpointed. Firefox moment. xD
-                    return;
-                }
-
-                if (c[CACHE_RERENDER_FN_INNER] !== renderFn) {
-                    return;
-                }
-
-                c[CACHE_ANIMATION_TIME] = t;
-
-                renderFn(c);
-
-                // Needs to go stale, so that c[CACHE_RERENDER_FN_INNER] !== renderFn can work.
-                requestAnimationFrame(animateFn);
+        const animateFn = (t: number) => {
+            if (c[CACHE_ANIMATE_FN_STILL_ANIMATING] === false) {
+                return;
             }
-            c[CACHE_ANIMATE_FN] = animateFn;
+
+            if (c[CACHE_IS_RENDERING] === true) {
+                // This will make debugging a lot easier. Otherwise the animation will play while
+                // we're breakpointed. Firefox moment. xD
+                return;
+            }
+
+            if (c[CACHE_RERENDER_FN_INNER] !== renderFn) {
+                return;
+            }
+
+            c[CACHE_ANIMATION_TIME] = t;
+
+            renderFn(c);
+
+            // Needs to go stale, so that c[CACHE_RERENDER_FN_INNER] !== renderFn can work.
             requestAnimationFrame(animateFn);
-        } else {
-            throw new Error("Invalid flags");
         }
+        c[CACHE_ANIMATE_FN] = animateFn;
+        requestAnimationFrame(animateFn);
     }
 
     const fpsState = getFpsCounterState(c);
@@ -330,12 +300,7 @@ export function imCacheBegin(
     c[CACHE_CURRENT_WAITING_FOR_SET] = false;
     c[CACHE_RENDER_COUNT]++;
 
-    if ((flags & USE_REQUEST_ANIMATION_FRAME) !== 0) {
-        c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
-        c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
-    } else {
-        c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 1 / 30;
-    }
+    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 1 / 30;
 
     imCacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], imCacheBegin, c, INTERNAL_TYPE_CACHE);
 
@@ -434,11 +399,9 @@ export function imCacheEntriesBegin<T>(
         entries[ENTRIES_PARENT_VALUE] = parent;
         entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
     } else {
+        // The parent should never change
         assert(entries[ENTRIES_PARENT_TYPE] === parentTypeId);
-        // NOTE: your API doesn't need to support changing this value every frame.
-        // In fact, most of the APIs I have made so far don't.
-        // This line of code only exists for the few times when you do want this.
-        entries[ENTRIES_PARENT_VALUE] = parent;
+        assert(entries[ENTRIES_PARENT_VALUE] === parent);
     }
 
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;

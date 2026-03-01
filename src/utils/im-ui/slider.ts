@@ -1,14 +1,17 @@
 import { ImCache, imFor, imForEnd, imMemo, imState, isFirstishRender } from 'src/utils/im-core.ts';
 import { elHasMouseOver, elSetStyle, getGlobalEventSystem, imTrackSize } from 'src/utils/im-dom.ts';
-import { BLOCK, imLayoutBegin, imLayoutEnd, cssVars } from './ui-core.ts';
 import { clamp, inverseLerp, lerp } from './math-utils.ts';
+import { BLOCK, cssVars, imLayoutBegin, imLayoutEnd } from './ui-core.ts';
 
 const MIN_STEP = 0.0001;
 
 function newSliderState() {
-    return { startedDragging: false, }
+    return {
+        startedDragging: false,
+    }
 }
 
+// TODO: make this event-based
 export function imSliderInput(
     c: ImCache,
     start: number, end: number, step: number | null, 
@@ -21,15 +24,10 @@ export function imSliderInput(
     }
     value = clamp(value, start, end);
 
-    const valueChanged = imMemo(c, value);
-    const sliderStartChanged = imMemo(c, start);
-    const sliderEndChanged = imMemo(c, end);
     const width = end - start;
 
     const sliderBody = imLayoutBegin(c, BLOCK); {
         const { size } = imTrackSize(c);
-
-        const widthChanged = imMemo(c, size.width);
 
         if (isFirstishRender(c)) {
             elSetStyle(c, "display", "flex");
@@ -77,13 +75,12 @@ export function imSliderInput(
                 elSetStyle(c, "height", "100%");
                 elSetStyle(c, "userSelect", "none");
                 elSetStyle(c, "cursor", "ew-resize");
+                elSetStyle(c, "transition", "left 0.05s ease-out");
             }
 
-            if (valueChanged || sliderStartChanged || sliderEndChanged || widthChanged) {
-                const t = inverseLerp(value, start, end);
-                const sliderPos = lerp(0, size.width - sliderHandleSize, t);
-                elSetStyle(c, "left", sliderPos + "px");
-            }
+            const t = inverseLerp(value, start, end);
+            const sliderPos = lerp(0, size.width - sliderHandleSize, t);
+            if (imMemo(c, sliderPos)) elSetStyle(c, "left", sliderPos + "px");
         } imLayoutEnd(c);
 
         const { mouse }  = getGlobalEventSystem();

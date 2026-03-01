@@ -1,6 +1,4 @@
-// NOTE: this rewrite went better than expected. it will most likely replace what we have right now.
-
-import { imAspectRatio, imExtraDiagnosticInfo, imFpsCounterSimple, imRelative, imSize, PX } from "src/utils/im-ui";
+import { cssVars, EM, imAlign, imAspectRatio, imButtonIsClicked, imExtraDiagnosticInfo, imFixed, imFlex, imFpsCounterSimple, imLayoutBegin, imLayoutEnd, imRelative, imSize, imSliderInput, NA, PX, ROW } from "src/utils/im-ui";
 import {
     getCurrentCacheEntries,
     getDeltaTimeSeconds,
@@ -11,10 +9,10 @@ import {
     ImCache,
     imCacheBegin,
     imCacheEnd,
-    ImCacheEntries,
     imFor,
     imForEnd,
     imGet,
+    imGetInline,
     imIf,
     imIfElse,
     imIfEnd,
@@ -36,6 +34,7 @@ import {
     EL_BUTTON,
     EL_DIV,
     EL_H1,
+    EL_H3,
     EL_INPUT,
     EL_LABEL,
     EL_SPAN,
@@ -71,23 +70,31 @@ function imExamples(c: ImCache) {
             elSetStyle(c, "gap", "10px");
         }
 
-        imButton(c); {
-            imStr(c, "Conditional rendering, memo, array block");
-            if (elHasMousePress(c)) currentExample = 0;
-        } imButtonEnd(c);
-        imButton(c); {
-            imStr(c, "Error boundaries");
-            if (elHasMousePress(c)) currentExample = 1;
-        } imButtonEnd(c);
-        imButton(c); {
-            imStr(c, "Realtime rendering");
-            if (elHasMousePress(c)) currentExample = 2;
-        } imButtonEnd(c);
-        imButton(c); {
-            imStr(c, "Tree view example");
-            if (elHasMousePress(c)) currentExample = 3;
-        } imButtonEnd(c);
+        if (imButtonIsClicked(c, "Conditional rendering, memo, array block", currentExample === 0)) {
+            currentExample = 0;
+        }
+        if (imButtonIsClicked(c, "Error boundaries", currentExample === 1)) {
+            currentExample = 1;
+        }
+        if (imButtonIsClicked(c, "Realtime rendering", currentExample === 2)) {
+            currentExample = 2;
+        }
+        if (imButtonIsClicked(c, "Tree view example", currentExample === 3)) {
+            currentExample = 3;
+        }
+    } imElEnd(c, EL_DIV);
 
+    imDivider(c);
+
+    // TODO: convert these into automated tests
+    imSwitch(c, currentExample); switch (currentExample) {
+        case 0: imMemoExampleView(c); break;
+        case 1: imErrorBoundaryExampleView(c); break;
+        case 2: imRealtimeExampleView(c); break;
+        case 3: imTreeExampleView(c); break;
+    } imSwitchEnd(c);
+
+    imLayoutBegin(c, ROW); imFixed(c, 0, NA, 0, PX, 0, PX, 0, PX); {
         imElBegin(c, EL_DIV); {
             if (isFirstishRender(c)) {
                 elSetStyle(c, "flex", "1");
@@ -106,24 +113,14 @@ function imExamples(c: ImCache) {
             imStr(c, "[" + numAnimations + " animations in progress ]");
         } imElEnd(c, EL_DIV);
 
-        imElBegin(c, EL_DIV); {
+        imLayoutBegin(c, ROW); {
             imStr(c, "[");
             const fps = getFpsCounterState(c);
             imFpsCounterSimple(c, fps);
-            imExtraDiagnosticInfo(c);
+            imExtraDiagnosticInfo(c, true);
             imStr(c, "]");
-        } imElEnd(c, EL_DIV);
-    } imElEnd(c, EL_DIV);
-
-    imDivider(c);
-
-    // TODO: convert these into automated tests
-    imSwitch(c, currentExample); switch (currentExample) {
-        case 0: imMemoExampleView(c); break;
-        case 1: imErrorBoundaryExampleView(c); break;
-        case 2: imRealtimeExampleView(c); break;
-        case 3: imTreeExampleView(c); break;
-    } imSwitchEnd(c);
+        } imLayoutEnd(c);
+    } imLayoutEnd(c);
 }
 
 export function imExampleMain(c: ImCache) {
@@ -237,10 +234,6 @@ function imErrorBoundaryExampleView(c: ImCache) {
 }
 
 function imRealtimeExampleView(c: ImCache) {
-    imElBegin(c, EL_H1); imStr(c, "Realtime animations example"); imElEnd(c, EL_H1);
-
-    imDivider(c);
-
     let currentExampleState; currentExampleState = imGet(c, imDivider);
     if (!currentExampleState) {
         currentExampleState = imSet(c, { example: 1 })
@@ -252,14 +245,12 @@ function imRealtimeExampleView(c: ImCache) {
             elSetStyle(c, "gap", "10px");
         }
 
-        imButton(c); {
-            imStr(c, "Sine waves");
-            if (elHasMousePress(c)) currentExampleState.example = 0;
-        } imButtonEnd(c);
-        imButton(c); {
-            imStr(c, "Lots of thigns");
-            if (elHasMousePress(c)) currentExampleState.example = 1;
-        } imButtonEnd(c);
+        if (imButtonIsClicked(c, "Sine waves", currentExampleState.example === 0)) {
+            currentExampleState.example = 0;
+        }
+        if (imButtonIsClicked(c, "Lots of things", currentExampleState.example === 1)) {
+            currentExampleState.example = 1;
+        }
     } imElEnd(c, EL_DIV);
 
     imDivider(c);
@@ -280,20 +271,6 @@ function imRealtimeExampleView(c: ImCache) {
         }
 
         imElBegin(c, EL_DIV); {
-            if (isFirstishRender(c)) {
-                elSetStyle(c, "display", "flex");
-                elSetStyle(c, "gap", "10px");
-            }
-
-            imElBegin(c, EL_DIV); imStr(c, Math.round(state.renderTime) + "ms"); imElEnd(c, EL_DIV);
-            imElBegin(c, EL_DIV); imStr(c, state.rerenders + " rerenders"); imElEnd(c, EL_DIV);
-            imElBegin(c, EL_DIV); imStr(c, state.itemsIterated + " rerenders"); imElEnd(c, EL_DIV);
-            imElBegin(c, EL_DIV); imStr(c, stylesSet + " styles set"); imElEnd(c, EL_DIV);
-            imElBegin(c, EL_DIV); imStr(c, classesSet + " classes set"); imElEnd(c, EL_DIV);
-            imElBegin(c, EL_DIV); imStr(c, attrsSet + " attrs set"); imElEnd(c, EL_DIV);
-        } imElEnd(c, EL_DIV);
-
-        imElBegin(c, EL_DIV); {
             imSwitch(c, currentExampleState.example); switch (currentExampleState.example) {
                 case 0: {
                     imElBegin(c, EL_H1); imStr(c, "Snake sine thing idx"); imElEnd(c, EL_H1);
@@ -312,44 +289,6 @@ function imRealtimeExampleView(c: ImCache) {
         } imElEnd(c, EL_DIV);
     } imElEnd(c, EL_DIV);
 }
-
-function newWallClockState() {
-    return { val: 0 };
-}
-
-function imWallClockView(c: ImCache, t: number) {
-    let s = imGet(c, newWallClockState);
-    if (s === undefined) s = imSet(c, newWallClockState());
-
-    const dt = 0.02;
-
-    s.val += (-0.5 + Math.random()) * dt;
-    if (s.val > 1) s.val = 1;
-    if (s.val < -1) s.val = -1;
-
-    // The retained-mode code is actually more compact here!
-    imElBegin(c, EL_DIV); {
-        imElBegin(c, EL_DIV); {
-            const entries = getCurrentCacheEntries(c);
-            imStr(c, "Removed: " + getEntriesRemoveLevel(entries));
-            imStr(c, "In conditional path: " + getEntriesIsInConditionalPathway(entries));
-            imMemo(c, 1);
-        } imElEnd(c, EL_DIV);
-    } imElEnd(c, EL_DIV);
-    imElBegin(c, EL_DIV); {
-        imStr(c, "brownian motion: " + s + "");
-    } imElEnd(c, EL_DIV);
-
-    let n = s.val < 0 ? 1 : 2;
-    n = 2; // TODO: revert
-    imFor(c); for (let i = 0; i < n; i++) {
-        imElBegin(c, EL_DIV); {
-            imStr(c, new Date().toISOString());
-        } imElEnd(c, EL_DIV);
-    } imForEnd(c);
-}
-
-
 
 function pingPong(c: ImCache, phase: number, size: number, t: number) {
     imElBegin(c, EL_DIV); {
@@ -376,12 +315,6 @@ function pingPong(c: ImCache, phase: number, size: number, t: number) {
 };
 
 function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
-    let s = imGet(c, newAppState);
-    if (!s) {
-        s = imSet(c, newAppState());
-        s.rerender = () => markNeedsRererender(c);
-    }
-
     let gridState = imGet(c, newGridState);
     if (!gridState) gridState = imSet(c, newGridState());
 
@@ -395,64 +328,28 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
         imStr(c, " DOM nodes, excluding the UI around it");
     } imElEnd(c, EL_H1);
 
+    const target = imGetInline(c, imOldRandomStuffExampleApplication) ?? imSet(c, {
+        budgetMsLower: 4,
+    });
+    const budgetMsUpper = target.budgetMsLower + 1;
+
+    imLayoutBegin(c, ROW); imAlign(c); {
+        imElBegin(c, EL_H3); imSize(c, 200, PX, 0, NA); {
+            imStr(c, "frame budget: ");
+            imStr(c, target.budgetMsLower);
+            imStr(c, "ms ");
+        } imElEnd(c, EL_H3);
+
+        imLayoutBegin(c, ROW); imSize(c, 0, NA, 2, EM); imFlex(c); {
+            target.budgetMsLower = imSliderInput(c, 4, 16, 0.5, target.budgetMsLower);
+        } imLayoutEnd(c);
+    } imLayoutEnd(c);
+
     imDivider(c);
 
     const tryState = imTry(c); try {
         const { err, recover } = tryState;
         if (imIf(c) && !err) {
-            imElBegin(c, EL_DIV); {
-                if (imButtonWasClicked(c, "Click me!")) {
-                    alert("noo");
-                }
-                imElBegin(c, EL_DIV); {
-                    imStr(c, "Hello world! ");
-                } imElEnd(c, EL_DIV);
-                imElBegin(c, EL_DIV); {
-                    imStr(c, "Lets goo");
-                } imElEnd(c, EL_DIV);
-                imElBegin(c, EL_DIV); {
-                    imStr(c, "Count: " + s.count);
-                } imElEnd(c, EL_DIV);
-                imElBegin(c, EL_DIV); {
-                    imStr(c, "Period: " + s.period);
-                } imElEnd(c, EL_DIV);
-
-                // sheesh. cant win with these people...
-                if (imIf(c) && s.count > 1000) {
-                    imElBegin(c, EL_DIV); {
-                        imStr(c, "The count is too damn high!!");
-                    } imElEnd(c, EL_DIV);
-                } else if (imIfElse(c) && s.count < 1000) {
-                    imElBegin(c, EL_DIV); {
-                        imStr(c, "The count is too damn low !!");
-                    } imElEnd(c, EL_DIV);
-                } else {
-                    imIfElse(c);
-                    imElBegin(c, EL_DIV); {
-                        imStr(c, "The count is too perfect!!");
-                    } imElEnd(c, EL_DIV);
-                } imIfEnd(c);
-                imElBegin(c, EL_DIV); {
-                    if (isFirstishRender(c)) {
-                        elSetAttr(c, "style", "height: 5px; background-color: black");
-                    }
-                } imElEnd(c, EL_DIV);
-                imElBegin(c, EL_DIV); {
-                    if (isFirstishRender(c)) {
-                        elSetAttr(c, "style", "padding: 10px; border: 1px solid black; display: inline-block");
-                    }
-
-                    if (s.count < 500) {
-                        // throw new Error("The count was way too low my dude");
-                    }
-
-                    if (imIf(c) && s.count < 2000) {
-                        imWallClockView(c, t);
-                    } imIfEnd(c);
-                } imElEnd(c, EL_DIV);
-            } imElEnd(c, EL_DIV);
-
-
             imElBegin(c, EL_DIV); {
                 if (isFirstishRender(c)) {
                     elSetStyle(c, "display", "flex");
@@ -489,193 +386,81 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
             } imElEnd(c, EL_DIV);
 
 
-            if (imIf(c) && s.grid === GRID_FRAMEWORK) {
-                const dt = getDeltaTimeSeconds(c); 0.03;
+            const dt = getDeltaTimeSeconds(c); 0.03;
 
-                const budgetMsLower = 4;
-                const budgetMsUpper = budgetMsLower + 1;
 
-                const fps = getFpsCounterState(c);
-                // Let's see how many things we can render in 4 to 5 ms
-                if (fps.renderMs > budgetMsUpper) {
-                    gridState.gridRows--;
-                } else if (fps.renderMs < budgetMsLower) {
-                    gridState.gridRows++;
+            const fps = getFpsCounterState(c);
+            // Let's see how many things we can render in 4 to 5 ms
+            if (fps.renderMs > budgetMsUpper) {
+                resize(gridState, gridState.gridRows - 1, gridState.gridCols);
+            } else if (fps.renderMs < target.budgetMsLower) {
+                resize(gridState, gridState.gridRows + 1, gridState.gridCols);
+            }
+
+            const { values, gridRows: gridRowsState, gridCols } = gridState;
+            const gridRows = Math.floor(gridRowsState / 10) * 10;
+
+            if (!isEventRerender(c)) {
+                for (let i = 0; i < 10; i++) {
+                    const randomRow = Math.floor(Math.random() * gridRows);
+                    const randomCol = Math.floor(Math.random() * gridCols);
+                    const cell = gridState.values[randomRow * gridCols + randomCol];
+                    cell.signal = 1;
+                    cell.col = cssVars.fg;
                 }
+            }
 
-                const { values, gridRows: gridRowsState, gridCols } = gridState;
-                const gridRows = Math.floor(gridRowsState / 10) * 10;
+            // Normally would use flex-wrap here. But we want to test the performance of double-list
 
-                imElBegin(c, EL_DIV); imStr(c, "Grid size: " + gridState.gridRows * gridState.gridCols); imElEnd(c, EL_DIV);
-
-                if (!isEventRerender(c)) {
-                    for (let i = 0; i < 10; i++) {
-                        const randomRow = Math.floor(Math.random() * gridRows);
-                        const randomCol = Math.floor(Math.random() * gridCols);
-                        gridState.values[randomRow * gridCols + randomCol] = 1;
-                    }
-                }
-
-                imFor(c); for (let row = 0; row < gridRows; row++) {
-                    imElBegin(c, EL_DIV); {
-                        if (isFirstishRender(c)) {
-                            elSetAttr(c, "style", "display: flex;");
-                        }
-
-                        imFor(c); for (let col = 0; col < gridCols; col++) {
-                            imElBegin(c, EL_DIV); imRelative(c); imSize(c, 50, PX, 50, PX); imAspectRatio(c, 1, 1); {
-                                if (isFirstishRender(c)) elSetStyle(c, "display", " inline-block");
-                                if (isFirstishRender(c)) elSetStyle(c, "backgroundColor", `rgba(0, 0, 0)`);
-
-                                const idx = col + gridCols * row;
-
-                                if (elHasMouseOver(c)) {
-                                    values[idx] = 1;
-                                }
-
-                                // NOTE: usually you would do this with a CSS transition if you cared about performance, but
-                                // I'm just trying out some random stuff.
-                                let val = values[idx];
-                                if (val > 0) {
-                                    val -= dt;
-                                    if (val < 0) {
-                                        val = 0;
-                                    }
-                                    values[idx] = val;
-                                }
-
-                                const valRounded = Math.round(val * 255) / 255;
-                                const styleChanged = imMemo(c, valRounded);
-                                if (styleChanged) {
-                                    // elSetStyle(c, "opacity", "" + valRounded);
-                                }
-
-                                imElBegin(c, EL_DIV); {
-                                    if (isFirstishRender(c)) {
-                                        elSetStyle(c, "position", "absolute");
-                                        elSetStyle(c, "top", "25%");
-                                        elSetStyle(c, "left", "25%");
-                                        elSetStyle(c, "right", "25%");
-                                        elSetStyle(c, "bottom", "25%");
-                                        elSetStyle(c, "backgroundColor", "white");
-                                    }
-                                } imElEnd(c, EL_DIV);
-                            } imElEnd(c, EL_DIV);
-                        } imForEnd(c);
-                    } imElEnd(c, EL_DIV);
-                } imForEnd(c);
-            } else if (imIfElse(c) && s.grid === GRID_MOST_OPTIMAL) {
-                imElBegin(c, EL_DIV); imStr(c,
-                    "[Theoretical best performance upperbound with our current approach]  Grid size: " + gridState.gridRows * gridState.gridCols
-                ); imElEnd(c, EL_DIV);
-
-                const root = imElBegin(c, EL_DIV); {
-                    root.manualDom = true;
-
-                    const dt = 0.02;
-                    const { values, gridRows, gridCols } = gridState;
-
-                    const gridRowsChanged = imMemo(c, gridRows);
-                    const gridColsChanged = imMemo(c, gridCols);
-
-                    let state; state = imGet(c, inlineTypeId(newGridState));
-                    if (!state || gridRowsChanged || gridColsChanged) {
-                        // This bit is not quite optimal. Thats ok though - we put slop behind infrequent signals all the time.
-
-                        if (!state) state = imSet<{
-                            rows: {
-                                root: HTMLElement;
-                                children: {
-                                    root: HTMLElement;
-                                    idx: number;
-                                    lastSignal: number;
-                                }[];
-                            }[];
-                        }>(c, { rows: [] });
-
-                        while (state.rows.length > gridRows) state.rows.pop();
-                        while (state.rows.length < gridRows) {
-                            const row = document.createElement("div");
-                            row.style.display = "flex";
-                            root.root.appendChild(row);
-                            state.rows.push({ root: row, children: [] });
-                        }
-                        root.root.replaceChildren(...state.rows.map(r => r.root));
-
-                        for (let i = 0; i < state.rows.length; i++) {
-                            const row = state.rows[i];
-                            while (row.children.length > gridCols) row.children.pop();
-                            while (row.children.length < gridCols) {
-                                const child = document.createElement("div");
-                                const val = { root: child, idx: 0, lastSignal: 0, };
-                                row.children.push(val);
-                                // Leak it. who cares. Mark and sweep should collect this when it becomes unreachable.
-                                child.onmouseover = () => {
-                                    if (val.idx > values.length) throw new Error("bruh");
-                                    values[val.idx] = 1;
-                                }
-
-                                child.style.position = " relative";
-                                child.style.display = " inline-block";
-                                child.style.width = " 100px";
-                                child.style.height = " 100px";
-                                child.style.aspectRatio = "1 / 1";
-                                child.style.border = " 1px solid red";
-                            }
-                            row.root.replaceChildren(...row.children.map(c => c.root));
-                        }
-
-                        for (let rowIdx = 0; rowIdx < state.rows.length; rowIdx++) {
-                            const row = state.rows[rowIdx];
-                            for (let colIdx = 0; colIdx < row.children.length; colIdx++) {
-                                const cell = row.children[colIdx];
-                                cell.idx = colIdx + gridCols * rowIdx;
-                            }
-                        }
+            imFor(c); for (let row = 0; row < gridRows; row++) {
+                imElBegin(c, EL_DIV); {
+                    if (isFirstishRender(c)) {
+                        elSetAttr(c, "style", "display: flex;");
                     }
 
-                    for (let i = 0; i < state.rows.length; i++) {
-                        const row = state.rows[i];
-                        for (let i = 0; i < row.children.length; i++) {
-                            const pixel = row.children[i];
-                            const idx = pixel.idx;
+                    imFor(c); for (let col = 0; col < gridCols; col++) {
+                        imElBegin(c, EL_DIV); imRelative(c); imSize(c, 50, PX, 50, PX); imAspectRatio(c, 1, 1); {
+                            const idx = col + gridCols * row;
+
+                            if (isFirstishRender(c))        elSetStyle(c, "display", " inline-block");
+                            if (imMemo(c, values[idx].col)) elSetStyle(c, "backgroundColor", values[idx].col);
+
+                            if (elHasMouseOver(c)) {
+                                values[idx].signal = 1;
+                                values[idx].col = "blue";
+                            }
 
                             // NOTE: usually you would do this with a CSS transition if you cared about performance, but
                             // I'm just trying out some random stuff.
-                            let val = values[idx];
+                            let val = values[idx].signal;
                             if (val > 0) {
                                 val -= dt;
                                 if (val < 0) {
                                     val = 0;
                                 }
-                                values[idx] = val;
+                                values[idx].signal = val;
                             }
 
                             const valRounded = Math.round(val * 255) / 255;
-                            if (valRounded !== pixel.lastSignal) {
-                                pixel.root.style.backgroundColor = `rgba(0, 0, 0, ${val})`;
+                            const styleChanged = imMemo(c, valRounded);
+                            if (styleChanged) {
+                                elSetStyle(c, "opacity", "" + valRounded);
                             }
-                        }
-                    }
+
+                            imElBegin(c, EL_DIV); {
+                                if (isFirstishRender(c)) {
+                                    elSetStyle(c, "position", "absolute");
+                                    elSetStyle(c, "top", "25%");
+                                    elSetStyle(c, "left", "25%");
+                                    elSetStyle(c, "right", "25%");
+                                    elSetStyle(c, "bottom", "25%");
+                                    elSetStyle(c, "backgroundColor", "white");
+                                }
+                            } imElEnd(c, EL_DIV);
+                        } imElEnd(c, EL_DIV);
+                    } imForEnd(c);
                 } imElEnd(c, EL_DIV);
-            } imIfEnd(c);
-
-            imElBegin(c, EL_DIV); {
-                if (isFirstishRender(c)) {
-                    elSetAttr(c, "style", `position: fixed; bottom: 10px; left: 10px`);
-                }
-
-                let period = imSlider(c, "period");
-                if (period !== null) s.setPeriod(period);
-
-                let increment = imSlider(c, "increment");
-                if (increment !== null) s.setIncrement(increment);
-
-                if (imButtonWasClicked(c, "Toggle grid")) s.toggleGrid();
-                if (imButtonWasClicked(c, "Increment count")) s.incrementCount();
-                if (imButtonWasClicked(c, "Decrement count")) s.decrementCount();
-            }
-            imElEnd(c, EL_DIV);
+            } imForEnd(c);
         } else {
             imIfElse(c);
 
@@ -697,11 +482,6 @@ function imOldRandomStuffExampleApplication(c: ImCache, t: number) {
                         imStr(c, "Click below to retry.")
                     }
                     imElEnd(c, EL_DIV);
-
-                    if (imButtonWasClicked(c, "Retry")) {
-                        s.count = 1000;
-                        recover();
-                    };
                 } imElEnd(c, EL_DIV);
             } imElEnd(c, EL_DIV);
         } imIfEnd(c);
@@ -913,61 +693,38 @@ function imSlider(c: ImCache, labelText: string): number | null {
     return result;
 }
 
+function resize(grid: GridState, rows: number, cols: number) {
+    if (rows <= 0) return;
+    if (cols <= 0) return;
 
+    grid.gridRows = rows;
+    grid.gridCols = cols;
 
+    let lastLen = grid.values.length;
+    grid.values.length = rows * cols;
 
-function resize(values: number[], gridRows: number, gridCols: number) {
-    values.length = gridRows * gridCols;
-    values.fill(0);
-}
-
-const GRID_DISABLED = 0;
-const GRID_FRAMEWORK = 1;
-const GRID_MOST_OPTIMAL = 2;
-const GRID_NUM_VARIANTS = 3;
-
-function newAppState() {
-    const s = {
-        rerender: () => { },
-
-        period: 2,
-        setPeriod(val: number) {
-            s.period = val;
-            s.rerender();
-        },
-        incrementValue: 1,
-        setIncrement(val: number) {
-            s.incrementValue = val;
-            s.rerender();
-        },
-        count: 1,
-        incrementCount() {
-            s.count += s.incrementValue;
-            s.rerender();
-        },
-        decrementCount() {
-            s.count -= s.incrementValue;
-            s.rerender();
-        },
-        grid: GRID_FRAMEWORK,
-        toggleGrid() {
-            s.grid = (s.grid + 1) % GRID_NUM_VARIANTS;
-            s.rerender();
-        }
+    if (grid.values.length < lastLen) return;
+    for (let i = lastLen; i < grid.values.length; i++) {
+        grid.values[i] = { signal: 0, col: cssVars.fg };
     }
-
-    return s;
 }
 
-function newGridState() {
-    // TODO: revert
-    let gridRows = 10;
-    let gridCols = 20;
-    const values: number[] = [];
 
-    resize(values, gridRows, gridCols);
+type GridState = {
+    gridRows: number;
+    gridCols: number;
+    values: { signal: number, col: string; }[];
+}
 
-    return { gridRows, gridCols, values };
+function newGridState(): GridState {
+    const s: GridState = {
+        gridRows: 0,
+        gridCols: 0,
+        values: [],
+    };
+
+    resize(s, 10, 20);
+    return s;
 }
 
 function imButton(c: ImCache) {

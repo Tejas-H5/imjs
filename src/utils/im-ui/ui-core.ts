@@ -129,9 +129,8 @@ export function getCssVarsDict<T extends Theme>(theme: T): CssVarDict<T> {
 }
 
 export const cssVars = getCssVarsDict(defaultTheme);
-setCurrentTheme(cssVars);
 
-let currentTheme: Theme = cssVars;
+let currentTheme: Theme = defaultTheme;
 export function getCurrentTheme(): Readonly<Theme> {
     return currentTheme;
 }
@@ -170,6 +169,7 @@ export function setCssVar(cssRoot: HTMLElement, varName: string, value: string |
  */
 export function initImUi() {
     initCssbStyles();
+    setCurrentTheme(defaultTheme);
 }
 
 ///////////////////////////
@@ -305,10 +305,10 @@ export function imFlex1(c: ImCache) {
 const cnInlineBlock = cssb.cn("inlineBlock", [` { display: inline-block; }`]);
 const cnInline      = cssb.cn("inline",      [` { display: inline; }`]);
 const cnRow         = cssb.cn("row",         [` { display: flex; flex-direction: row; }`]);
-const cnInlineRow   = cssb.cn("row",         [` { display: inline-flex; flex-direction: row; }`]);
+const cnInlineRow   = cssb.cn("inline-row",  [` { display: inline-flex; flex-direction: row; }`]);
 const cnRowReverse  = cssb.cn("row-reverse", [` { display: flex; flex-direction: row-reverse; }`]);
 const cnCol         = cssb.cn("col",         [` { display: flex; flex-direction: column; }`]);
-const cnInlineCol   = cssb.cn("col",         [` { display: inline-flex; flex-direction: column; }`]);
+const cnInlineCol   = cssb.cn("inline-col",  [` { display: inline-flex; flex-direction: column; }`]);
 const cnColReverse  = cssb.cn("col-reverse", [` { display: flex; flex-direction: column-reverse; }`]);
 
 export function imLayoutBeginInternal(c: ImCache, type: DisplayType) {

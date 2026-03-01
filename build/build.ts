@@ -132,15 +132,22 @@ async function runTscAndGetErrors() {
 	};
 }
 
-function getOutputHtml(result: esbuild.BuildResult) {
+function getOutputHtml(
+	result: esbuild.BuildResult,
+	headerJs?: string,
+) {
 	const singlarFile = result.outputFiles?.[0];
 	if (!singlarFile) {
 		throw new Error("Build not working as expected");
 	}
 
+	let text = singlarFile.text;
+	if (headerJs) {
+		text = headerJs + "\n\n" + text;
+	}
+
 	// TODO: handle the </script> edgecase - if this text appears anywhere in our code, right now, we're toast
-	let outputText = templateStart + singlarFile.text + templateEnd;
-	return outputText;
+	return templateStart + text + templateEnd;
 }
 
 if (config === "build") {
@@ -169,7 +176,7 @@ if (config === "build") {
 	log("Built");
 } else {
 	function newServer() {
-		let currentFile = templateStart + `console.log("Hello there")`;
+		let currentFile = `console.log("Hello there")`;
 
 		const clients = new Set<http.ServerResponse>();
 
@@ -202,6 +209,8 @@ if (config === "build") {
 		// MASSIVE performance boost. 
 		// Seems stupid, and it would be if it was a production server, but it isn't - 
 		// it will only ever have 1 connection. So this should actually work just fine.
+		// The Vite maintainers have been informed: https://github.com/vitejs/vite/issues/21653
+		// and in the meantime, we will just use this custom dev-server with ESBuild.
 		server.keepAliveTimeout = 2147480000;
 
 		server.listen(PORT, HOST, () => {
@@ -231,15 +240,14 @@ if (config === "build") {
 
 	const ctx = await esbuild.context({
 		...commonBuildOptions,
-		footer: {
-			js: "new EventSource('/events').addEventListener('change', (e) => location.reload())",
-		},
 		plugins: [{
 			name: "Custom dev server plugin",
 			setup(build) {
 				build.onEnd((result) => {
-					const outputText = getOutputHtml(result);
+					const header = "new EventSource('/events').addEventListener('change', (e) => location.reload())";
+					const outputText = getOutputHtml(result, header);
 					setCurrentFile(outputText);
+
 					broadcastRefreshMessage();
 					runTscAndGetErrors()
 						.then((result) => {
@@ -250,6 +258,7 @@ if (config === "build") {
 							} else {
 								log("Type errors: \n\n" + result.result);
 							}
+
 							log("Time taken: " + (performance.now() - lintingStartTime) + "ms");
 							logServerUrl();
 						});
