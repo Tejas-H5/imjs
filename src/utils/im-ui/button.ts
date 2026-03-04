@@ -8,11 +8,10 @@ const cnButton = (() => {
     const transiton = `0.05s linear`;
     return cssb.cn(`button`, [
         ` { 
-    padding: 5px 0px; 
     display: flex; align-items: center; justify-content: center;
 }`,
     `.hidden { opacity: 0; }`,
-        ` .inner { 
+    ` .inner { 
     cursor: pointer;
     user-select: none;
     color: ${cssVars.fg};

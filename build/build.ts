@@ -206,11 +206,13 @@ if (config === "build") {
 			res.end();
 		});
 
-		// MASSIVE performance boost. 
+		// MASSIVE performance boost. Web devs hate me for this one wierd trick.
 		// Seems stupid, and it would be if it was a production server, but it isn't - 
 		// it will only ever have 1 connection. So this should actually work just fine.
 		// The Vite maintainers have been informed: https://github.com/vitejs/vite/issues/21653
 		// and in the meantime, we will just use this custom dev-server with ESBuild.
+		// I am curious if this will be triaged before I ship this framework. 
+		// In the meantime, I will open it a couple of times every hour, ever day
 		server.keepAliveTimeout = 2147480000;
 
 		server.listen(PORT, HOST, () => {

@@ -1,4 +1,4 @@
-// IM-CORE 1.076
+// IM-CORE 1.077
 // NOTE: I'm currently working on 3 different apps with this framework,
 // so even though I thought it was mostly finished, the API appears to still be changing slightly.
 // Majority of the last changes have just been updates to the documentation though
@@ -510,7 +510,14 @@ export function imGet<T>(
 
     if (idx < entries.length) {
         if (entries[idx] !== typeId) {
-            const errorMessage = "Expected to populate this cache entry with a different type. Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state";
+            const expectedName = entries[idx].name;
+            let gotName = typeId.name;
+            let errorMessage;
+            if (expectedName === gotName) {
+                errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got <same name, but new object reference>. Only functions that don't change can be used as typeIds. If you wrote some code like imState(c, () => ({ ... })), consider using imGet/imSet directly instead.`
+            } else {
+                errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got ${gotName} . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state`;
+            }
             console.error(errorMessage, entries[idx], typeId);
             throw new Error(errorMessage);
         }
@@ -696,7 +703,7 @@ export function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entrie
         for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === imBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 recursivelyEnumerateEntries(v, fn);
             }
         }
@@ -730,7 +737,7 @@ function imCacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
         for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === imBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 imCacheEntriesOnDestroy(c, v);
             }
         }
@@ -751,13 +758,13 @@ function imCacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
 }
 
 // This is the typeId for a list of cache entries.
-export function imBlockBegin<T>(
+export function imImmediateModeBlockBegin<T>(
     c: ImCache,
     parentTypeId: TypeId<T>,
     parent: T,
     internalType: number = INTERNAL_TYPE_NORMAL_BLOCK
 ): ImCacheEntries {
-    let entries; entries = imGet(c, imBlockBegin);
+    let entries; entries = imGet(c, imImmediateModeBlockBegin);
     if (entries === undefined) {
         entries = imSet(c, [] as unknown as ImCacheEntries);
     }
@@ -772,7 +779,7 @@ export function __GetEntries(c: ImCache): ImCacheEntries {
     return entries;
 }
 
-export function imBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
+export function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
     const entries = c[CACHE_CURRENT_ENTRIES];
 
     if (entries[ENTRIES_INTERNAL_TYPE] !== internalType) {
@@ -828,7 +835,7 @@ export function __imBlockDerivedBegin(c: ImCache, internalType: number): ImCache
     const parentType = entries[ENTRIES_PARENT_TYPE];
     const parent = entries[ENTRIES_PARENT_VALUE];
 
-    return imBlockBegin(c, parentType, parent, internalType);
+    return imImmediateModeBlockBegin(c, parentType, parent, internalType);
 }
 
 // Not quite the first render - 
@@ -870,7 +877,7 @@ export function __imBlockDerivedEnd(c: ImCache, internalType: number) {
     // NOTE: I've now moved this functionality into core. Your immediate mode tree builder will need
     // to resolve diffs in basically the same way.
 
-    imBlockEnd(c, internalType);
+    imImmediateModeBlockEnd(c, internalType);
 }
 
 /**
@@ -1020,7 +1027,7 @@ function __imBlockArrayEnd(c: ImCache) {
         for (let i = idx + 2; i <= lastIdx; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === imBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 imCacheEntriesOnRemove(v);
             }
         }
@@ -1143,10 +1150,19 @@ export type TryState = {
 /**
  * ```ts
  * const tryState = imTry(c); try {
+ *      const { err, recover }  tryState;
+ *      if (imIf(c) && !err) {
+ *          imMainApp(c);
+ *      } else {
+ *          imIfElse(c):
+ *
+ *          imErrorViewer(c, err, recover);
+ *      } imIfEnd(c);
  *      // render your component here
  * } catch(err) {
  *      imTryCatch(c, tryState, err);
- *      // don't render anything here! Only do the other things
+ *      // NOTE: you can't render components here. use the else part of an if-else in the try block instead.
+ *      // NOTE: if your else block has an error as well, then you're cooked.
  * } imTryEnd(c, tryState); 
  * ```
  */

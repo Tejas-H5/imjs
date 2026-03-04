@@ -1,11 +1,9 @@
-import { COL, cssVars, EM, imAlign, imAspectRatio, imButtonIsClicked, imExtraDiagnosticInfo, imFixed, imFlex, imFpsCounterSimple, imLayoutBegin, imLayoutEnd, imRelative, imSize, imSliderInput, NA, PERCENT, PX, ROW } from "src/utils/im-ui";
+import { BLOCK, COL, cssVars, EM, END, imAlign, imAspectRatio, imBg, imButtonIsClicked, imCheckbox, imFg, imFixed, imFlex, imGap, imJustify, imLayoutBegin, imLayoutBeginInternal, imLayoutEnd, imRelative, imSize, imSliderInput, LEFT, lerp01, NA, newCssBuilder, PERCENT, PX, ROW } from "src/utils/im-ui";
+import { imVisualTestHarness, imVisualTestInstallation, newVisualTest, VisualTest } from "src/utils/im-ui/visual-testing-harness";
 import {
     getCurrentCacheEntries,
     getDeltaTimeSeconds,
-    getEntriesIsInConditionalPathway,
-    getEntriesRemoveLevel,
     getFpsCounterState,
-    getStackLength,
     ImCache,
     imCacheBegin,
     imCacheEnd,
@@ -16,6 +14,8 @@ import {
     imIf,
     imIfElse,
     imIfEnd,
+    imKeyedBegin,
+    imKeyedEnd,
     imMemo,
     imSet,
     imSwitch,
@@ -25,22 +25,25 @@ import {
     imTryEnd,
     inlineTypeId,
     isEventRerender,
-    isFirstishRender,
-    markNeedsRererender
+    isFirstishRender
 } from "../utils/im-core";
 import {
-    attrsSet,
-    classesSet,
     EL_BUTTON,
     EL_DIV,
     EL_H1,
+    EL_H2,
     EL_H3,
     EL_INPUT,
     EL_LABEL,
+    EL_LI,
+    EL_P,
     EL_SPAN,
+    EL_UL,
+    elHasMouseClick,
     elHasMouseOver,
     elHasMousePress,
     elSetAttr,
+    elSetClass,
     elSetStyle,
     getGlobalEventSystem,
     imDomRootBegin,
@@ -49,195 +52,148 @@ import {
     imElEnd,
     imGlobalEventSystemBegin,
     imGlobalEventSystemEnd,
-    imStr,
-    stylesSet
+    imStr
 } from "../utils/im-dom";
-import { imVisualTestHarness, newVisualTest, VisualTest } from "src/utils/im-ui/visual-testing-harness";
 
-let toggleA = false;
-let toggleB = false;
+const brb = newCssBuilder()
+    .cn(`brb`, [
+        `:hover { cursor: pointer; }`
+    ])
 
-const changeEvents: string[] = [];
+function imBigRedButton(c: ImCache) {
+    const s = imGetInline(c, imBigRedButton) ?? imSet(c, {
+        c1: false, c2: false, c3: false,
+        c4: false, c5: false, c6: false,
+    });
 
-let currentExample = 2;
-let numAnimations = 0;
+    imLayoutBegin(c, ROW); imJustify(c);  {
+        imLayoutBegin(c, COL); imAlign(c, END); imJustify(c); imSize(c, 0, NA, 300, PX); imGap(c, 10, PX); imFlex(c); {
+            imLayoutBegin(c, ROW); imJustify(c, END); imAlign(c); imGap(c, 10, PX); {
+                imStr(c, "Approval from Sarge");
+                const ev = imCheckbox(c, s.c1);
+                if (ev) s.c1 = ev.checked;
+            } imLayoutEnd(c);
 
-let rerenders = 0;
+            imLayoutBegin(c, ROW); imJustify(c, END); imAlign(c); imGap(c, 10, PX); {
+                imStr(c, "Approval from Master Chief");
+                const ev = imCheckbox(c, s.c2);
+                if (ev) s.c2 = ev.checked;
+            } imLayoutEnd(c);
 
-function imExamples(c: ImCache) {
-    imElBegin(c, EL_DIV); {
-        if (isFirstishRender(c)) {
-            elSetStyle(c, "display", "flex");
-            elSetStyle(c, "gap", "10px");
-        }
+            imLayoutBegin(c, ROW); imJustify(c, END); imAlign(c); imGap(c, 10, PX); {
+                imStr(c, "Approval from POTUS");
+                const ev = imCheckbox(c, s.c3);
+                if (ev) s.c3 = ev.checked;
+            } imLayoutEnd(c);
+        } imLayoutEnd(c);
 
-        if (imButtonIsClicked(c, "Conditional rendering, memo, array block", currentExample === 0)) {
-            currentExample = 0;
-        }
-        if (imButtonIsClicked(c, "Error boundaries", currentExample === 1)) {
-            currentExample = 1;
-        }
-        if (imButtonIsClicked(c, "Realtime rendering", currentExample === 2)) {
-            currentExample = 2;
-        }
-        if (imButtonIsClicked(c, "Tree view example", currentExample === 3)) {
-            currentExample = 3;
-        }
-    } imElEnd(c, EL_DIV);
+        imLayoutBegin(c, COL); imAlign(c); imJustify(c); imSize(c, 0, NA, 300, PX); {
+            imLayoutBegin(c, ROW); imAspectRatio(c, 1, 1); imSize(c, 0, NA, 100, PERCENT); imAlign(c); imJustify(c); {
+                const animState = imGetInline(c, imBigRedButton) ?? imSet(c, {
+                    t: 0,
+                    presses: 0,
+                    radialGradient: 50,
+                });
 
-    imDivider(c);
+                if (imMemo(c, animState.radialGradient)) {
+                    elSetStyle(
+                        c,
+                        "background",
+                        `radial-gradient(circle at center, red, transparent ${animState.radialGradient}% `
+                    );
+                }
 
-    // TODO: convert these into automated tests
-    imSwitch(c, currentExample); switch (currentExample) {
-        case 0: imMemoExampleView(c); break;
-        case 1: imErrorBoundaryExampleView(c); break;
-        case 2: imRealtimeExampleView(c); break;
-        case 3: imTreeExampleView(c); break;
-    } imSwitchEnd(c);
+                imButton(c); {
+                    if (isFirstishRender(c)) {
+                        elSetStyle(c, "fontSize", "40px");
+                        elSetStyle(c, "borderRadius", "1000px");
+                        elSetStyle(c, "aspectRatio", "1/1");
+                        elSetStyle(c, "padding", "40px");
+                    }
 
-    imLayoutBegin(c, ROW); imFixed(c, 0, NA, 0, PX, 0, PX, 0, PX); {
-        imElBegin(c, EL_DIV); {
-            if (isFirstishRender(c)) {
-                elSetStyle(c, "flex", "1");
-            }
-        } imElEnd(c, EL_DIV);
+                    const blinkPhaseOn = Math.floor(animState.t * 3) % 2 === 1;
+                    const armed =
+                        s.c1 &&
+                        s.c2 &&
+                        s.c3 &&
+                        s.c4 &&
+                        s.c5 &&
+                        s.c6;
 
-        imElBegin(c, EL_DIV); {
-            imStr(c, "[" + rerenders + " rerenders ]");
-        } imElEnd(c, EL_DIV);
+                    const col = armed ? "#990000" : "#999999";
 
-        imElBegin(c, EL_DIV); {
-            imStr(c, "[" + getStackLength(c) + " stack size ]");
-        } imElEnd(c, EL_DIV);
+                    if (imMemo(c, armed)) {
+                        elSetClass(c, brb, armed);
+                    }
 
-        imElBegin(c, EL_DIV); {
-            imStr(c, "[" + numAnimations + " animations in progress ]");
-        } imElEnd(c, EL_DIV);
+                    imBg(c, col);
 
-        imLayoutBegin(c, ROW); {
-            imStr(c, "[");
-            const fps = getFpsCounterState(c);
-            imFpsCounterSimple(c, fps);
-            imExtraDiagnosticInfo(c, true);
-            imStr(c, "]");
+                    if (blinkPhaseOn || armed) {
+                        animState.t += getDeltaTimeSeconds(c);
+                        animState.radialGradient = lerp01(animState.radialGradient, 70, 10 * getDeltaTimeSeconds(c));
+                    } else if (!armed && !blinkPhaseOn) {
+                        animState.t = 0;
+                        animState.radialGradient = lerp01(animState.radialGradient, 40, 10 * getDeltaTimeSeconds(c));
+                    }
+
+                    imLayoutBegin(c, ROW); imSize(c, 100, PX, 100, PX); imAlign(c); imJustify(c); {
+                        if (isFirstishRender(c)) {
+                            elSetStyle(c, "padding", "10px");
+                            elSetStyle(c, "backgroundColor", "white");
+                        }
+
+                        imLayoutBegin(c, BLOCK); imSize(c, 20, PX, 20, PX); {
+                            if (isFirstishRender(c)) elSetStyle(c, "padding", "10px");
+                            imBg(c, blinkPhaseOn ? "#FF0000" : col);
+                        } imLayoutEnd(c);
+                    } imLayoutEnd(c);
+
+                    if (armed && elHasMouseClick(c)) {
+                        animState.presses++;
+                        if (animState.presses < 10) {
+                            // Maybe 'recover()' is not such a good idea in all cases ...
+                            throw new Error(
+                                "Error when requesting POST /prometheon/gigaanuke?target=everything&priority=highest - " +
+                                "503 Service Unavailable - please try again"
+                            );
+                        } else {
+                            throw new Error(
+                                "Error when requesting POST /prometheon/gigaanuke?target=everything&priority=highest - " +
+                                "503 Service Unavailable - all giganukes have already been fired. The world is about to end soon - it's back to rock carvings for you!"
+                            );
+                        }
+                    }
+                } imButtonEnd(c);
+            } imLayoutEnd(c);
+        } imLayoutEnd(c);
+
+        imLayoutBegin(c, COL); imAlign(c, LEFT); imJustify(c); imSize(c, 0, NA, 300, PX); imGap(c, 10, PX); imFlex(c); {
+            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
+                const ev = imCheckbox(c, s.c4);
+                if (ev) s.c4 = ev.checked;
+                imStr(c, "I know what I am doing");
+            } imLayoutEnd(c);
+
+            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
+                const ev = imCheckbox(c, s.c5);
+                if (ev) s.c5 = ev.checked;
+                imStr(c, "You sure you want to do this");
+            } imLayoutEnd(c);
+
+            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
+                const ev = imCheckbox(c, s.c6);
+                if (ev) s.c6 = ev.checked;
+                imStr(c, "Final checkbox!! lets go");
+            } imLayoutEnd(c);
         } imLayoutEnd(c);
     } imLayoutEnd(c);
 }
 
-const tests: VisualTest[] = [
-    newVisualTest("imMemo example", imMemoExampleView),
-];
+function imErrorUiDismissedWasClicked(c: ImCache, err: any): boolean {
+    imElBegin(c, EL_DIV); imStr(c, "Your component encountered an error:"); imElEnd(c, EL_DIV);
+    imElBegin(c, EL_DIV); imStr(c, err); imElEnd(c, EL_DIV);
 
-export function imExampleMain(c: ImCache) {
-    rerenders++;
-
-    imCacheBegin(c, imExampleMain); {
-        imDomRootBegin(c, document.body); {
-            const ev = imGlobalEventSystemBegin(c); {
-                imLayoutBegin(c, COL); imFixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                    imVisualTestHarness(c, tests);
-                } imLayoutEnd(c);
-            } imGlobalEventSystemEnd(c, ev);
-        } imDomRootEnd(c, document.body);
-    } imCacheEnd(c);
-}
-
-
-function imMemoExampleView(c: ImCache) {
-    imElBegin(c, EL_H1); {
-        imStr(c, "Im memo changes");
-    } imElEnd(c, EL_H1);
-
-    let i = 0;
-    imFor(c); for (const change of changeEvents) {
-        imElBegin(c, EL_DIV); {
-            imStr(c, i++);
-            imStr(c, ":");
-            imStr(c, change);
-        } imElEnd(c, EL_DIV);
-    } imForEnd(c);
-
-    imDivider(c);
-
-    imElBegin(c, EL_DIV); { imStr(c, `toggleA: ${toggleA}, toggleB: ${toggleB}`); } imElEnd(c, EL_DIV);
-    imElBegin(c, EL_DIV); { imStr(c, `expected: ${toggleA ? (toggleB ? "A" : "B") : (toggleB ? "C" : "D")}`); } imElEnd(c, EL_DIV);
-
-    if (imIf(c) && toggleA) {
-        if (imIf(c) && toggleB) {
-            if (imIf(c) && toggleB) {
-                if (imMemo(c, toggleB)) {
-                    changeEvents.push("A");
-                }
-
-                imElBegin(c, EL_DIV); imStr(c, "A"); imElEnd(c, EL_DIV);
-            } imIfEnd(c);
-        } else {
-            imIfElse(c);
-
-            if (imMemo(c, toggleB)) {
-                changeEvents.push("B");
-            }
-
-            imElBegin(c, EL_DIV); imStr(c, "B"); imElEnd(c, EL_DIV);
-        } imIfEnd(c);
-    } else {
-        imIfElse(c);
-        if (imIf(c) && toggleB) {
-            if (imMemo(c, toggleB)) {
-                changeEvents.push("C");
-            }
-
-            imElBegin(c, EL_DIV); imStr(c, "C"); imElEnd(c, EL_DIV);
-        } else {
-            imIfElse(c);
-
-            if (imMemo(c, toggleB)) {
-                changeEvents.push("D");
-            }
-
-            imElBegin(c, EL_DIV); imStr(c, "D"); imElEnd(c, EL_DIV);
-        } imIfEnd(c);
-    } imIfEnd(c);
-    imElBegin(c, EL_DIV); {
-        imStr(c, "Bro");
-        imStr(c, "!");
-    } imElEnd(c, EL_DIV);
-}
-
-function imErrorBoundaryExampleView(c: ImCache) {
-    imElBegin(c, EL_H1); imStr(c, "Error boundary example"); imElEnd(c, EL_H1);
-
-    imDivider(c);
-
-    imElBegin(c, EL_DIV); {
-        const tryState = imTry(c); try {
-            const { err, recover } = tryState;
-
-            if (imIf(c) && err) {
-                imElBegin(c, EL_DIV); imStr(c, "Your component encountered an error:"); imElEnd(c, EL_DIV);
-                imElBegin(c, EL_DIV); imStr(c, err); imElEnd(c, EL_DIV);
-                // Why don't we do this for the root of the program xDD)"); imElEnd(c, EL_DIV);
-
-                imButton(c); {
-                    imStr(c, "<Undo>");
-                    if (elHasMousePress(c)) {
-                        recover();
-                    }
-                } imButtonEnd(c);
-            } else {
-                imIfElse(c);
-
-                imButton(c); {
-                    imStr(c, "Red button (use your imagination for this one, apologies)");
-                    if (elHasMousePress(c)) {
-                        throw new Error("nooo your not supposed to actually press it! You have now initiated the eventual heat-death of the universe.");
-                    }
-                } imButtonEnd(c);
-            } imIfEnd(c);
-        } catch (err) {
-            imTryCatch(c, tryState, err);
-        } imTryEnd(c, tryState);
-    } imElEnd(c, EL_DIV);
+    return imButtonIsClicked(c, "Dismiss");
 }
 
 function imRealtimeExampleView(c: ImCache) {
@@ -761,3 +717,271 @@ function imDivider(c: ImCache) {
     } imElEnd(c, EL_DIV);
 }
 
+function imHeadingBegin(c: ImCache) {
+    return imElBegin(c, EL_H1);
+}
+function imHeadingEnd(c: ImCache) {
+    return imElEnd(c, EL_H1);
+}
+
+function imParaBegin(c: ImCache) {
+    return imLayoutBegin(c, BLOCK);
+}
+function imParaEnd(c: ImCache) {
+    return imLayoutEnd(c);
+}
+
+function imSubheadingBegin(c: ImCache) {
+    return imElBegin(c, EL_H2);
+}
+function imSubheadingEnd(c: ImCache) {
+    return imElEnd(c, EL_H2);
+}
+
+const tests: VisualTest[] = [
+    newVisualTest(
+        "State management",
+        function imStateManagement(c: ImCache) {
+            imHeadingBegin(c); imStr(c, "State management"); imHeadingEnd(c);
+
+            imParaBegin(c); {
+                imStr(c, 
+                    `To understand how this framework actually works, the best place to start is actually state management.
+                    The core framework has no knowledge of the DOM or any other tree-like structure - you'll need to use it in conjunction with 'im-dom' (or your own custom adapter for DOM or other structures).
+                    The adapter methods will call imImmediateModeBlockBegin/imImmediateModeBlockEnd internally to create 'immediate mode blocks' - a region of code for a node in the tree that has it's own immediate mode state array that it can write to and read from.
+                    User code should never need to call imImmediateModeBlockBegin/End directly.
+                    Instead, most user code will be persisting state within the immediate mode cache tree using the The 'imGet' and 'imSet' methods.
+                    imGet works by incrementing an internal index for the current immediate-mode block, and grabbing whatever state is at that index, or undefined. 
+                    imSet works by setting the value at this internal index and then returning this value. 
+                    The first ever call to imGet must always be followed by a call to imSet to set the initial state. 
+                    You can call imSet again in subsequent renders if you need to update the state again, e.g in response to dependencies changing.
+                    imGet`
+                );
+            } imParaEnd(c);
+
+            imStr(c, "TODO: examples");
+        },
+    ),
+    newVisualTest(
+        "Control flow",
+        function imControlFlowExamples(c: ImCache) {
+            imHeadingBegin(c); imStr(c, "Control flow"); imHeadingEnd(c);
+
+            imParaBegin(c); {
+                imStr(c, "After reading the state management section, some of you may have noticed that the only way for imGet and imSet to actually work, is if components rendered the same things in the same order every single frame! (sounds kinda like React rule of hooks, doesn't it?) How, then, can we use this framework with things like if-statements, for-loops, and other language constructs?");
+            } imParaEnd(c);
+
+            imSubheadingBegin(c); imStr(c, "If-statements and for-loops"); imSubheadingEnd(c); { 
+                imParaBegin(c); {
+                    imStr(c,
+                        `For starters, how do you conditionally render a particular block of immediate mode items?
+You'll need to annotate your control flow to let the framework know which pathway in the code is currently being rendered.
+For if-statements, you'll be using "imIf/imIfElse/imIfEnd". They do two things:`)
+
+                    imElBegin(c, EL_UL); {
+                        imElBegin(c, EL_LI); imStr(c, "Rather than rendering a dynamic numer of immediate mode entries, we are rendering 1 immediate mode block. This block is simply 1 unit of immediate-mode state, so imGet and imSet will work just fine."); imElEnd(c, EL_LI);
+                        imElBegin(c, EL_LI); {
+                            imStr(c, `If it recieves a call to "imIfElse" or "imIfEnd" before we add any more immediate-mode state entries, then the stuff we rendered there before can be removed.`);
+                            imElBegin(c, EL_UL); {
+                                imElBegin(c, EL_LI); {
+                                    imStr(c, `(The actual act of removal, i.e domNode.remove() must be handled by the adapter. The framework just assumes the adapter has done it's job, and marks that block as having been removed)`);
+                                } imElEnd(c, EL_LI);
+                            } imElEnd(c, EL_UL);
+                        } imElEnd(c, EL_LI);
+                    } imElEnd(c, EL_UL);
+
+                    imStr(c, `imFor acts similarly, except you can render an arbitrary amount of elements, as long as they are in the same order ever render (if you've been paying attention, you will know why the order matters, so I won't re-explain it here). You can do any kind of syncronous traversal - but for every index in the internal state entries, you must always render the same thing.`);
+                } imParaEnd(c);
+
+                imVisualTestInstallation(c, imIfAndForExample);
+            }
+
+            imSubheadingBegin(c); imStr(c, "Switches, keyed lists"); imSubheadingEnd(c); {
+
+                imParaBegin(c); {
+                    imStr(c,
+                        `imSwitch and imKeyedBegin/End are actually both the same thing under the hood, but are used in different contexts.
+imSwitch can be used to route to the right view from within a hub component.
+imKeyedBegin/End can be used in much the same way as the key="blah" prop in React. 
+Except imKeyedBegin can directly accept object references as values. 
+As a direct consequence of this API design choice, in order to avoid memory leaks, keyed items that aren't rendered in the subsequent frame do not just get removed - they, and all their children, are recursively destroyed.
+The following example should demonstrate how they work, and give you an idea of when you might want to use imKeyed.
+But in case it didn't: You should use it for basically any list item with it's own immediate mode state and a non-constant ordering.
+
+A note on imSwitch - DO NOT USE FALLTHROUGH. 
+If there are multiple keys mapping to the same case using fallthrough, the framework will still think it's two different routes.
+You will end up getting an exact clone of the component with different state!
+Very hard and confusing to debug, but not enough of a reason for me to remove imSwitch from the framework.`
+                    );
+
+                } imParaEnd(c);
+
+                imVisualTestInstallation(c, imSwitchAndKeyedExample);
+            }
+
+            imSubheadingBegin(c); imStr(c, "Error boundaries, aka try-catch"); imSubheadingEnd(c); {
+                imParaBegin(c); {
+                    imStr(c, `Error boundaries can be implemented by simply annotating a try/catch block.
+In general, you shouldn't use exceptions in your control flow. 
+This only exists to allow a user to recover from an error being thrown that would have otherwise crashed the entire program.
+It's useful to always have at least one error boundary at the very root, so that your app can transition to another view in case of an error. 
+Without it, the website will appear the exact same - but none of the dynamic elements will work, because the animation loop has stopped running.`);
+                } imParaEnd(c);
+
+                imVisualTestInstallation(c, imErrorBoundaryExampleView);
+            }
+
+        },
+    ),
+    newVisualTest(
+        "Composability",
+        function imControlFlowExamples(c: ImCache) {
+            imStr(c, "TODO");
+        }
+    ),
+    newVisualTest(
+        "Animation",
+        function imControlFlowExamples(c: ImCache) {
+            imStr(c, "TODO");
+        }
+    ),
+];
+
+function imErrorBoundaryExampleView(c: ImCache) {
+    const tryState = imTry(c); try {
+        const { err, recover } = tryState;
+
+        if (imIf(c) && err) {
+            if (imErrorUiDismissedWasClicked(c, err)) {
+                recover();
+            }
+        } else if (imIfElse(c)) { 
+            imBigRedButton(c);
+        } imIfEnd(c);
+    } catch (err) {
+        imTryCatch(c, tryState, err);
+    } imTryEnd(c, tryState);
+}
+
+
+function imIfAndForExample(c: ImCache) {
+    const { flags, hiddenMessage } = imGetInline(
+        c,
+        imIfAndForExample
+    ) ?? imSet(c, {
+        flags: [false],
+        hiddenMessage: `Hello there, here's a hidden message for 
+you to manually click! have fun. Or not.`.split(" "),
+    });
+
+    imLayoutBegin(c, ROW); {
+        imFor(c); for (let i = 0; i < hiddenMessage.length; i++) {
+            const chunk = hiddenMessage[i];
+
+            if (imIf(c) && i === 0 || flags[i - 1]) {
+                if (imButtonIsClicked(c, chunk, flags[i])) {
+                    flags[i] = !flags[i];
+                }
+            } imIfEnd(c);
+
+            if (!flags[i]) break;
+        } imForEnd(c);
+    } imLayoutEnd(c);
+}
+
+function imSwitchAndKeyedExample(c: ImCache) {
+    type Occupant = { name: string; toggled: boolean };
+
+    let hotel; hotel = imGetInline(c, imGetInline);
+    if (!hotel) {
+        const newItem = (name: string, toggled: boolean): Occupant => ({ name, toggled });
+        const logs = Array<string>();
+
+        hotel = imSet(c, {
+            currentPos: "keyed rooms", 
+            items: "ABCDEFGH".split("").map((c, i) => newItem(c, i % 2 == 0)),
+            logs,
+            itemInstance(c: ImCache, occupant: Occupant, i: number) {
+                const sI = imGetInline(c, imSet) ?? imSet(c, {
+                    occupant: occupant
+                });
+                if (sI.occupant !== occupant) {
+                    logs.push("[" + this.currentPos + "] Occupant " + occupant.name + " found someone else in their room! wtf.");
+                    sI.occupant = occupant;
+                }
+
+                imLayoutBegin(c, BLOCK);
+                imBg(c, occupant.toggled ? cssVars.fg : cssVars.bg);
+                imFg(c, !occupant.toggled ? cssVars.fg : cssVars.bg); {
+                    imStr(c, occupant.name);
+                } imLayoutEnd(c);
+            }
+        });
+    }
+
+    imLayoutBegin(c, ROW); imJustify(c); {
+        imStr(c, "=========== " + hotel.currentPos + " ===========");
+    } imLayoutEnd(c);
+
+    imLayoutBeginInternal(c, ROW); imJustify(c); imGap(c, 10, PX); {
+        imSwitch(c, hotel.currentPos); switch (hotel.currentPos) {
+            case "start": {
+                if (imButtonIsClicked(c, "enable keyed rooms")) hotel.currentPos = "keyed rooms";
+                if (imButtonIsClicked(c, "enable unkeyed rooms")) hotel.currentPos = "unkeyed rooms";
+            } break;
+            case "unkeyed rooms": {
+                imFor(c); hotel.items.forEach((item, i) => {
+                    hotel.itemInstance(c, item, i);
+                }); imForEnd(c);
+            } break;
+            case "keyed rooms": {
+                imFor(c); hotel.items.forEach((item, i) => {
+                    imKeyedBegin(c, item); {
+                        hotel.itemInstance(c, item, i);
+                    } imKeyedEnd(c);
+                }); imForEnd(c);
+            } break;
+        } imSwitchEnd(c);
+    } imLayoutEnd(c);
+
+    imLayoutBegin(c, ROW); imJustify(c); imGap(c, 10, PX); {
+        if (imIf(c) && hotel.currentPos !== "start") {
+            if (imButtonIsClicked(c, "reorder bookings")) hotel.items.sort((a, b) => (0.5 - Math.random()))
+            if (imButtonIsClicked(c, "back to lobby")) hotel.currentPos = "start";
+        } imIfEnd(c);
+    } imLayoutEnd(c);
+
+    imLayoutBegin(c, COL); imAlign(c); {
+        imStr(c, "=========== " + "Complaints" + " ===========");
+        if (imIf(c) && hotel.logs.length > 0) {
+            if (imButtonIsClicked(c, "ignore complaints")) hotel.logs.length = 0;
+        } imIfEnd(c);
+    } imLayoutEnd(c);
+
+    imFor(c); for (const log of hotel.logs) {
+        imLayoutBegin(c, BLOCK); {
+            imStr(c, log);
+        } imLayoutEnd(c);
+    } imForEnd(c);
+}
+
+
+    function newComponentState() {
+        return {
+            // Usually, newComponentState would not be inline like this
+            x: 1,
+        }
+    }
+
+
+export function imExampleMain(c: ImCache) {
+    imCacheBegin(c, imExampleMain); {
+        imDomRootBegin(c, document.body); {
+            const ev = imGlobalEventSystemBegin(c); {
+                imLayoutBegin(c, COL); imFixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+                    imVisualTestHarness(c, tests);
+                } imLayoutEnd(c);
+            } imGlobalEventSystemEnd(c, ev);
+        } imDomRootEnd(c, document.body);
+    } imCacheEnd(c);
+}

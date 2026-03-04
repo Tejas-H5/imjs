@@ -9,8 +9,8 @@ import {
     globalStateStackGet,
     globalStateStackPop,
     globalStateStackPush,
-    imBlockBegin,
-    imBlockEnd,
+    imImmediateModeBlockBegin,
+    imImmediateModeBlockEnd,
     ImCache,
     ImCacheEntries,
     imGet,
@@ -258,6 +258,7 @@ export function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
+    // TODO: support changing tne type
     // Make this entry in the current entry list, so we can delete it easily
     const appender = getEntriesParent(c, newDomAppender);
 
@@ -276,7 +277,7 @@ export function imElBegin<K extends keyof HTMLElementTagNameMap>(
 function imBeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
     appendToDomRoot(appender, childAppender);
 
-    imBlockBegin(c, newDomAppender, childAppender);
+    imImmediateModeBlockBegin(c, newDomAppender, childAppender);
 
     childAppender.idx = -1;
 }
@@ -318,7 +319,7 @@ export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyo
         deferList.push(appender);
     }
 
-    imBlockEnd(c);
+    imImmediateModeBlockEnd(c);
 }
 
 export const imElSvgEnd = imElEnd;
@@ -345,7 +346,7 @@ export function imDomRootBegin(c: ImCache, root: ValidElement) {
         appender.keyRef = root;
     }
 
-    imBlockBegin(c, newDomAppender, appender);
+    imImmediateModeBlockBegin(c, newDomAppender, appender);
 
     // well we kinda have to. imDomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
     imFinalizeDeferred(c);
@@ -373,13 +374,13 @@ export function imDomRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     // calls to textInput.focus() for example, won't work till the next frame, for example.
     assert(existing.finalizeType === FINALIZE_DEFERRED);
 
-    imBlockBegin(c, newDomAppender, existing);
+    imImmediateModeBlockBegin(c, newDomAppender, existing);
 }
 
 export function imDomRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
     let appender = getEntriesParent(c, newDomAppender);
     assert(appender === existing);
-    imBlockEnd(c);
+    imImmediateModeBlockEnd(c);
 }
 
 export function imFinalizeDeferred(c: ImCache) {
@@ -411,7 +412,7 @@ export function imDomRootEnd(c: ImCache, root: ValidElement) {
     // Finally, finalize the root
     finalizeDomAppender(appender);
 
-    imBlockEnd(c);
+    imImmediateModeBlockEnd(c);
 }
 
 function domFinalizeEnumerator(entries: ImCacheEntries): boolean {
