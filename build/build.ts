@@ -246,6 +246,7 @@ if (config === "build") {
 			name: "Custom dev server plugin",
 			setup(build) {
 				build.onEnd((result) => {
+					// TODO: fix bug where we put the PC to sleep, reopen and it's broken
 					const header = "new EventSource('/events').addEventListener('change', (e) => location.reload())";
 					const outputText = getOutputHtml(result, header);
 					setCurrentFile(outputText);

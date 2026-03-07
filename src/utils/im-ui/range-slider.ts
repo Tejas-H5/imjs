@@ -1,5 +1,5 @@
-import { ImCache, imGet, imMemo, imSet, isFirstishRender } from "src/utils/im-core.ts";
-import { elHasMousePress, elSetStyle, getGlobalEventSystem, imTrackSize } from "src/utils/im-dom.ts";
+import { ImCache, imGet, imMemo, imSet, isFirstishRender } from "../im-core.ts";
+import { elHasMousePress, elSetStyle, getGlobalEventSystem, imTrackSize } from "../im-dom.ts";
 import { BLOCK, imLayoutBegin, imLayoutEnd, cssVars } from "./ui-core.ts";
 import { clamp } from "./math-utils.ts";
 

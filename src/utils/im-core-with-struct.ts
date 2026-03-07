@@ -7,7 +7,7 @@
 // so even though I thought it was mostly finished, the API appears to still be changing slightly.
 // Majority of the last changes have just been updates to the documentation though
 
-import { assert } from "src/utils/assert";
+import { assert } from "./assert";
 
 // Conventions
 //  - An 'immediate mode' method or 'im' method is any method that eventually _writes_ to the `ImCache`.

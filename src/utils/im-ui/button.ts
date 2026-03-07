@@ -1,6 +1,6 @@
 import { DisplayType, imAlign, imLayoutBegin, imLayoutEnd, imNoWrap, INLINE, ROW, newCssBuilder, cssVars } from "./ui-core.ts";
-import { ImCache, imMemo, isFirstishRender } from "src/utils/im-core.ts";
-import { elHasMousePress, elSetClass, imStr } from "src/utils/im-dom.ts";
+import { ImCache, imMemo, isFirstishRender } from "../im-core.ts";
+import { elHasMousePress, elSetClass, imStr } from "../im-dom.ts";
 
 const cssb = newCssBuilder();
 

@@ -6,8 +6,8 @@ import {
     imGet,
     imSet,
     inlineTypeId
-} from "src/utils/im-core";
-import { imStr } from "src/utils/im-dom";
+} from "../im-core";
+import { imStr } from "../im-dom";
 import { BLOCK, imLayoutBegin, imLayoutEnd } from "./ui-core";
 
 export type FpsCounterState = {

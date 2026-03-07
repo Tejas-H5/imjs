@@ -1,8 +1,8 @@
 // context-menu V0.01
 
 import { COL, imAbsolute, imFixed, imJustify, imLayoutBegin, imLayoutEnd, imZIndex, NA, PX, ROW, cssVars } from "./ui-core";
-import { ImCache, imState, isFirstishRender } from "src/utils/im-core";
-import { elHasMousePress, elSetStyle, getGlobalEventSystem } from "src/utils/im-dom";
+import { ImCache, imState, isFirstishRender } from "../im-core";
+import { elHasMousePress, elSetStyle, getGlobalEventSystem } from "../im-dom";
 
 export type ContextMenuState = {
     open: boolean;

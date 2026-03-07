@@ -1,7 +1,7 @@
 // core-ui V.0.1.2
 
-import { ImCache, imGet, imMemo, imSet, inlineTypeId, isFirstishRender } from 'src/utils/im-core';
-import { EL_DIV, elSetClass, elSetStyle, imElBegin, imElEnd } from 'src/utils/im-dom';
+import { ImCache, imGet, imMemo, imSet, inlineTypeId, isFirstishRender } from '../im-core';
+import { EL_DIV, elSetClass, elSetStyle, imElBegin, imElEnd } from '../im-dom';
 
 
 ///////////////////////////
@@ -208,7 +208,7 @@ function getUnits(num: SizeUnits) {
 }
 
 function getSize(num: number, units: SizeUnits) {
-    return units === NA ? "" : num + getUnits(units);
+    return units === NA ? ("") : (num + getUnits(units));
 }
 
 export function imSize(

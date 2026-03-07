@@ -2,7 +2,7 @@ import { getDeltaTimeSeconds, ImCache, ImCacheRerenderFn, imCatch, imFor, imForE
 import { elSetStyle, imStr } from "../im-dom";
 import { imButtonIsClicked } from "./button";
 import { lerp01 } from "./math-utils";
-import { BLOCK, COL, cssVars, imAbsolute, imAbsoluteXY, imAlign, imBg, imFg, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imOpacity, imPreWrap, imRelative, imScrollOverflow, imSize, PERCENT, PX, ROW } from "./ui-core";
+import { BLOCK, CENTER, COL, cssVars, imAbsolute, imAbsoluteXY, imAlign, imBg, imFg, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imOpacity, imPreWrap, imRelative, imScrollOverflow, imSize, NONE, PERCENT, PX, ROW, STRETCH } from "./ui-core";
 
 export type VisualTest = {
     name: string;
@@ -250,7 +250,7 @@ function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             const tText = a.t - start;
             if (imIf(c) && tText > 0) {
                 const tBlinkLength = 0.3;
-                const tPhase = 0; //Math.floor((tText / textDuration) / tBlinkLength) % 2;
+                const tPhase = Math.floor((tText / textDuration) / tBlinkLength) % 2;
                 const bg = tPhase === 0 ? cssVars.fg : cssVars.bg;
                 const fg = tPhase === 0 ? cssVars.bg : cssVars.fg;
 
@@ -397,7 +397,10 @@ function imRenderWithErrorBoundary(c: ImCache, test: ImCacheRerenderFn) {
     } imSwitchEnd(c);
 }
 
-export function imVisualTestInstallation(c: ImCache, test: ImCacheRerenderFn, code?: string) {
+export const TEST_CENTERED = (1 << 0);
+export const TEST_SCROLLABLE = (2 << 0);
+
+export function imVisualTestInstallation(c: ImCache, test: ImCacheRerenderFn, code?: string, flags = 0) {
     const testChanged = imMemo(c, test);
     const codeChanged = imMemo(c, code);
 
@@ -408,17 +411,26 @@ export function imVisualTestInstallation(c: ImCache, test: ImCacheRerenderFn, co
         });
     }
 
-    imLayoutBegin(c, ROW); {
-        imLayoutBegin(c, BLOCK); imFlex(c); {
+    const scroll = !!(flags & TEST_SCROLLABLE);
+
+    imLayoutBegin(c, ROW); imAlign(c, STRETCH); {
+        if (isFirstishRender(c)) elSetStyle(c, "maxHeight", "80vh");
+
+        const center = !!(flags & TEST_CENTERED);
+
+        imLayoutBegin(c, center ? COL : BLOCK); imFlex(c); imScrollOverflow(c, scroll); {
+            imAlign(c, center ? CENTER : NONE);
+            imJustify(c, center ? CENTER : NONE);
+
             imRenderWithErrorBoundary(c, test);
         } imLayoutEnd(c);
 
-        imLayoutBegin(c, BLOCK); imFlex(c); {
-            imLayoutBegin(c, COL); imFlex(c); imPreWrap(c); imScrollOverflow(c); {
-                if (isFirstishRender(c)) elSetStyle(c, "fontFamily", "monospace");
-                if (isFirstishRender(c)) elSetStyle(c, "fontSize", "22px");
-                if (isFirstishRender(c)) elSetStyle(c, "tabSize", "4");
+        imLayoutBegin(c, BLOCK); imPreWrap(c); imScrollOverflow(c); imFlex(c); {
+            if (isFirstishRender(c)) elSetStyle(c, "fontFamily", "monospace");
+            if (isFirstishRender(c)) elSetStyle(c, "fontSize", "18px");
+            if (isFirstishRender(c)) elSetStyle(c, "tabSize", "4");
 
+            imLayoutBegin(c, BLOCK); {
                 imStr(c, s.code);
             } imLayoutEnd(c);
         } imLayoutEnd(c);

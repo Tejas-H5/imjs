@@ -1,7 +1,7 @@
-import { ImCache, imMemo, isFirstishRender } from "src/utils/im-core";
-import { EL_TEXTAREA, elSetAttr, elSetClass, elSetStyle, elSetTextSafetyRemoved, imElBegin, imElEnd } from "src/utils/im-dom";
-import { BLOCK, imLayoutBegin, imLayoutEnd, INLINE, cssVars, newCssBuilder, imHandleLongWords, imRelative, imSize, PERCENT, NA } from "./ui-core";
+import { ImCache, imMemo, isFirstishRender } from "../im-core";
+import { EL_TEXTAREA, elSetClass, elSetStyle, elSetTextSafetyRemoved, imElBegin, imElEnd } from "../im-dom";
 import { setInputValue } from "./dom-utils";
+import { BLOCK, cssVars, imHandleLongWords, imLayoutBegin, imLayoutEnd, imRelative, imSize, INLINE, NA, newCssBuilder, PERCENT } from "./ui-core";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);

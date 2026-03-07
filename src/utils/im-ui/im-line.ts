@@ -1,6 +1,6 @@
 import { BLOCK, imLayoutBegin, imLayoutEnd, imSize, NA, PERCENT, PX, cssVars, newCssBuilder } from "./ui-core";
-import { ImCache, imMemo, isFirstishRender } from "src/utils/im-core";
-import { elSetClass, elSetStyle } from "src/utils/im-dom";
+import { ImCache, imMemo, isFirstishRender } from "../im-core";
+import { elSetClass, elSetStyle } from "../im-dom";
 
 // Surprisingly useful. That being said, I have been informed that using lines to design instead of spacing is usally a bad idea
 

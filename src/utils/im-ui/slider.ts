@@ -1,7 +1,7 @@
-import { ImCache, imFor, imForEnd, imMemo, imState, isFirstishRender } from 'src/utils/im-core.ts';
-import { elHasMouseOver, elSetStyle, getGlobalEventSystem, imTrackSize } from 'src/utils/im-dom.ts';
-import { clamp, inverseLerp, lerp } from './math-utils.ts';
-import { BLOCK, cssVars, imLayoutBegin, imLayoutEnd } from './ui-core.ts';
+import { ImCache, imFor, imForEnd, imMemo, imState, isFirstishRender } from "../im-core.ts";
+import { elHasMouseOver, elSetStyle, getGlobalEventSystem, imTrackSize } from "../im-dom.ts";
+import { clamp, inverseLerp, lerp } from "./math-utils.ts";
+import { BLOCK, cssVars, imLayoutBegin, imLayoutEnd } from "./ui-core.ts";
 
 const MIN_STEP = 0.0001;
 

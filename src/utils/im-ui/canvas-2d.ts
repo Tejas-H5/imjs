@@ -1,5 +1,5 @@
-import { ImCache, imGet, imMemo, imSet } from "src/utils/im-core.ts";
-import { EL_CANVAS, elSetStyle, imElBegin, imElEnd, imTrackSize } from "src/utils/im-dom.ts";
+import { ImCache, imGet, imMemo, imSet } from "../im-core.ts";
+import { EL_CANVAS, elSetStyle, imElBegin, imElEnd, imTrackSize } from "../im-dom.ts";
 import { BLOCK, imFlex, imLayoutBegin, imLayoutEnd, imRelative } from "./ui-core.ts";
 
 type ImCanvasRenderingContext = [

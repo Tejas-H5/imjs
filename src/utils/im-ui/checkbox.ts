@@ -1,5 +1,5 @@
-import { ImCache, isFirstishRender } from "src/utils/im-core.ts";
-import { elHasMousePress, elSetClass, elSetStyle } from "src/utils/im-dom.ts";
+import { ImCache, isFirstishRender } from "../im-core.ts";
+import { elHasMousePress, elSetClass, elSetStyle } from "../im-dom.ts";
 import { BLOCK, EM, imAlign, imBg, imLayoutBegin, imLayoutEnd, imSize, INLINE_BLOCK, PERCENT , newCssBuilder, cssVars } from "./ui-core.ts";
 
 const cssb = newCssBuilder();

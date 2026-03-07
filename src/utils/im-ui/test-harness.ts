@@ -1,5 +1,5 @@
-import { ImCache, imFor, imForEnd, imIf, imIfElse, imIfEnd, imMemo, imState, imTry, imTryCatch, imTryEnd, isFirstishRender } from "src/utils/im-core";
-import { EL_H3, EL_H4, elHasMousePress, elSetStyle, imElBegin, imElEnd, imStr, Stringifyable } from "src/utils/im-dom";
+import { ImCache, imFor, imForEnd, imIf, imIfElse, imIfEnd, imMemo, imState, imTry, imTryCatch, imTryEnd, isFirstishRender } from "../im-core";
+import { EL_H3, EL_H4, elHasMousePress, elSetStyle, imElBegin, imElEnd, imStr, Stringifyable } from "../im-dom";
 import {BLOCK, COL, imAlign, imBg, imGap, imLayoutBegin, imLayoutEnd, imNoWrap, imPadding, imPre, imSize, NA, PERCENT, PX, ROW, cssVars} from "./ui-core.ts";
 import { imButtonIsClicked } from "./button.ts";
 import { imScrollContainerBegin, imScrollContainerEnd, newScrollContainer } from "./scroll-container.ts";

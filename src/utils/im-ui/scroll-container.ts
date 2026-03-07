@@ -1,4 +1,4 @@
-import { getDeltaTimeSeconds, ImCache } from "src/utils/im-core";
+import { getDeltaTimeSeconds, ImCache } from "../im-core";
 import { COL, imFlex, imLayoutBegin, imLayoutEnd, imScrollOverflow, ROW } from "./ui-core";
 import { getScrollVHEx } from "./dom-utils";
 

@@ -1,5 +1,5 @@
-import { ImCache, imGet, imMemo, imSet, isFirstishRender } from "src/utils/im-core.ts";
-import { elGet, elHasMouseOver, elHasMousePress, elSetStyle, getGlobalEventSystem } from "src/utils/im-dom.ts";
+import { ImCache, imGet, imMemo, imSet, isFirstishRender } from "../im-core.ts";
+import { elGet, elHasMouseOver, elHasMousePress, elSetStyle, getGlobalEventSystem } from "../im-dom.ts";
 import { COL, imBg, imFlex, imLayoutBegin, imLayoutEnd, cssVars } from "./ui-core.ts";
 
 export type DragAndDropState =  {

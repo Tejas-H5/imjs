@@ -1,9 +1,9 @@
-// IM-CORE 1.077
+// IM-CORE 1.078
 // NOTE: I'm currently working on 3 different apps with this framework,
 // so even though I thought it was mostly finished, the API appears to still be changing slightly.
 // Majority of the last changes have just been updates to the documentation though
 
-import { assert } from "src/utils/assert";
+import { assert } from "./assert";
 
 // Conventions
 //  - An 'immediate mode' method or 'im' method is any method that eventually _writes_ to the `ImCache`.
@@ -48,7 +48,7 @@ const CACHE_CURRENT_WAITING_FOR_SET      = 18;
 const CACHE_ROOT_ENTRIES                 = 19;
 const CACHE_CURRENT_ENTRIES              = 20;
 const CACHE_IDX                          = 21;
-const CACHE_ENTRIES_START                = 22;
+export const CACHE_ENTRIES_START         = 22; // Not in the struct implementation, but we'll need it for the array implementation
 
 
 const ENTRIES_REMOVE_LEVEL                    = 1;
@@ -64,7 +64,7 @@ const ENTRIES_INTERNAL_TYPE                   = 10;
 const ENTRIES_COMPLETED_ONE_RENDER            = 11;
 const ENTRIES_LAST_IDX                        = 12;
 const ENTRIES_IDX                             = 13;
-const ENTRIES_ITEMS_START                     = 14;
+export const ENTRIES_ITEMS_START              = 14; // Not in the struct implementation, but we'll need it for the array implementation
 
 export function newImCache(): ImCache {
     return [];
@@ -94,6 +94,10 @@ export function getCurrentCacheEntries(c: ImCache) {
     return c[CACHE_CURRENT_ENTRIES] as unknown as ImCacheEntries;
 }
 
+export function getRootEntries(c: ImCache): ImCacheEntries {
+    return c[CACHE_ROOT_ENTRIES];
+}
+
 export function getEntriesRemoveLevel(entries: ImCacheEntries) {
     return entries[ENTRIES_REMOVE_LEVEL];
 }
@@ -105,6 +109,7 @@ export function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
 export function getStackLength(c: ImCache) {
     return c.length - CACHE_ENTRIES_START;
 }
+
 
 /**
  * Allows us to cache state for our immediate mode callsites.
@@ -648,6 +653,9 @@ function __imBlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLeve
      *      if (deferredAction) deferredAction();
      * }
      */
+    if (block.rendered === true) {
+        throw new Error("You have already rendered to this key");
+    }
     assert(block.rendered === false);
 
     block.rendered = true;
@@ -679,7 +687,7 @@ export function imKeyedEnd(c: ImCache) {
 }
 
 // You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
-export function cacheEntriesAddDestructor(c: ImCache, destructor: () => void) {
+export function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
     const entries = c[CACHE_CURRENT_ENTRIES];
     let destructors = entries[ENTRIES_DESTRUCTORS];
     if (destructors === undefined) {
@@ -714,6 +722,25 @@ export function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entrie
             for (const block of map.values()) {
                 recursivelyEnumerateEntries(block.entries, fn);
             }
+        }
+    }
+}
+
+/**
+ * Iterates every item in an entries list. You only need this if you're working on 
+ * dev-tools for this framework.
+ */
+export function imForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
+    for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
+        const t = entries[i];
+        const v = entries[i + 1];
+        fn(t, v);
+    }
+
+    let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
+    if (map !== undefined) {
+        for (const block of map.values()) {
+            imForEachCacheEntryItem(block.entries, fn);
         }
     }
 }
@@ -1227,7 +1254,7 @@ export function getRenderCount(c: ImCache) {
 }
 
 /**
- * Sometimes, you'll need a global state stack, so that you have access to some state.
+ * Sometimes, you'll need global state, so that you have access to some state without having to pass down values.
  * ```ts
  *
  * globalStateStackPush(gssThing, thing); {
@@ -1254,10 +1281,12 @@ export function getRenderCount(c: ImCache) {
  *  This state is related to my app's   | Don't use a global state stack   | Don't use a global state stack 
  *  domain model                        | ctx: AppGlobalState is here      | s: BlahViewState is here
  * ----------------------------------------------------------------------------------------------------------------------------
- *  This state is not related to my     | Don't use a global state stack   | Consider using a global state stack
- *  app's domain model                  | c: ImCache is here               | getGlobalEventSystem() is here
+ *  This state is not related to my     | Don't use a global state stack   | - consider using global state.
+ *  app's domain model                  |  c: ImCache is here              | getGlobalEventSystem() is here       Tanstack query client is here
+ *                                      |                                  | getAsyncTasksInProgress() is here    Heck, maybe ctx: AppGlobalState is actually here
  * ----------------------------------------------------------------------------------------------------------------------------
  *
+ * TODO: deprevate and remove globalStateStackPush. people can use whatever global state they like, however they like.
  */
 export function globalStateStackPush<T>(gss: T[], item: T) {
     // I've put a limit on the context depth to 100. But really, anything > 1 is already a niche usecase, and anything > 2 may never happen in practice ... 

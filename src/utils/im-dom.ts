@@ -1,9 +1,9 @@
 // IM-DOM 1.68
 
-import { assert } from "src/utils/assert";
+import { assert } from "./assert";
 import {
     __GetEntries,
-    cacheEntriesAddDestructor,
+    onImmediateModeBlockDestroyed as onImmediateModeBlockDestroyed,
     getEntriesParent,
     getEntriesParentFromEntries,
     globalStateStackGet,
@@ -18,6 +18,7 @@ import {
     imSet,
     inlineTypeId,
     rerenderImCache,
+    imSetRequired,
 } from "./im-core";
 
 ///////////////////////////
@@ -40,7 +41,7 @@ export type FinalizationType
 // NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
 // However, you do need to store your dom appender children somewhere beforehand for stable references. 
 // That is what the ImCache helps with - but the ImCache does need control-flow annotations to work. eh, It is what it is
-export type DomAppender<E extends AppendableElement> = {
+export type DomAppender<E extends AppendableElement = AppendableElement> = {
     label?: string; // purely for debug
 
     root: E;
@@ -452,9 +453,9 @@ export function imStr(c: ImCache, value: Stringifyable): Text {
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
     let lastValue = imGet(c, inlineTypeId(document.createTextNode));
-    if (lastValue !== value) {
+    if (imSetRequired(c) === true || lastValue !== value) {
         imSet(c, value);
-        textNodeLeafAppender.root.nodeValue = value.toString();
+        textNodeLeafAppender.root.nodeValue = (value != null && value.toString) ? value.toString() : "<couldn't stringify>";
     }
 
     appendToDomRoot(domAppender, textNodeLeafAppender);
@@ -512,13 +513,12 @@ export function elSetClass(
     c: ImCache,
     className: string,
     enabled: boolean | number = true,
+    el = elGet(c)
 ): boolean {
-    const domAppender = getEntriesParent(c, newDomAppender);
-
     if (enabled !== false && enabled !== 0) {
-        domAppender.root.classList.add(className);
+        el.classList.add(className);
     } else {
-        domAppender.root.classList.remove(className);
+        el.classList.remove(className);
     }
 
     classesSet++;
@@ -875,7 +875,7 @@ export function imGlobalEventSystemBegin(c: ImCache): ImGlobalEventSystem {
     if (state === undefined) {
         const eventSystem = newImGlobalEventSystem(c);
         addDocumentAndWindowEventListeners(eventSystem);
-        cacheEntriesAddDestructor(c, () => removeDocumentAndWindowEventListeners(eventSystem));
+        onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
         state = imSet(c, eventSystem);
     }
 
@@ -921,7 +921,7 @@ export function imTrackSize(c: ImCache, rerender = false) {
         };
 
         self.observer.observe(root);
-        cacheEntriesAddDestructor(c, () => {
+        onImmediateModeBlockDestroyed(c, () => {
             self.observer.disconnect()
         });
 
@@ -954,7 +954,7 @@ export function imPreventScrollEventPropagation(c: ImCache) {
         };
 
         el.addEventListener("wheel", handler);
-        cacheEntriesAddDestructor(c, () => el.removeEventListener("wheel", handler));
+        onImmediateModeBlockDestroyed(c, () => el.removeEventListener("wheel", handler));
 
         state = imSet(c, val);
     }

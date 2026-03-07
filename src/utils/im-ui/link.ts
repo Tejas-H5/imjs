@@ -1,5 +1,5 @@
-import { ImCache, imMemo } from "src/utils/im-core";
-import { EL_A, elSetAttr, imElBegin, imElEnd, imStr } from "src/utils/im-dom";
+import { ImCache, imMemo } from "../im-core";
+import { EL_A, elSetAttr, imElBegin, imElEnd, imStr } from "../im-dom";
 
 export function imLink(c: ImCache, url: string, text: string = url) {
     imElBegin(c, EL_A); {
