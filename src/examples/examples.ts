@@ -1,4 +1,4 @@
-import { BLOCK, COL, imFixed, imLayoutBegin, imLayoutEnd, imPadding, imSize, INLINE, NA, newCssBuilder, PX } from "src/utils/im-ui";
+import { BLOCK, COL, imFixed, imLayoutBegin, imLayoutEnd, imPadding, imSize, NA, newColor, newColorFromHsv, newCssBuilder, PX } from "src/utils/im-ui";
 import { imVisualTestHarness, imVisualTestInstallation, newVisualTest, TEST_CENTERED, VisualTest } from "src/utils/im-ui/visual-testing-harness";
 import {
     getCurrentCacheEntries,
@@ -19,6 +19,7 @@ import {
     imImmediateModeBlockBegin,
     imKeyedBegin,
     imKeyedEnd,
+    imMemo,
     imSet,
     imSwitch,
     imSwitchEnd,
@@ -37,7 +38,6 @@ import {
     EL_H2,
     EL_LI,
     EL_UL,
-    elHasMouseClick,
     elHasMouseOver,
     elSetClass,
     elSetStyle,
@@ -81,25 +81,6 @@ function imBaseContainerBegin(c: ImCache) {
 }
 function imBaseContainerEnd(c: ImCache) {
     imLayoutEnd(c);
-}
-
-function imTangent(c: ImCache, text: string) {
-    const s = imGetInline(c, imTangent) ?? imSet(c, { expanded: false });
-
-    imLayoutBegin(c, INLINE); {
-        imStr(c, s.expanded ? text : "...");
-
-        imLayoutBegin(c, INLINE); {
-            if (elHasMouseClick(c)) s.expanded = !s.expanded;
-            if (isFirstishRender(c)) {
-                elSetStyle(c, "padding", "10px");
-                elSetStyle(c, "fontWeight", "bold");
-                elSetStyle(c, "cursor", "pointer");
-            }
-
-            imStr(c, s.expanded ? "<<" : ">>");
-        } imLayoutEnd(c);
-    } imLayoutEnd(c);
 }
 
 const tests: VisualTest[] = [
@@ -178,7 +159,7 @@ const tests: VisualTest[] = [
                     imStr(c, "See? I'm very smart:  TODO: include the refactored methods as well somehow");
                 } imParaEnd(c);
 
-                imVisualTestInstallation(c, imSimpleComponentCounterRefactored);
+                imVisualTestInstallation(c, imSimpleComponentCounterRefactored, undefined, TEST_CENTERED);
 
                 imSubheadingBegin(c); imStr(c, "However, there is a problem - control flow"); imSubheadingEnd(c);
 
@@ -269,7 +250,7 @@ const tests: VisualTest[] = [
 
                 imVisualTestInstallation(c, imErrorBoundaryExampleView, undefined, TEST_CENTERED);
 
-                imSubheadingBegin(c); imStr(c, "State management - initialization, re-initialization, destruction"); imSubheadingEnd(c);
+                imSubheadingBegin(c); imStr(c, "State management - initialisation, destruction"); imSubheadingEnd(c);
 
                 imParaBegin(c); {
                     imStr(c, `There are primarily two ways to initialize state. The first, and most common way, is to call isFirstishRender(c) to check if this is effectively the first time the component is being rendered:`);
@@ -296,6 +277,32 @@ const tests: VisualTest[] = [
                 imParaBegin(c); {
                     imStr(c, `Do note that a lot of things we used to do with a constructor/destruct pair, like getting mouse coordinates, can actually just be done once at a global level, and the result can be reused by all the components (instead of each component individually registering global handlers). Something similar can be said for other kinds of input, async requests/tasks, and possibly other things. I've also included a global event system in im-dom that I frequently use to handle mouse/keyboard interactions in my various UIs. There is a good chance that it may be somewhat lacking for 'production-grade' tasks. Feel free to suggest additions/updates as needed. `);
                 } imParaEnd(c);
+
+                imSubheadingBegin(c); imStr(c, "Reacting to changes"); imSubheadingEnd(c);
+
+                imParaBegin(c); {
+                    imStr(c, `This overview would be incomplete without mentioning imMemo. This method is used everywhere to execute code but only if some value was different than it was in the previous frame. If you can replace imMemo with an event, you probably should. However, it is extremely convenient to use, so maybe you shouldn't. It is entirely up to you. Something to note - it also returns non-zero if the particular scope it was called in has re-entered the 'conditional rendering pathway'. If you think about it, this is essential for components to behave as the caller intended. But if you literally only want to execute code when a value has actually changed, you can check imMemo(c, val) === MEMO_CHANGED instead. Useful if you need to persist some state but only when it was actually mutated, and not just when you open it up in the editor`);
+                    imStr(c, `A common pattern in the ThreeJS codebase for example, is to increment a version number to indicate that a piece of state has changed, so that other systems can respond to this. imMemo works well with this pattern.`);
+                } imParaEnd(c);
+
+                imParaBegin(c); {
+                    imStr(c, `It can be used in a lot of ways, here are some examples of the most common ways it is used:`);
+                } imParaEnd(c);
+
+                imVisualTestInstallation(c, imMemoExamples, undefined, TEST_CENTERED);
+
+                imParaBegin(c); {
+                    imStr(c, `Some things to notice:`);
+                } imParaEnd(c);
+
+                imElBegin(c, EL_UL); {
+                    imElBegin(c, EL_LI); {
+                        imStr(c, `imSet can be called again later, to overwrite/reset the state. By default, the state is persisted unless destroyed, but here we've decided to reset it out whenever we re-attatch the component as well. Be careful that you aren't adding any destructuors in that initialisation block though - the previous destructor may not have ran`);
+                    } imElEnd(c, EL_LI);
+                    imElBegin(c, EL_LI); {
+                        imStr(c, `The Regular logical-or || operator will short-circuit, but the bitwise-or | operator will not. Coincidentally, imMemo returns a number, and not a boolean. If you want to query the same number of slots as you read the previous frame, you need to chain imMemo using | instead of ||.`);
+                    } imElEnd(c, EL_LI);
+                } imElEnd(c, EL_UL);
 
                 imSubheadingBegin(c); imStr(c, "Congrats!"); imSubheadingEnd(c);
 
@@ -756,6 +763,48 @@ function imErrorBoundaryExampleView(c: ImCache) {
     } catch (err) {
         imTryCatch(c, tryState, err);
     } imTryEnd(c, tryState);
+}
+
+function imMemoExamples(c: ImCache) {
+    const becameVisible = imMemo(c, true);
+
+    let s; s = imGetInline(c, imGetInline);
+    if (!s || becameVisible) {
+        s = imSet(c, {
+            secondsElapsed: 0,
+            color: newColor(0, 0, 0, 1),
+            count: 0,
+        });
+    }
+
+    const thisSecond = Math.floor(new Date().getTime() / 1000);
+    if (imMemo(c, thisSecond)) {
+        s.secondsElapsed += 1;
+    }
+
+    if (imMemo(c, thisSecond) | imMemo(c, s.count)) {
+        s.color = newColorFromHsv(Math.random(), 0.5, 0.5);
+    }
+
+    imDivBegin(c); {
+        if (imMemo(c, s.color)) elSetStyle(c, "color", s.color.toString());
+
+        imDivBegin(c); {
+            imStr(c, "Seconds elapsed: ");
+            imStr(c, s.secondsElapsed);
+        } imDivEnd(c);
+
+        imDivBegin(c); {
+            imStr(c, "Count: ");
+            imStr(c, s.count);
+        } imDivEnd(c);
+
+        imDivBegin(c); {
+            if (imExampleButtonIsClicked(c, "Increment count")) {
+                s.count++;
+            }
+        } imDivEnd(c);
+    } imDivEnd(c);
 }
 
 export function imExampleMain(c: ImCache) {

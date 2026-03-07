@@ -320,6 +320,7 @@ function formatCode(fnSource: string): string {
         .replace(/imTry\(c\);\s+try/g, "imTry(c); try")
         .replace(/;\s+\{/g, "; {")
         .replace(/\}\s+im([0-9a-zA-Z]+)End/g, "} im$1End")
+        .replace(/( )?\/\* @__PURE__ \*\/( )?/g, "")
         .split("\n")
 
     const maxLineNumberSize = Math.ceil(Math.log10(lines.length));
