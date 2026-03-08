@@ -313,7 +313,11 @@ const cnColReverse  = cssb.cn("col-reverse", [` { display: flex; flex-direction:
 
 export function imLayoutBeginInternal(c: ImCache, type: DisplayType) {
     const root = imElBegin(c, EL_DIV);
+    imLayout(c, type);
+    return root;
+}
 
+export function imLayout(c: ImCache, type: DisplayType) {
     const last = imGet(c, inlineTypeId(imLayoutBegin), -1);
     if (last !== type) {
         imSet(c, type);
@@ -342,8 +346,6 @@ export function imLayoutBeginInternal(c: ImCache, type: DisplayType) {
             case INLINE_COL:   elSetClass(c, cnInlineCol, true);           break;
         }
     }
-
-    return root;
 }
 
 export function imLayoutBegin(c: ImCache, type: DisplayType) {

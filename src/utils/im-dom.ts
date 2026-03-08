@@ -19,6 +19,7 @@ import {
     inlineTypeId,
     rerenderImCache,
     imSetRequired,
+    imGetInline,
 } from "./im-core";
 
 ///////////////////////////
@@ -932,6 +933,51 @@ export function imTrackSize(c: ImCache, rerender = false) {
 
     return state;
 
+}
+
+export function imTrackVisibility(c: ImCache, threshold: number) {
+    let state; state = imGetInline(c, imTrackVisibility);
+    if (state === undefined) {
+        const root = elGet(c);
+
+        const self = {
+            isVisible: false,
+            initialThreshold: threshold,
+            // TODO: add properties as we discover they are actually useful
+
+            observer: new IntersectionObserver((entries) => {
+                let isIntersecting = false;
+
+                self.isVisible = false;
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        isIntersecting = true;
+                    }
+                }
+
+                if (self.isVisible !== isIntersecting) {
+                    self.isVisible = isIntersecting;
+                    rerenderImCache(c);
+                }
+            }, {
+                threshold: threshold,
+            })
+        };
+
+        self.observer.observe(root);
+        onImmediateModeBlockDestroyed(c, () => {
+            self.observer.disconnect()
+        });
+
+        state = imSet(c, self);
+    }
+
+
+    if (state.initialThreshold !== threshold) {
+        throw new Error("Can't change the threhsold after the fact");
+    }
+
+    return state;
 }
 
 function newPreventScrollEventPropagationState() {
