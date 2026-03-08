@@ -1,7 +1,9 @@
 import { ImCache, imMemo } from "../im-core";
 import { EL_A, elSetAttr, imElBegin, imElEnd, imStr } from "../im-dom";
 
-export function imLink(c: ImCache, url: string, text: string = url) {
+export type Url = string & { readonly __Url: unique symbol; };
+
+export function imLink(c: ImCache, url: Url, text: string = url) {
     imElBegin(c, EL_A); {
         if (imMemo(c, url)) {
             elSetAttr(c, "rel", "nofollow noopener noreferrer external");

@@ -1,7 +1,9 @@
 {
-  "name": "pooling-framework",
+  "name": "im-js",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
+  "description": "An immediate-mode UI framework",
+  "main": "./src/utils/im-js/index.ts",
   "type": "module",
   "scripts": {
     "dev": "node ./build/build.ts devserver",

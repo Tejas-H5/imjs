@@ -237,7 +237,7 @@ It retains most of the benefits of the previous framework, while also:
 - If-statements _are_ capable of type-narrowing
     - Though sadly, because of the `imIf`, the type of a value in the else-branch doesn't get narrowed to the inverse type of the if branch, probably a Typescript bug that they didnt address because no-one is doing this kind of API really
 - No need to call `rerender` manually
-    - Unless you have decided that you really want manual control over when rerenders actually happen, and you can disable the default animation. (your loss tbh)
+    - I used to include a config that lets you disable the animation loop. But the whole point of this framework _is_ the animation loop, so I've decided to remove this config, and I have no intention of ever bringing it back
 - State _can_ be declared as close as possible to where it is actually needed. Massive monolith components are easy to split out when needed.
     - Transient values relevant to just that frame can be easily defined in the component and used without writing to a state object anywhere
 - Almost no closures in sight

@@ -29,8 +29,8 @@ export function imVisualTestInstallation(
     title: string,
     harness: VisualTestHarnessState,
     test: ImCacheRerenderFn,
+    flags = 0,
     code?: string,
-    flags = 0
 ) {
     const testChanged = imMemo(c, test);
     const codeChanged = imMemo(c, code);
@@ -40,8 +40,7 @@ export function imVisualTestInstallation(
         s = imSet(c, newVisualTestHarnessInstallationState(test, code));
     }
 
-    harness.installations[harness.installationIdx] = s;
-    harness.installationIdx++;
+    harness.installations.push(s);
     s.title = title;
 
     const scroll = !!(flags & TEST_SCROLLABLE);
@@ -69,8 +68,8 @@ export function imVisualTestInstallation(
             const split = imGetInline(c, imVisualTestInstallation) ?? 
                 imSet(c, { vSplit: 0.5, dragging: false });
 
-            // Component
-            imLayoutBegin(c, center ? COL : BLOCK); imFlex(c, split.vSplit); imScrollOverflow(c, scroll); {
+            // Test Component
+            imLayoutBegin(c, COL); imFlex(c, split.vSplit); imScrollOverflow(c, scroll); {
                 imAlign(c, center ? CENTER : NONE);
                 imJustify(c, center ? CENTER : NONE);
 
@@ -149,7 +148,7 @@ function formatCode(fnSource: string): string[] {
         .replace(/imTry\(c\);\s+try/g, "imTry(c); try")
         .replace(/;\s+\{/g, "; {")
         .replace(/\}\s+im([0-9a-zA-Z]+)End/g, "} im$1End")
-        .replace(/( )?\/\* @__PURE__ \*\/( )?/g, "")
+        // .replace(/( )?\/\* @__PURE__ \*\/( )?/g, "") // Whitespace is always off by one. I will just keep this in
         .split("\n")
 
 

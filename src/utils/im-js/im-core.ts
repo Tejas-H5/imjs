@@ -308,7 +308,8 @@ export function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     c[CACHE_CURRENT_WAITING_FOR_SET] = false;
     c[CACHE_RENDER_COUNT]++;
 
-    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 1 / 30;
+    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
+    c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
 
     imCacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], imCacheBegin, c, INTERNAL_TYPE_CACHE);
 

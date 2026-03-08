@@ -2,7 +2,7 @@ import { getDeltaTimeSeconds, ImCache, imCatch, imFor, imForEnd, imGet, imIf, im
 import { elHasMouseOver, elSetStyle, getGlobalEventSystem, imStr } from "../../im-dom";
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
-import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imNoWrap, imRelative, imScrollOverflow, INLINE, NA, PX, ROW } from "../ui-core";
+import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
 
@@ -32,7 +32,6 @@ export type VisualTestHarnessState = {
         sideBarOpen: boolean;
     },
     installations: VisualTestHarnessInstallationState[];
-    installationIdx: number;
 }
 
 const numIntros = 3;
@@ -52,7 +51,6 @@ function newState(): VisualTestHarnessState {
             sideBarOpen: false,
         },
         installations: [],
-        installationIdx: 0,
     };
 }
 
@@ -102,7 +100,7 @@ export function imVisualTestHarness(
         s = imSet(c, newState());
     }
 
-    s.installationIdx = 0;
+    s.installations.length = 0;
     s.currentVisibleInstallation = undefined;
 
     const currentTestName = queryParams.get("test");
@@ -124,7 +122,9 @@ export function imVisualTestHarness(
     let scrollView;
     let scrolledToTop = false;
 
-    imLayoutBegin(c, COL); imFlex(c); {
+    const root = imLayoutBegin(c, COL); imFlex(c); {
+        const rootClientRect = root.getBoundingClientRect();
+
         if (imIf(c) && s.currentTest) {
             if (imIf(c) && tests.length === 0) {
                 imLayoutBegin(c, ROW); imFlex(c); imAlign(c); imJustify(c); {
@@ -168,11 +168,12 @@ export function imVisualTestHarness(
                     if (scrolledToTop) {
                         target = 1;
                     } else {
-                        if (mouse.Y < 0.05 * window.innerHeight) {
+                        const yPos = lerp01(rootClientRect.top, rootClientRect.bottom, 0.05)
+                        if (rootClientRect.top < mouse.Y && mouse.Y < yPos) {
                             target = 1;
                         }
                     }
-                    s.animations.topBarOpen = lerp01(s.animations.topBarOpen, target, 10 * getDeltaTimeSeconds(c));
+                    s.animations.topBarOpen = lerp01(s.animations.topBarOpen, target, 30 * getDeltaTimeSeconds(c));
                 }
 
                 // Sidebar
@@ -209,14 +210,15 @@ export function imVisualTestHarness(
                     // animate sidebar
                     {
                         const threshold = s.animations.sideBarOpen ? 0.7 : 0.95;
-                        if (mouse.X < threshold * window.innerWidth) {
+                        const xPos = lerp01(rootClientRect.left, rootClientRect.right, threshold);
+                        if (mouse.X < xPos || mouse.X > rootClientRect.right) {
                             s.animations.sideBarOpen = false;
                         } else {
                             s.animations.sideBarOpen = true;
                         }
 
                         const target = s.animations.sideBarOpen ? 1 : 0;
-                        s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 10 * getDeltaTimeSeconds(c));
+                        s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 30 * getDeltaTimeSeconds(c));
                     }
                 } imLayoutEnd(c);
             } imIfEnd(c);
@@ -303,7 +305,6 @@ function updateWindowLocationHash(hash: string) {
     hash = hash ? ("#" + hash) : "";
 
     let url = window.location.pathname + window.location.search + hash;
-    console.log("replacing state", window.location.hash, hash);
     window.history.replaceState(null, "", url);
 }
 

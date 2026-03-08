@@ -3,7 +3,7 @@ import { EL_H3, EL_H4, elHasMousePress, elSetStyle, imElBegin, imElEnd, imStr, S
 import {BLOCK, COL, imAlign, imBg, imGap, imLayoutBegin, imLayoutEnd, imNoWrap, imPadding, imPre, imSize, NA, PERCENT, PX, ROW, cssVars} from "./ui-core.ts";
 import { imButtonIsClicked } from "./button.ts";
 import { imScrollContainerBegin, imScrollContainerEnd, newScrollContainer } from "./scroll-container.ts";
-import { assert } from "src/utils/assert";
+import { assert } from "../assert";
 import { getAllTests, runTest, Test, TestingHarness, TestResult } from "src/utils/testing";
 import { imLine, LINE_HORIZONTAL } from "./im-line.ts";
 

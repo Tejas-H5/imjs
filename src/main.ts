@@ -1,6 +1,6 @@
-import { imExampleMain } from "./examples/examples";
-import { newImCache } from "./utils/im-core";
-import { cssVars, initImUi, newCssBuilder } from "./utils/im-ui";
+import { imMain } from "./examples/examples";
+import { newImCache } from "./utils/im-js/im-core";
+import { cssVars, initImUi, newCssBuilder } from "./utils/im-js/im-ui";
 
 const cssb = newCssBuilder();
 
@@ -35,4 +35,4 @@ p {
 initImUi();
 
 const globalCache = newImCache();
-imExampleMain(globalCache);
+imMain(globalCache);

@@ -1,12 +1,12 @@
 import { getDeltaTimeSeconds, ImCache, imFor, imForEnd, imIf, imIfEnd, imMemo, imSwitch, imSwitchEnd, isFirstishRender } from "../../im-core";
-import { elSetStyle, imStr } from "../../im-dom";
+import { elSetStyle, imStr, imTrackSize } from "../../im-dom";
 import { lerp01 } from "../math-utils";
 import { BLOCK, COL, cssVars, imAbsolute, imAbsoluteXY, imAlign, imBg, imFg, imFlex, imGap, imJustify, imLayoutBegin, imLayoutEnd, imOpacity, imRelative, imSize, PERCENT, PX, ROW } from "../ui-core";
 import { VisualTestHarnessState } from "./harness";
 
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const { size } = imTrackSize(c);
+    const { width, height } = size;
 
     const a = s.animations;
     let animationComplete = false;
