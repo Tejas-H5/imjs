@@ -390,16 +390,18 @@ export function imGap(c: ImCache, val = 0, units: SizeUnits) {
     }
 }
 
-// Add more as needed
-export const NONE = 0;
-export const CENTER = 1;
-export const LEFT = 2;
-export const RIGHT = 3;
-export const START = 2;
-export const END = 3;
-export const STRETCH = 4;
+export type Alignment = number & { readonly __Alignment: unique symbol; };
 
-function getAlignment(alignment: number) {
+// Add more as needed
+export const NONE    = 0 as Alignment;
+export const CENTER  = 1 as Alignment;
+export const LEFT    = 2 as Alignment;
+export const RIGHT   = 3 as Alignment;
+export const START   = 2 as Alignment;
+export const END     = 3 as Alignment;
+export const STRETCH = 4 as Alignment;
+
+function getAlignment(alignment: Alignment) {
     switch(alignment) {
         case NONE:    return "";
         case CENTER:  return "center";
@@ -500,6 +502,7 @@ export function imOverflowContainerEnd(c: ImCache) {
     imLayoutEnd(c);
 }
 
+// NOTE: should be before imSize
 export function imAspectRatio(c: ImCache, w: number, h: number) {
     if (isFirstishRender(c)) {
         elSetStyle(c, "width", "auto");

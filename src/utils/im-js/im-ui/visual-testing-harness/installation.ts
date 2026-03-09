@@ -2,7 +2,7 @@ import { ImCache, ImCacheRerenderFn, imFor, imForEnd, imGetInline, imMemo, imSet
 import { EL_BR, EL_I, elHasMouseOver, elSetAttr, elSetStyle, getGlobalEventSystem, imElBegin, imElEnd, imStr, imTrackVisibility } from "../../im-dom";
 import { inverseLerp } from "../math-utils";
 import { BLOCK, CENTER, COL, cssVars, imAlign, imBg, imFlex, imJustify, imLayoutBegin, imLayoutEnd, imPreWrap, imScrollOverflow, imSize, INLINE, NA, NONE, PX, ROW, STRETCH } from "../ui-core";
-import { imRenderWithErrorBoundary, updateHash, VisualTestHarnessState } from "./harness";
+import { imRenderWithErrorBoundary, VisualTestHarnessState } from "./harness";
 
 
 export const TEST_CENTERED = (1 << 0);

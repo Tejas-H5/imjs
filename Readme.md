@@ -45,7 +45,7 @@ Even other problems that I didn't think this would solve also get solved. I'm su
 In addition to all of this, the friction for animating things decreases significantly, since the entire app is alread running in an animation loop.
 Programming web frontends stops feeling like looking up various things on MDN (there is still some of that) and more like programming in Processing.js or Raylib.
 
-This does _NOT_ mean, that I am just rendering a bunch of UI components to a canvas like Flutter. We are still using the DOM - but the backbone that is controling the DOM is programmed with an immediate-mode syncronous top -> bottom rendering loop instead of tree of nodes that granularly updates subtrees of itself.
+This does _NOT_ mean, that itjust rendering a bunch of UI components to a canvas like Flutter (although, you could do such a refactor to your UI components if you wrote them in this framework). It still uses the DOM - but the backbone that is controling the DOM is programmed with an immediate-mode syncronous top -> bottom rendering loop instead of tree of nodes that granularly updates subtrees of itself.
 
 The main thing that makes this possible is the immediate mode cache, which can be seen passed around as `c: ImCache` as the first argument to every component. 
 The `ImCache` is a tree-like datastructure, where we push and pop a series of `ImCacheEntries`. 

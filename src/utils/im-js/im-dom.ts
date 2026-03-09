@@ -1,4 +1,4 @@
-// IM-DOM 1.68
+// IM-DOM 1.69
 
 import { assert } from "./assert";
 import {
@@ -53,6 +53,7 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     // Good use case: You have to manage hundreds of thousands of DOM nodes. 
     // From my experimentation, it is etiher MUCH faster to do this yourself instead of relying on the framework, or about the same,
     // depending on how the browser has implemented DOM node rendering.
+    // Also will be needed for 3rd party lib integrations.
     manualDom: boolean;
 
     idx: number;     // Used to iterate the list
@@ -63,7 +64,9 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     children: (DomAppender<AppendableElement>[] | null);
     selfIdx: number; // index of this node in it's own array
 
-    finalizeType: FinalizationType; // if true, the final pass can ignore this.
+    // if true, the final pass can ignore this.
+    finalizeType: FinalizationType; 
+
     // Dedicated finalization list instead of recursing through every element at the end.
     // This is because deferring the finalization of an element is very uncommon, so I don't
     // want to eat the performance penalty of the recursion just to finalize 2 things

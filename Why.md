@@ -237,7 +237,7 @@ It retains most of the benefits of the previous framework, while also:
 - If-statements _are_ capable of type-narrowing
     - Though sadly, because of the `imIf`, the type of a value in the else-branch doesn't get narrowed to the inverse type of the if branch, probably a Typescript bug that they didnt address because no-one is doing this kind of API really
 - No need to call `rerender` manually
-    - I used to include a config that lets you disable the animation loop. But the whole point of this framework _is_ the animation loop, so I've decided to remove this config, and I have no intention of ever bringing it back
+    - I used to include a config that lets you disable the animation loop. But the whole point of this framework _is_ the animation loop, so I've decided to remove this config, and I have no intention of ever bringing it back. Although if I did really want to save the trees, I would go back to the manual render() method, and re-add individual subtree rendering, but retain everyting else
 - State _can_ be declared as close as possible to where it is actually needed. Massive monolith components are easy to split out when needed.
     - Transient values relevant to just that frame can be easily defined in the component and used without writing to a state object anywhere
 - Almost no closures in sight
@@ -300,6 +300,8 @@ There are more explanations for how it all works in the code itself, so I won't 
 
 ## Drawbacks
 
+- You are running javascript 60 times a second (or more depending on your monitor).
+    - I doubt whether this is actually that bad though
 - It is very easy to forget to end something after you've begun it. Even rendering a different number of 'immediate mode state' items every frame can cause difficult bugs. For example, if function call #6 doesn't get called in a render, then function call #7 will be pulling state from where function call #6 used to write to, which causes data corruption.
     - Sounds pretty bad, but the framework has endless assertions everywhere to make it impossible for two state objects of a different type to be read from or written to the same slot, assuming correct use of typeIds. You could still encounter bugs if all the state in a row was of the same type, but it is far more convenient to bundle up state into a singular object anyway that I've never encounted this bug in practice.
 - You'll need to be cognisant of mutating collections while you're iterating and rendering them, since rendering is synchronous. A common pattern is to assign to a `let deferredAction: (() => void) |undefined` and then running it at the end if it was assigned to.

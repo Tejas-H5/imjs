@@ -15,8 +15,8 @@ import { imJsCompleteOverview } from "./overview";
 import { imJsPerformanceBenchmarks } from "./performance-benchmarking";
 
 const tests: VisualTest[] = [
-    newVisualTest("imJS - a complete overview", imJsCompleteOverview),
-    newVisualTest("performance benchmarks", imJsPerformanceBenchmarks),
+    newVisualTest("imJS - A complete overview", imJsCompleteOverview),
+    newVisualTest("Performance benchmarks", imJsPerformanceBenchmarks),
 ];
 
 export function imMain(c: ImCache) {

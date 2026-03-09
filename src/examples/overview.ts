@@ -55,7 +55,6 @@ import {
 
 export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
-        imHeadingBegin(c); imStr(c, "imJS - A complete overview"); imHeadingEnd(c);
 
         imParaBegin(c); {
             imStr(c, `imJS is an immediate-mode UI framework I created after encountering various issues while using React. It didn't start off as an immediate-mode framework, but I have since found immediate-mode to be a very useful and convenient way to structure my programs. I've done a detailed writeup that elaborates more on the pain-points and the thought process to get to this solution `); 
@@ -63,6 +62,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
             imStr(c, `. `);
 
             imStr(c, `In this overview, I'll try to get you up to speed with this framework, what it does, and how you can use it. `);
+            imStr(c, `NOTE: If you're not on Keyboard+Mouse, then this page won't be very nice to use right now`);
         } imParaEnd(c);
 
         imSubheadingBegin(c); imStr(c, "How to put it into it to your project"); imSubheadingEnd(c);
@@ -213,6 +213,10 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "imSwitch usage code", harness, imSwitchExampleWithUsageCode, TEST_CENTERED);
+
+        imParaBegin(c); {
+            imStr(c, `NOTE: don't use imSwitch with fallthrough. The framework has no way to to distinguish between fallthrough and two genuinely different cases. You'll be expecting two cases to map to the same component, but they will map to two identical but separate instances of the same component.`);
+        } imParaEnd(c);
 
         imParaBegin(c); {
             imStr(c, `The final piece of control flow you'll need, is some way to handle exceptions that get thrown while your component is rendering. They can come from this framework, or from any code at all really. Without an error boundary, the current behaviour is for the animation loop to abort itself. A user may not even realise that the app has crashed till they try clicking a button. And I suppose, the button would still work since it invokes renders! But none of the animations will work. <TODO: we gotta handle this better>. For now, it's recommended that you have at least one error boundary at the root of your program. `);

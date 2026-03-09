@@ -13,7 +13,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     imSwitch(c, a.introToUse); switch(a.introToUse) {
         case 0: { // Not sure what this is. im / JS. I have since scrapped the line
             const target = 0.2;
-            a.scaleFactor = lerp01(a.scaleFactor, target, 5 * getDeltaTimeSeconds(c));
+            a.scaleFactor = lerp01(a.scaleFactor, target, 10 * getDeltaTimeSeconds(c));
             animationComplete = Math.abs(a.scaleFactor - target) < 0.0001;
 
             imLayoutBegin(c, BLOCK); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
@@ -55,7 +55,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
         } break;
         case 1: { // Some visual that stuck in my head after watching Billain third impact AMV
             a.t += getDeltaTimeSeconds(c);
-            const duration = 1;
+            const duration = 0.75;
             const rowsDuration = duration * 1.5;
             const textDuration = duration * 1;
 
@@ -142,13 +142,12 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             } imIfEnd(c);
         } break;
         case 2: { // Which way it rotating tho?
-            a.t += getDeltaTimeSeconds(c) * 0.5;
+            a.t += getDeltaTimeSeconds(c);
 
             let angle = a.t * Math.PI * 2 - Math.PI / 2;
             // if (a.t > 1) {
             //     angle -= Math.PI * 2;
             // }
-            
 
             if (a.t > 1) {
                 animationComplete = true;

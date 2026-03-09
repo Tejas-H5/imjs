@@ -10,6 +10,11 @@ type ImCanvasRenderingContext = [
     dpi: number
 ];
 
+/**
+ * const [canvas, ctx] = imBeginCanvasRenderingContext2D(c); {
+ *      // ur code here.
+ * } imEndCanvasRenderingContext2D(c);
+ */
 export function imBeginCanvasRenderingContext2D(c: ImCache): ImCanvasRenderingContext {
     // When I set the canvas to the size of it's offset width, this in turn
     // causes the parent to get larger, which causes the canvas to get larger, and so on.

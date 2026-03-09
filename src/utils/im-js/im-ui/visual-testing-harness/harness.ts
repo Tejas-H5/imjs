@@ -1,5 +1,5 @@
 import { getDeltaTimeSeconds, ImCache, imCatch, imFor, imForEnd, imGet, imIf, imIfElse, imIfEnd, imMemo, imSet, imSwitch, imSwitchEnd, imTry, imTryEnd, isFirstishRender } from "../../im-core";
-import { elHasMouseOver, elSetStyle, getGlobalEventSystem, imStr } from "../../im-dom";
+import { EL_H1, elHasMouseOver, elSetAttr, elSetStyle, getGlobalEventSystem, imElBegin, imElEnd, imStr } from "../../im-dom";
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
 import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
@@ -56,6 +56,14 @@ function newState(): VisualTestHarnessState {
 
 function parseUrl(search: string) {
     return new URLSearchParams(search);
+}
+
+
+export function imHeading(c: ImCache, text: string, id: string) {
+    imElBegin(c, EL_H1); imJustify(c); {
+        if (imMemo(c, id)) elSetAttr(c, "id", id);
+        imStr(c, text);
+    } imElEnd(c, EL_H1);
 }
 
 function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
@@ -155,6 +163,8 @@ export function imVisualTestHarness(
                         elSetStyle(c, "paddingRight", "2em");
                     }
 
+                    imHeading(c, s.currentTest.name, "heading");
+
                     imRenderWithErrorBoundary(c, s, s.currentTest.code);
                 } imLayoutEnd(c);
 
@@ -181,9 +191,12 @@ export function imVisualTestHarness(
                     if (imMemo(c, s.animations.sideBarOpenEm)) elSetStyle(c, "fontSize", s.animations.sideBarOpenEm + "em");
 
                     let isHoveringSidebar = false;
-                    imFor(c); for (const installation of s.installations) {
+
+                    imFor(c); for (let i = -1; i < s.installations.length; i++) {
+                        const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
+
                         imLayoutBegin(c, ROW); imJustify(c, END); {
-                            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX);  {
+                            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
                                 const hasMouseOver = elHasMouseOver(c);
                                 if (hasMouseOver) {
                                     isHoveringSidebar = true;
@@ -194,7 +207,7 @@ export function imVisualTestHarness(
                                     imStr(c, " -> ");
                                 } imIfEnd(c);
 
-                                if (imButtonIsClicked(c, installation.title, installation === s.currentInstallation)) {
+                                if (imButtonIsClicked(c, installation?.title ?? s.currentTest.name, installation === s.currentInstallation)) {
                                     scrollToInstalllation(s, installation);
                                     updateHash(s, installation);
                                     s.animations.sideBarOpen = false;
@@ -203,7 +216,7 @@ export function imVisualTestHarness(
                         } imLayoutEnd(c);
                     } imForEnd(c);
 
-                    if (imMemo(c, isHoveringSidebar) && !isHoveringSidebar && s.currentInstallation) {
+                    if (imMemo(c, isHoveringSidebar) && !isHoveringSidebar) {
                         scrollToInstalllation(s, s.currentInstallation);
                     }
 
@@ -274,10 +287,10 @@ export function imRenderWithErrorBoundary(
 }
 
 
-export function scrollToInstalllation(harness: VisualTestHarnessState, installation: VisualTestHarnessInstallationState) {
+export function scrollToInstalllation(harness: VisualTestHarnessState, installation: VisualTestHarnessInstallationState | undefined) {
     // Yooo. The # is the id selector. Its also the hash in the URL.
     // The hash in the url navigates to the element on the page with id=hash. Damn. Orthogonality of design. crazy
-    const handle = document.getElementById(installation.hash);
+    const handle = document.getElementById(installation ? installation.hash : "heading");
     if (handle) {
         handle.scrollIntoView();
     }
