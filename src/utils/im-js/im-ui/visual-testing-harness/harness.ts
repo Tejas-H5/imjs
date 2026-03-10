@@ -2,7 +2,7 @@ import { getDeltaTimeSeconds, ImCache, imCatch, imFor, imForEnd, imGet, imIf, im
 import { EL_H1, elHasMouseOver, elSetAttr, elSetStyle, getGlobalEventSystem, imElBegin, imElEnd, imStr } from "../../im-dom";
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
-import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
+import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayout, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
 
@@ -60,7 +60,7 @@ function parseUrl(search: string) {
 
 
 export function imHeading(c: ImCache, text: string, id: string) {
-    imElBegin(c, EL_H1); imJustify(c); {
+    imElBegin(c, EL_H1); imLayout(c, ROW); imJustify(c); {
         if (imMemo(c, id)) elSetAttr(c, "id", id);
         imStr(c, text);
     } imElEnd(c, EL_H1);
@@ -143,8 +143,7 @@ export function imVisualTestHarness(
                     if (isFirstishRender(c)) elSetStyle(c, "overflow", "clip");
                     if (imMemo(c, s.animations.topBarOpen)) elSetStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
-                    imLayoutBegin(c, ROW); {
-
+                    imLayoutBegin(c, ROW); imFlexWrap(c); {
                         imFor(c); for (const test of tests) {
                             if (imButtonIsClicked(c, test.name, s.currentTest === test)) {
                                 setCurrentTest(s, test, true);

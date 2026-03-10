@@ -196,6 +196,7 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
 
         // Lots of boxes
         {
+            // Still not sure if it's the right abstraction. It could be improved.
             const cols = 10;
             const renderingBenchmark = newBenchmarkResult(
                 report,
@@ -215,29 +216,7 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
                 } imCacheEnd(c);
             }
 
-            const timer = newTimer();
-
-            renderingBenchmark.variable1.forEach((rows, rowsIdx) => {
-                const numSamples = renderingBenchmark.variable1NumSamples[rowsIdx];
-                assert(numSamples !== undefined);
-
-                for (let sample = 0; sample < numSamples; sample++) {
-                    // new cache for each rows config
-                    const c: ImCache = [];
-                    root.replaceChildren();
-
-                    getTime(timer);
-                    renderingBenchmark.variable2.forEach((render, renderIdx) => {
-                        const numSamples = renderingBenchmark.variable2NumSamples[renderIdx];
-                        assert(numSamples !== undefined);
-
-                        for (let sample = 0; sample < numSamples; sample++) {
-                            renderFn(c, rows, cols);
-                            pushBenchmarkResult(renderingBenchmark, rowsIdx, renderIdx, getTime(timer));
-                        }
-                    });
-                }
-            });
+            runRenderingBenchmark(renderingBenchmark, renderFn, root);
         }
 
         // Clear children once we're done
@@ -275,6 +254,36 @@ function newBenchmarkResult(
     return result;
 }
 
+function runRenderingBenchmark(
+    res: BenchmarkResult, 
+    renderFn: (c: ImCache, var1: number) => void,
+    root: HTMLElement,
+) {
+
+    const timer = newTimer();
+
+    res.variable1.forEach((rows, rowsIdx) => {
+        const numSamples = res.variable1NumSamples[rowsIdx];
+        assert(numSamples !== undefined);
+
+        for (let sample = 0; sample < numSamples; sample++) {
+            // new cache for each rows config
+            const c: ImCache = [];
+            root.replaceChildren();
+
+            getTime(timer);
+            res.variable2.forEach((render, renderIdx) => {
+                const numSamples = res.variable2NumSamples[renderIdx];
+                assert(numSamples !== undefined);
+
+                for (let sample = 0; sample < numSamples; sample++) {
+                    renderFn(c, rows);
+                    pushBenchmarkResult(res, rowsIdx, renderIdx, getTime(timer));
+                }
+            });
+        }
+    });
+}
 
 function getBenchmarkResultIdx(res: BenchmarkResult, v1Idx: number, v2Idx: number) {
     const arrayIdx = res.variable1.length * v2Idx + v1Idx;
