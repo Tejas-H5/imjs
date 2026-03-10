@@ -80,10 +80,7 @@ function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined,
     }
 
     if (pushHistory) {
-        // The first param is a state parameter. Very intersting.
-        console.log("Pushing history: ", params);
         window.history.pushState(null, "", "?" + params.toString());
-        console.log("pushing state");
     }
 }
 

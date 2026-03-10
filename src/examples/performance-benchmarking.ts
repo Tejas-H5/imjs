@@ -25,8 +25,10 @@ export type BenchmarkResult = {
 
     variable1Name: string;
     variable1: number[];
+    variable1NumSamples: number[];
     variable2Name: string;
     variable2: number[];
+    variable2NumSamples: number[];
     measurements: Measurement[];
 }
 
@@ -192,28 +194,17 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
     setTimeout(() => {
         const report: BenchmarkReport = { results: [] };
 
-        const numInitializationSamples = 10;
-        // This is the thing we care more about, given initialization speed is largely out of our hands.
-        // "did the document.createDiv fast enough?"
-        const numRerenderSamples = 5; 
-
         // Lots of boxes
         {
             const cols = 10;
             const renderingBenchmark = newBenchmarkResult(
                 report,
                 `Lots of boxes - ${cols}x#rows`,
-                // TODO: figure out why .reverse() improves higher end results - 
-                // maybe the memory allocations from the previous runs have lower impact??
-                "#rows", [
-                    20,
-                    200,
-                    2000,
-                    // Only uncomment once we get all times < 5ms
-                    // 2500,
-                    // 5000
-                ].reverse(),
-                "#render", [1, 2],
+                // Only add 2500, 5000  we get all times < 5ms
+                "#rows", [20, 200, 2000].reverse(), [10, 10, 10],
+                // We care more about accurately measuring the re-render time, given initialization speed is largely out of our hands,
+                // and rerendering will occur more often than normal renders. Worth doing both though.
+                "#render", [1, 2], [1, 5],
             );
 
             function renderFn(c: ImCache, rows = 10, cols = 10) {
@@ -226,23 +217,27 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
 
             const timer = newTimer();
 
-            for (let sample = 0; sample < numInitializationSamples; sample++) {
-                renderingBenchmark.variable1.forEach((rows, rowsIdx) => {
+            renderingBenchmark.variable1.forEach((rows, rowsIdx) => {
+                const numSamples = renderingBenchmark.variable1NumSamples[rowsIdx];
+                assert(numSamples !== undefined);
+
+                for (let sample = 0; sample < numSamples; sample++) {
                     // new cache for each rows config
                     const c: ImCache = [];
                     root.replaceChildren();
 
                     getTime(timer);
                     renderingBenchmark.variable2.forEach((render, renderIdx) => {
-                        const n = renderIdx === 0 ? 1 : numRerenderSamples;
+                        const numSamples = renderingBenchmark.variable2NumSamples[renderIdx];
+                        assert(numSamples !== undefined);
 
-                        for (let sample = 0; sample < n; sample++) {
+                        for (let sample = 0; sample < numSamples; sample++) {
                             renderFn(c, rows, cols);
                             pushBenchmarkResult(renderingBenchmark, rowsIdx, renderIdx, getTime(timer));
                         }
                     });
-                });
-            }
+                }
+            });
         }
 
         // Clear children once we're done
@@ -258,15 +253,22 @@ function newBenchmarkResult(
     name: string,
     variable1Name: string,
     variable1: number[],
+    variable1NumSamples: number[],
     variable2Name: string,
     variable2: number[],
+    variable2NumSamples: number[],
 ): BenchmarkResult {
+    assert(variable1.length === variable1NumSamples.length);
+    assert(variable2.length === variable2NumSamples.length);
+
     const result: BenchmarkResult = {
         name,
         variable1Name,
         variable1,
+        variable1NumSamples,
         variable2Name,
         variable2,
+        variable2NumSamples,
         measurements: Array(variable1.length * variable2.length).fill(0).map(() => newMeasurement()),
     }
     report.results.push(result);
