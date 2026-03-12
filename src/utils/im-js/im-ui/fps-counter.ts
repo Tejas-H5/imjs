@@ -1,6 +1,6 @@
 import { im, ImCache } from "../im-core";
 import { imdom } from "../im-dom";
-import { BLOCK, imLayoutBegin, imLayoutEnd } from "./ui-core";
+import { BLOCK, imui, } from "./im-ui";
 
 export type FpsCounterState = {
     renderStart: number;
@@ -57,7 +57,7 @@ export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
     renderMs /= arr.frameMsRingbuffer.length;
     frameMs /= arr.frameMsRingbuffer.length;
 
-    imLayoutBegin(c, BLOCK); imdom.Str(c, Math.round(renderMs) + "ms/" + Math.round(frameMs) + "ms"); imLayoutEnd(c);
+    imui.Begin(c, BLOCK); imdom.Str(c, Math.round(renderMs) + "ms/" + Math.round(frameMs) + "ms"); imui.End(c);
 }
 
 export function imExtraDiagnosticInfo(c: ImCache, verbose = false) {
@@ -65,7 +65,7 @@ export function imExtraDiagnosticInfo(c: ImCache, verbose = false) {
     const numDestructors = im.getTotalDestructors(c);
     const numMapEntries  = im.getTotalMapEntries(c);
 
-    imLayoutBegin(c, BLOCK); {
+    imui.Begin(c, BLOCK); {
         imdom.Str(c, itemsIterated);
         imdom.Str(c, verbose ? " immediate mode state entries, " : "i ");
 
@@ -74,5 +74,5 @@ export function imExtraDiagnosticInfo(c: ImCache, verbose = false) {
         imdom.Str(c, verbose ? " destructors, " : "d ");
         imdom.Str(c, numMapEntries);
         imdom.Str(c, verbose ? " map entries" : "m");
-    } imLayoutEnd(c);
+    } imui.End(c);
 }

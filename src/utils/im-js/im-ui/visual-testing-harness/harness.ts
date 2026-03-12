@@ -2,7 +2,7 @@ import { im, ImCache } from '../../im-core';
 import { imdom, el } from '../../im-dom';
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
-import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayout, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
+import { BLOCK, COL, END, imui, NA, PX, ROW } from "../im-ui";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
 
@@ -60,7 +60,7 @@ function parseUrl(search: string) {
 
 
 export function imHeading(c: ImCache, text: string, id: string) {
-    imdom.ElBegin(c, el.H1); imLayout(c, ROW); imJustify(c); {
+    imdom.ElBegin(c, el.H1); imui.Layout(c, ROW); imui.Justify(c); {
         if (im.Memo(c, id)) imdom.setAttr(c, "id", id);
         imdom.Str(c, text);
     } imdom.ElEnd(c, el.H1);
@@ -127,33 +127,33 @@ export function imVisualTestHarness(
     let scrollView;
     let scrolledToTop = false;
 
-    const root = imLayoutBegin(c, COL); imFlex(c); {
+    const root = imui.Begin(c, COL); imui.Flex(c); {
         const rootClientRect = root.getBoundingClientRect();
 
         if (im.If(c) && s.currentTest) {
             if (im.If(c) && tests.length === 0) {
-                imLayoutBegin(c, ROW); imFlex(c); imAlign(c); imJustify(c); {
+                imui.Begin(c, ROW); imui.Flex(c); imui.Align(c); imui.Justify(c); {
                     imdom.Str(c, "No tests yet");
-                } imLayoutEnd(c);
+                } imui.End(c);
             } else {
                 im.IfElse(c);
 
                 // Top bar
-                imLayoutBegin(c, ROW); imAlign(c); imFlexWrap(c); imGap(c, 10, PX); {
+                imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
                     if (im.isFirstishRender(c)) imdom.setStyle(c, "overflow", "clip");
                     if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
-                    imLayoutBegin(c, ROW); imFlexWrap(c); {
+                    imui.Begin(c, ROW); imui.FlexWrap(c); {
                         im.For(c); for (const test of tests) {
                             if (imButtonIsClicked(c, test.name, s.currentTest === test)) {
                                 setCurrentTest(s, test, true);
                             }
                         } im.ForEnd(c);
-                    } imLayoutEnd(c);
-                } imLayoutEnd(c);
+                    } imui.End(c);
+                } imui.End(c);
 
                 // Main view
-                scrollView = imLayoutBegin(c, COL); imFlex(c); imRelative(c); imScrollOverflow(c); {
+                scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
                     if (im.isFirstishRender(c)) {
                         // makes way for the sidebar. Not ideal code but eh
                         imdom.setStyle(c, "paddingRight", "2em");
@@ -162,7 +162,7 @@ export function imVisualTestHarness(
                     imHeading(c, s.currentTest.name, "heading");
 
                     imRenderWithErrorBoundary(c, s, s.currentTest.code);
-                } imLayoutEnd(c);
+                } imui.End(c);
 
                 scrolledToTop = scrollView.scrollTop < 20;
 
@@ -183,7 +183,7 @@ export function imVisualTestHarness(
                 }
 
                 // Sidebar
-                imLayoutBegin(c, COL); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imJustify(c); imScrollOverflow(c); {
+                imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imui.Justify(c); imui.ScrollOverflow(c); {
                     if (im.Memo(c, s.animations.sideBarOpenEm)) imdom.setStyle(c, "fontSize", s.animations.sideBarOpenEm + "em");
 
                     let isHoveringSidebar = false;
@@ -191,8 +191,8 @@ export function imVisualTestHarness(
                     im.For(c); for (let i = -1; i < s.installations.length; i++) {
                         const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
 
-                        imLayoutBegin(c, ROW); imJustify(c, END); {
-                            imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
+                        imui.Begin(c, ROW); imui.Justify(c, END); {
+                            imui.Begin(c, ROW); imui.Align(c); imui.Gap(c, 10, PX); {
                                 const hasMouseOver = imdom.hasMouseOver(c);
                                 if (hasMouseOver) {
                                     isHoveringSidebar = true;
@@ -208,8 +208,8 @@ export function imVisualTestHarness(
                                     updateHash(s, installation);
                                     s.animations.sideBarOpen = false;
                                 }
-                            } imLayoutEnd(c);
-                        } imLayoutEnd(c);
+                            } imui.End(c);
+                        } imui.End(c);
                     } im.ForEnd(c);
 
                     if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
@@ -229,7 +229,7 @@ export function imVisualTestHarness(
                         const target = s.animations.sideBarOpen ? 1 : 0;
                         s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 30 * im.getDeltaTimeSeconds(c));
                     }
-                } imLayoutEnd(c);
+                } imui.End(c);
             } im.IfEnd(c);
         } else {
             im.IfElse(c);
@@ -237,7 +237,7 @@ export function imVisualTestHarness(
                 s.seenIntro = true;
             }
         } im.IfEnd(c);
-    } imLayoutEnd(c);
+    } imui.End(c);
 
     if (im.Memo(c, s.currentVisibleInstallation) | im.Memo(c, scrolledToTop)) {
         if (!s.animations.sideBarOpen) {
@@ -266,15 +266,15 @@ export function imRenderWithErrorBoundary(
             } else {
                 im.IfElse(c);
 
-                imLayoutBegin(c, BLOCK); {
+                imui.Begin(c, BLOCK); {
                     imdom.Str(c, "An error occured while rendering your component: ");
                     if (imButtonIsClicked(c, "Try again")) {
                         recover();
                     }
-                } imLayoutEnd(c);
-                imLayoutBegin(c, BLOCK); {
+                } imui.End(c);
+                imui.Begin(c, BLOCK); {
                     imdom.Str(c, err);
-                } imLayoutEnd(c);
+                } imui.End(c);
             } im.IfEnd(c);
         } catch (err) {
             im.Catch(c, tryState, err);

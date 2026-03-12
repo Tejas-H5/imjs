@@ -1,5 +1,3 @@
-// core-ui V.0.1.2
-
 import { im, ImCache } from '../im-core';
 import { imdom, el } from '../im-dom';
 
@@ -7,7 +5,7 @@ import { imdom, el } from '../im-dom';
 ///////////////////////////
 // CSS Builder
 
-export function newStyleElement(): HTMLStyleElement {
+function newStyleElement(): HTMLStyleElement {
     return document.createElement("style") as HTMLStyleElement;
 }
 
@@ -15,7 +13,7 @@ const stylesStringBuilder: string[] = [];
 const allClassNames = new Set<string>();
 
 // collect every single style that was created till this point, and append it as a style node.
-export function initCssbStyles(stylesRoot?: HTMLElement) {
+function initCssbStyles(stylesRoot?: HTMLElement) {
     // NOTE: right now, you probably dont want to use document.body as your styles root, if that is also your app root.
     if (!stylesRoot) {
         stylesRoot = document.head;
@@ -40,7 +38,7 @@ export function initCssbStyles(stylesRoot?: HTMLElement) {
  *
  * The object approach allows us to add a prefix to all the class names we make.
  */
-export function newCssBuilder(prefix: string = "") {
+function newCssBuilder(prefix: string = "") {
     const builder = stylesStringBuilder;
     return {
         /** Appends a CSS style to the builder. The prefix is not used. */
@@ -78,7 +76,7 @@ export function newCssBuilder(prefix: string = "") {
     };
 }
 
-export function isColourLike(val: object): val is CssColor {
+function isColourLike(val: object): val is CssColor {
     return "r" in val && "g" in val && "b" in val && "a" in val && "toString" in val;
 }
 
@@ -104,7 +102,10 @@ const defaultTheme = {
 } satisfies Theme;
 
 /**
- * Hint:
+ * Use this to make your own css variable dictionary. 
+ * That dictionary can be used refer to a CSS variable 
+ * via dot notation, which will be aided by LSP autocomplete.
+ *
  * ```ts
  *
  * const appTheme = {
@@ -120,7 +121,7 @@ const defaultTheme = {
  *
  * ```
  */
-export function getCssVarsDict<T extends Theme>(theme: T): CssVarDict<T> {
+function getCssVarsDict<T extends Theme>(theme: T): CssVarDict<T> {
     return Object.fromEntries(
         Object.keys(theme)
         .map((k: keyof T) =>  typeof k === "string" ? [k, `var(--${k})`] : null)
@@ -128,10 +129,11 @@ export function getCssVarsDict<T extends Theme>(theme: T): CssVarDict<T> {
     );
 }
 
+// The css var dictionary for this UI library. Components in this library can reliably depend on this.
 export const cssVars = getCssVarsDict(defaultTheme);
 
 let currentTheme: Theme = defaultTheme;
-export function getCurrentTheme(): Readonly<Theme> {
+function getCurrentTheme(): Readonly<Theme> {
     return currentTheme;
 }
 
@@ -140,7 +142,7 @@ export function getCurrentTheme(): Readonly<Theme> {
  * Anything that isn't a string, number or colour-like object is ignored.
  * For now, you'll need to manually make sure your themes have parity with one another.
  */
-export function setCurrentTheme(theme: Theme, cssRoot?: HTMLElement) {
+function setCurrentTheme(theme: Theme, cssRoot?: HTMLElement) {
     if (!cssRoot) {
         cssRoot = document.querySelector(":root") as HTMLElement;
     }
@@ -155,7 +157,7 @@ export function setCurrentTheme(theme: Theme, cssRoot?: HTMLElement) {
     }
 }
 
-export function setCssVar(cssRoot: HTMLElement, varName: string, value: string | CssColor) {
+function setCssVar(cssRoot: HTMLElement, varName: string, value: string | CssColor) {
     const fullVarName = `--${varName}`;
     cssRoot.style.setProperty(fullVarName, "" + value);
 }
@@ -167,7 +169,7 @@ export function setCssVar(cssRoot: HTMLElement, varName: string, value: string |
 /**
  * Run this once _after_ all styles have been registered.
  */
-export function initImUi() {
+function initImUi() {
     initCssbStyles();
     setCurrentTheme(defaultTheme);
 }
@@ -182,6 +184,7 @@ const cssb = newCssBuilder();
 
 export type SizeUnitInstance = number & { __sizeUnit: void; };
 
+// Fairly common, so exporting as root level
 export const PX = 10001 as SizeUnitInstance;
 export const EM = 20001 as SizeUnitInstance;
 export const PERCENT = 30001 as SizeUnitInstance;
@@ -211,7 +214,7 @@ function getSize(num: number, units: SizeUnits) {
     return units === NA ? ("") : (num + getUnits(units));
 }
 
-export function imSize(
+function imSize(
     c: ImCache,
     width: number, wType: SizeUnits,
     height: number, hType: SizeUnits, 
@@ -233,23 +236,23 @@ export function imSize(
     }
 }
 
-export function imOpacity(c: ImCache, val: number) {
+function imOpacity(c: ImCache, val: number) {
     if (im.Memo(c, val)) imdom.setStyle(c, "opacity", "" + val);
 }
 
-export function imRelative(c: ImCache) {
+function imRelative(c: ImCache) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "relative");
 }
 
-export function imBg(c: ImCache, colour: string) {
+function imBg(c: ImCache, colour: string) {
     if (im.Memo(c, colour)) imdom.setStyle(c, "backgroundColor", colour);
 }
 
-export function imFg(c: ImCache, colour: string) {
+function imFg(c: ImCache, colour: string) {
     if (im.Memo(c, colour)) imdom.setStyle(c, "color", colour);
 }
 
-export function imFontSize(c: ImCache, size: number, units: SizeUnits) {
+function imFontSize(c: ImCache, size: number, units: SizeUnits) {
     if (im.Memo(c, size) | im.Memo(c, units)) imdom.setStyle(c, "fontSize", getSize(size, units));
 }
 
@@ -295,7 +298,7 @@ export type DisplayType
 /**
  * A dummy element with flex: 1. Super useful for flexbox.
  */
-export function imFlex1(c: ImCache) {
+function imFlex1(c: ImCache) {
     imLayoutBegin(c, BLOCK); {
         if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
     } imLayoutEnd(c);
@@ -311,13 +314,13 @@ const cnCol         = cssb.cn("col",         [` { display: flex; flex-direction:
 const cnInlineCol   = cssb.cn("inline-col",  [` { display: inline-flex; flex-direction: column; }`]);
 const cnColReverse  = cssb.cn("col-reverse", [` { display: flex; flex-direction: column-reverse; }`]);
 
-export function imLayoutBeginInternal(c: ImCache, type: DisplayType) {
+function imLayoutBeginInternal(c: ImCache, type: DisplayType) {
     const root = imdom.ElBegin(c, el.DIV);
     imLayout(c, type);
     return root;
 }
 
-export function imLayout(c: ImCache, type: DisplayType) {
+function imLayout(c: ImCache, type: DisplayType) {
     const last = im.GetInline(c, imLayoutBegin, -1);
     if (last !== type) {
         im.Set(c, type);
@@ -348,28 +351,28 @@ export function imLayout(c: ImCache, type: DisplayType) {
     }
 }
 
-export function imLayoutBegin(c: ImCache, type: DisplayType) {
+function imLayoutBegin(c: ImCache, type: DisplayType) {
     return imLayoutBeginInternal(c, type).root;
 }
 
-export function imLayoutEnd(c: ImCache) {
+function imLayoutEnd(c: ImCache) {
     imdom.ElEnd(c, el.DIV);
 }
 
-export function imPre(c: ImCache) {
+function imPre(c: ImCache) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "pre");
 }
 
-export function imPreWrap(c: ImCache) {
+function imPreWrap(c: ImCache) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "pre-wrap");
 }
 
-export function imNoWrap(c: ImCache) {
+function imNoWrap(c: ImCache) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "nowrap");
 }
 
 
-export function imFlex(c: ImCache, ratio = 1) {
+function imFlex(c: ImCache, ratio = 1) {
     if (im.Memo(c, ratio)) {
         imdom.setStyle(c, "flex", "" + ratio);
         // required to make flex work the way I had thought it already worked
@@ -378,11 +381,11 @@ export function imFlex(c: ImCache, ratio = 1) {
     }
 }
 
-export function imFlexWrap(c: ImCache) {
+function imFlexWrap(c: ImCache) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "flexWrap", "wrap");
 }
 
-export function imGap(c: ImCache, val = 0, units: SizeUnits) {
+function imGap(c: ImCache, val = 0, units: SizeUnits) {
     const valChanged = im.Memo(c, val);
     const unitsChanged = im.Memo(c, units);
     if (valChanged || unitsChanged) {
@@ -414,24 +417,24 @@ function getAlignment(alignment: Alignment) {
     return "";
 }
 
-export function imAlign(c: ImCache, alignment = CENTER) {
+function imAlign(c: ImCache, alignment = CENTER) {
     if (im.Memo(c, alignment)) {
         imdom.setStyle(c, "alignItems", getAlignment(alignment));
     }
 }
 
-export function imJustify(c: ImCache, alignment = CENTER) {
+function imJustify(c: ImCache, alignment = CENTER) {
     if (im.Memo(c, alignment)) {
         imdom.setStyle(c, "justifyContent", getAlignment(alignment));
     }
 }
 
-export function imScrollOverflow(c: ImCache, vScroll = true, hScroll = false) {
+function imScrollOverflow(c: ImCache, vScroll = true, hScroll = false) {
     if (im.Memo(c, vScroll)) imdom.setStyle(c, "overflowY", vScroll ? "auto" : "");
     if (im.Memo(c, hScroll)) imdom.setStyle(c, "overflowX", hScroll ? "auto" : "");
 }
 
-export function imFixed(
+function imFixed(
     c: ImCache,
     top: number, topType: SizeUnits,
     right: number, rightType: SizeUnits,
@@ -445,7 +448,7 @@ export function imFixed(
     if (im.Memo(c, left) | im.Memo(c, leftType))     imdom.setStyle(c, "left",   getSize(left, leftType)); 
 }
 
-export function imPadding(
+function imPadding(
     c: ImCache,
     top: number,    topType: SizeUnits,
     right: number,  rightType: SizeUnits, 
@@ -463,7 +466,7 @@ export function imPadding(
  * Silly order. But it's the css standard convention.
  * I would have preferred (left, top), (right, bottom). You know, (x=0, y=0) -> (x=width, y=height) in HTML coordinates. xD
  */
-export function imAbsolute(
+function imAbsolute(
     c: ImCache,
     top: number, topType: SizeUnits,
     right: number, rightType: SizeUnits, 
@@ -477,33 +480,14 @@ export function imAbsolute(
     if (im.Memo(c, left) | im.Memo(c, leftType))     imdom.setStyle(c, "left",   getSize(left, leftType)); 
 }
 
-export function imAbsoluteXY(c: ImCache, x: number, xType: SizeUnits, y: number, yType: SizeUnits) {
+function imAbsoluteXY(c: ImCache, x: number, xType: SizeUnits, y: number, yType: SizeUnits) {
     if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "absolute");
     if (im.Memo(c, x) | im.Memo(c, xType)) imdom.setStyle(c, "left", getSize(x, xType)); 
     if (im.Memo(c, y) | im.Memo(c, yType)) imdom.setStyle(c, "top",  getSize(y, yType)); 
 }
 
-export function imOverflowContainer(c: ImCache, noScroll: boolean = false) {
-    const root = imLayoutBegin(c, BLOCK);
-
-    if (im.Memo(c, noScroll)) {
-        if (noScroll) {
-            imdom.setStyle(c, "overflow", "hidden");
-        } else {
-            imdom.setStyle(c, "overflow", "");
-            imdom.setStyle(c, "overflowY", "auto");
-        }
-    }
-
-    return root;
-}
-
-export function imOverflowContainerEnd(c: ImCache) {
-    imLayoutEnd(c);
-}
-
 // NOTE: should be before imSize
-export function imAspectRatio(c: ImCache, w: number, h: number) {
+function imAspectRatio(c: ImCache, w: number, h: number) {
     if (im.isFirstishRender(c)) {
         imdom.setStyle(c, "width", "auto");
         imdom.setStyle(c, "height", "auto");
@@ -515,13 +499,13 @@ export function imAspectRatio(c: ImCache, w: number, h: number) {
     }
 }
 
-export function imZIndex(c: ImCache, z: number) {
+function imZIndex(c: ImCache, z: number) {
     if (im.Memo(c, z)) {
         imdom.setStyle(c, "zIndex", "" + z);
     }
 }
 
-export function imHandleLongWords(c: ImCache) {
+function imHandleLongWords(c: ImCache) {
     if (im.isFirstishRender(c)) {
         imdom.setStyle(c, "overflowWrap", "anywhere");
         imdom.setStyle(c, "wordBreak", "normal");
@@ -537,7 +521,7 @@ export type CssColor = {
     toString(): string;
 }
 
-export function newColor(r: number, g: number, b: number, a: number): CssColor {
+function newColor(r: number, g: number, b: number, a: number): CssColor {
     return {
         r, g, b, a,
         toCssString(aOverride?: number) {
@@ -551,7 +535,7 @@ export function newColor(r: number, g: number, b: number, a: number): CssColor {
 }
 
 // This one won't throw exceptions.
-export function newColorFromHexOrUndefined(hex: string): CssColor | undefined {
+function newColorFromHexOrUndefined(hex: string): CssColor | undefined {
     if (hex.startsWith("#")) {
         hex = hex.substring(1);
     }
@@ -587,7 +571,7 @@ export function newColorFromHexOrUndefined(hex: string): CssColor | undefined {
     return undefined;
 }
 
-export function newColorFromHex(hex: string): CssColor {
+function newColorFromHex(hex: string): CssColor {
     const col = newColorFromHexOrUndefined(hex);
     if (!col) {
         throw new Error("invalid hex: " + hex);
@@ -599,21 +583,12 @@ export function newColorFromHex(hex: string): CssColor {
 /**
  * Taken from https://gist.github.com/mjackson/5311256
  */
-export function newColorFromHsv(h: number, s: number, v: number): CssColor {
+function newColorFromHsv(h: number, s: number, v: number): CssColor {
     let r = 0, g = 0, b = 0;
 
     if (s === 0) {
         r = g = b = v; // achromatic
         return newColor(r, g, b, 1);
-    }
-
-    function hue2rgb(p: number, q: number, t: number) {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-        return p;
     }
 
     var q = v < 0.5 ? v * (1 + s) : v + s - v * s;
@@ -624,6 +599,15 @@ export function newColorFromHsv(h: number, s: number, v: number): CssColor {
     b = hue2rgb(p, q, h - 1 / 3);
 
     return newColor(r, g, b, 1);
+}
+
+function hue2rgb(p: number, q: number, t: number) {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
 }
 
 function lerp(a: number, b: number, factor: number) {
@@ -641,10 +625,45 @@ function lerp(a: number, b: number, factor: number) {
 /**
  * NOTE to self: try to use a CSS transition on the colour style before you reach for this!
  **/
-export function lerpColor(c1: CssColor, c2: CssColor, factor: number, dst: CssColor) {
+function lerpColor(c1: CssColor, c2: CssColor, factor: number, dst: CssColor) {
     dst.r = lerp(c1.r, c2.r, factor);
     dst.g = lerp(c1.g, c2.g, factor);
     dst.b = lerp(c1.b, c2.b, factor);
     dst.a = lerp(c1.a, c2.a, factor);
 }
 
+export const imui = {
+    init: initImUi,     // Need to call this for the css builder and theme to work.
+
+    // Code-first CSS 
+    newCssBuilder,      // Use this to declare css classes or arbitrary css styles right next to your component
+
+    // Theme management
+    getCssVarsDict,     // Generate a css var dictionary for your own app's theme
+    getCurrentTheme, setCurrentTheme,
+    setCssVar,
+
+    // Common layout logic
+    // NOTE: enum values are used so frequently, that they are exported on their own instead of via this namespace object
+    LayoutBeginInternal: imLayoutBeginInternal, Layout: imLayout, Begin: imLayoutBegin, End: imLayoutEnd, LayoutBegin: imLayoutBegin, LayoutEnd: imLayoutEnd,
+    Size: imSize, Padding: imPadding, Gap: imGap, AspectRatio: imAspectRatio,
+    Flex: imFlex, FlexWrap: imFlexWrap, 
+    Pre: imPre, PreWrap: imPreWrap, NoWrap: imNoWrap, HandleLongWords: imHandleLongWords,
+    Align: imAlign, Justify: imJustify,
+    Relative: imRelative, Fixed: imFixed, Absolute: imAbsolute, AbsoluteXY: imAbsoluteXY,
+    ScrollOverflow: imScrollOverflow,
+    ZIndex: imZIndex,
+
+    // Styling logic
+    Opacity: imOpacity, Bg: imBg, Fg: imFg, FontSize: imFontSize, 
+    
+    // Common space reserving component
+    Flex1: imFlex1,
+    
+    // Colours
+    newColor,
+    newColorFromHexOrUndefined,
+    newColorFromHex,
+    newColorFromHsv,
+    lerpColor,
+};

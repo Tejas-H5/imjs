@@ -1,7 +1,7 @@
 import { im, ImCache } from "../im-core";
 import { imdom, el } from "../im-dom";
 import { setInputValue } from "./dom-utils";
-import { BLOCK, cssVars, imHandleLongWords, imLayoutBegin, imLayoutEnd, imRelative, imSize, INLINE, NA, newCssBuilder, PERCENT } from "./ui-core";
+import { BLOCK, cssVars, imui, INLINE, NA, PERCENT } from "./im-ui";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);
@@ -36,7 +36,7 @@ export function newTextArea(initFn?: (el: HTMLTextAreaElement) => void): HTMLTex
     return textArea
 }
 
-const cssb = newCssBuilder();
+const cssb = imui.newCssBuilder();
 
 const cnTextAreaRoot = cssb.newClassName("customTextArea");
 cssb.s(`
@@ -68,7 +68,7 @@ export function imTextAreaBegin(c: ImCache, {
 }: TextAreaArgs) {
     let textArea: HTMLTextAreaElement;
 
-    const root = imLayoutBegin(c, BLOCK); {
+    const root = imui.Begin(c, BLOCK); {
         if (im.isFirstishRender(c)) {
             imdom.setStyle(c, "display",   "flex");
             imdom.setStyle(c, "flex",      "1");
@@ -78,7 +78,7 @@ export function imTextAreaBegin(c: ImCache, {
         }
 
         // This is now always present.
-        imLayoutBegin(c, BLOCK); imHandleLongWords(c); imRelative(c); imSize(c, 100, PERCENT, 0, NA); {
+        imui.Begin(c, BLOCK); imui.HandleLongWords(c); imui.Relative(c); imui.Size(c, 100, PERCENT, 0, NA); {
             if (im.isFirstishRender(c)) {
                 imdom.setStyle(c, "height", "fit-content");
             }
@@ -90,7 +90,7 @@ export function imTextAreaBegin(c: ImCache, {
 
             // This is a facade that gives the text area the illusion of auto-sizing!
             // but it only works if the text doesn't end in whitespace....
-            imLayoutBegin(c, INLINE); {
+            imui.Begin(c, INLINE); {
                 const placeholderChanged = im.Memo(c, placeholder);
                 const valueChanged = im.Memo(c, value);
                 if (placeholderChanged || valueChanged) {
@@ -102,16 +102,16 @@ export function imTextAreaBegin(c: ImCache, {
                         imdom.setStyle(c, "color", cssVars.fg);
                     }
                 }
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             // This full-stop at the end of the text is what prevents the text-area from collapsing in on itself
-            imLayoutBegin(c, INLINE); {
+            imui.Begin(c, INLINE); {
                 if (im.isFirstishRender(c)) {
                     imdom.setStyle(c, "color", "transparent");
                     imdom.setStyle(c, "userSelect", "none");
                     imdom.setTextUnsafe(c, ".");
                 }
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             textArea = imdom.ElBegin(c, el.TEXTAREA).root; {
                 if (im.isFirstishRender(c)) {
@@ -136,10 +136,10 @@ export function imTextAreaBegin(c: ImCache, {
                 }
 
             } // imdom.ElEnd(c, el.TEXTAREA);
-        } // imLayoutEnd(c);
+        } // imui.End(c);
 
         // TODO: some way to optionally render other stuff hereYou can now render your own overlays here.
-    } // imLayoutEnd(c);
+    } // imui.End(c);
 
 
     return [root, textArea] as const;
@@ -150,8 +150,8 @@ export function imTextAreaEnd(c: ImCache) {
         {
             {
             } imdom.ElEnd(c, el.TEXTAREA);
-        } imLayoutEnd(c);
-    } imLayoutEnd(c);
+        } imui.End(c);
+    } imui.End(c);
 }
 
 

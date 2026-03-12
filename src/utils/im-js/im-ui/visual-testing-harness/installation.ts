@@ -1,27 +1,7 @@
 import { ImCacheRerenderFn, im, ImCache } from '../../im-core';
 import { imdom, el } from '../../im-dom';
 import { inverseLerp } from "../math-utils";
-import {
-    BLOCK,
-    CENTER,
-    COL,
-    cssVars,
-    imAlign,
-    imBg,
-    imFlex,
-    imJustify,
-    imLayoutBegin,
-    imLayoutEnd,
-    imPreWrap,
-    imScrollOverflow,
-    imSize,
-    INLINE,
-    NA,
-    NONE,
-    PX,
-    ROW,
-    STRETCH
-} from "../ui-core";
+import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "../im-ui";
 import { imRenderWithErrorBoundary, VisualTestHarnessState } from "./harness";
 
 export const TEST_CENTERED = (1 << 0);
@@ -64,22 +44,22 @@ export function imVisualTestInstallation(
 
     const scroll = !!(flags & TEST_SCROLLABLE);
 
-    imLayoutBegin(c, BLOCK); {
+    imui.Begin(c, BLOCK); {
         const visibility = imdom.TrackVisibility(c, 1);
 
-        imLayoutBegin(c, ROW); imAlign(c); imJustify(c); {
+        imui.Begin(c, ROW); imui.Align(c); imui.Justify(c); {
             if (im.Memo(c, s.hash)) {
                 imdom.setAttr(c, "id", s.hash);
             }
 
             imdom.ElBegin(c, el.I); imdom.Str(c, title); imdom.ElEnd(c, el.I);
-        } imLayoutEnd(c);
+        } imui.End(c);
 
         if (visibility.isVisible && !harness.currentVisibleInstallation) {
             harness.currentVisibleInstallation = s;
         }
 
-        const root = imLayoutBegin(c, ROW); imAlign(c, STRETCH); {
+        const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
             if (im.isFirstishRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
 
             const center = !!(flags & TEST_CENTERED);
@@ -88,15 +68,15 @@ export function imVisualTestInstallation(
                 im.Set(c, { vSplit: 0.5, dragging: false });
 
             // Test Component
-            imLayoutBegin(c, COL); imFlex(c, split.vSplit); imScrollOverflow(c, scroll); {
-                imAlign(c, center ? CENTER : NONE);
-                imJustify(c, center ? CENTER : NONE);
+            imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c, scroll); {
+                imui.Align(c, center ? CENTER : NONE);
+                imui.Justify(c, center ? CENTER : NONE);
 
                 imRenderWithErrorBoundary(c, harness, test);
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             // Middle draggable splitter thing
-            imLayoutBegin(c, BLOCK); imSize(c, 10, PX, 0, NA); imBg(c, (imdom.hasMouseOver(c) || split.dragging) ? cssVars.fg : ""); {
+            imui.Begin(c, BLOCK); imui.Size(c, 10, PX, 0, NA); imui.Bg(c, (imdom.hasMouseOver(c) || split.dragging) ? cssVars.fg : ""); {
                 const mouse = imdom.getMouse();
                 if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
@@ -109,10 +89,10 @@ export function imVisualTestInstallation(
                     const rect = root.getBoundingClientRect();
                     split.vSplit = inverseLerp(mouse.X, rect.left, rect.right);
                 }
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             // Code
-            imLayoutBegin(c, BLOCK); imPreWrap(c); imScrollOverflow(c); imFlex(c, 1 - split.vSplit); {
+            imui.Begin(c, BLOCK); imui.PreWrap(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "fontSize", "18px");
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "tabSize", "4");
@@ -122,19 +102,19 @@ export function imVisualTestInstallation(
                 im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
                     const line = s.code[lineIdx];
                     // Line numbers. Exclude them from the user selection
-                    imLayoutBegin(c, INLINE); {
+                    imui.Begin(c, INLINE); {
                         if (im.isFirstishRender(c)) imdom.setStyle(c, "userSelect", "none");
                         imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
                         imdom.Str(c, " | ");
-                    } imLayoutEnd(c);
+                    } imui.End(c);
 
                     imdom.Str(c, line);
                     imdom.ElBegin(c, el.BR); imdom.ElEnd(c, el.BR);
                 } im.ForEnd(c);
 
-            } imLayoutEnd(c);
-        } imLayoutEnd(c);
-    } imLayoutEnd(c);
+            } imui.End(c);
+        } imui.End(c);
+    } imui.End(c);
 }
 
 

@@ -1,32 +1,11 @@
 import { assert } from "src/utils/assert";
 import { im, ImCache, imdom, el, DomAppender } from "src/utils/im-js";
-import {
-    BLOCK,
-    CENTER,
-    COL,
-    cssVars,
-    imAlign,
-    imAspectRatio,
-    imBg,
-    imButtonIsClicked,
-    imFg,
-    imFlex,
-    imFlexWrap,
-    imGap,
-    imJustify,
-    imLayoutBegin,
-    imLayoutEnd,
-    imScrollOverflow,
-    imSliderInput,
-    INLINE,
-    LEFT,
-    newColorFromHsv,
-    PX,
-    ROW
-} from "src/utils/im-js/im-ui";
+import { BLOCK, CENTER, COL, cssVars, imui, INLINE, LEFT, PX, ROW } from "src/utils/im-js/im-ui";
 import { imVisualTestInstallation, TEST_SCROLLABLE, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
 import { getPreviousResult, getUserAgentString, previousResults, previousResultsByUserAgent, UserAgentString } from "./prev-results";
+import { imButtonIsClicked } from "src/utils/im-js/im-ui/button";
+import { imSliderInput } from "src/utils/im-js/im-ui/slider";
 
 export function imJsPerformanceBenchmarks(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
@@ -111,7 +90,7 @@ function imBenchmarkRunner(c: ImCache) {
         }
     }
 
-    imLayoutBegin(c, COL); imGap(c, 10, PX); imFlex(c); {
+    imui.Begin(c, COL); imui.Gap(c, 10, PX); imui.Flex(c); {
         if (imButtonIsClicked(c, "Rerun benchmarks") && s.stubNode && !s.isGeneratingReport) {
             s.isGeneratingReport = true;
             generateReport(s, s.stubNode.root);
@@ -129,23 +108,23 @@ function imBenchmarkRunner(c: ImCache) {
             imdom.Str(c, s.isGeneratingReport ? "Running benchmarks..." : "No report");
         } im.IfEnd(c);
 
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 const CELL_BOLD = (1 << 0);
 
 function imTableCellBegin(c: ImCache, alignment = LEFT, flags = 0) {
     const bold = !!(CELL_BOLD & flags);
-    imLayoutBegin(c, ROW); imJustify(c, alignment); {
+    imui.Begin(c, ROW); imui.Justify(c, alignment); {
         if (im.isFirstishRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
         if (im.Memo(c, bold)) imdom.setStyle(c, "fontWeight", bold ? "bold" : "");
-    } // imLayoutEnd(c);
+    } // imui.End(c);
 }
 
 function imTableCellEnd(c: ImCache) {
-    // imLayoutBegin(c, ROW); 
+    // imui.Begin(c, ROW); 
     {
-    } imLayoutEnd(c);
+    } imui.LayoutEnd(c);
 }
 
 
@@ -172,42 +151,42 @@ function imLotsOfBoxesWithUI(c: ImCache) {
         }
     }
 
-    imLayoutBegin(c, COL); imGap(c, 10, PX); imFlex(c); {
-        imLayoutBegin(c, ROW); {
-            imLayoutBegin(c, BLOCK); {
+    imui.Begin(c, COL); imui.Gap(c, 10, PX); imui.Flex(c); {
+        imui.Begin(c, ROW); {
+            imui.Begin(c, BLOCK); {
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "minWidth", "200px");
                 imdom.Str(c, "Render ms budget: "); imdom.Str(c, s.renderBudgetMs);
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             s.renderBudgetMs = imSliderInput(c, 1, 17, 1, s.renderBudgetMs);
-        } imLayoutEnd(c);
+        } imui.End(c);
 
-        imLayoutBegin(c, BLOCK); {
+        imui.Begin(c, BLOCK); {
             imdom.Str(c, "Boxes rendered: "); imdom.Str(c, Math.floor(s.rows) * s.cols);
             imdom.Str(c, ", "); imdom.Str(c, "Current render ms: "); imdom.Str(c, fps.renderMs.toFixed(0));
-        } imLayoutEnd(c);
+        } imui.End(c);
 
         imLotsOfBoxes(c, s.rows, s.cols);
 
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 function imLotsOfBoxes(c: ImCache, rows: number, cols: number) {
-    imLayoutBegin(c, COL); imGap(c, 10, PX); imFlex(c); imScrollOverflow(c); {
+    imui.Begin(c, COL); imui.Gap(c, 10, PX); imui.Flex(c); imui.ScrollOverflow(c); {
         let idx = 0;
         im.For(c); for (let rowIdx = 0; rowIdx < rows; rowIdx++) {
-            imLayoutBegin(c, ROW); imGap(c, 10, PX); {
+            imui.Begin(c, ROW); imui.Gap(c, 10, PX); {
                 im.For(c); for (let colIdx = 0; colIdx < cols; colIdx++) {
                     const boxState = im.GetInline(c, imLotsOfBoxes) ??
-                        im.Set(c, { color: newColorFromHsv(Math.random(), 0.5, 0.5).toCssString() });
-                    imLayoutBegin(c, ROW); imBg(c, boxState.color); imFlex(c); imAspectRatio(c, 1, 1); imAlign(c); imJustify(c); {
+                        im.Set(c, { color: imui.newColorFromHsv(Math.random(), 0.5, 0.5).toCssString() });
+                    imui.Begin(c, ROW); imui.Bg(c, boxState.color); imui.Flex(c); imui.AspectRatio(c, 1, 1); imui.Align(c); imui.Justify(c); {
                         imdom.Str(c, idx);
-                    } imLayoutEnd(c);
+                    } imui.End(c);
                     idx++;
                 } im.ForEnd(c);
-            } imLayoutEnd(c);
+            } imui.End(c);
         } im.ForEnd(c);
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
@@ -346,13 +325,13 @@ function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
 
     let regressions = 0;
 
-    imLayoutBegin(c, BLOCK); {
+    imui.Begin(c, BLOCK); {
 
-        imLayoutBegin(c, BLOCK); {
+        imui.Begin(c, BLOCK); {
             if (im.If(c) && results === previousResults) {
                 imdom.Str(c, "NOTE: viewing previous results");
             } im.IfEnd(c);
-        } imLayoutEnd(c);
+        } imui.End(c);
 
         im.For(c); for (const res of results) {
             im.KeyedBegin(c, res); {
@@ -383,13 +362,13 @@ function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
 
             imSubheadingBegin(c); imdom.Str(c, "Previous results"); imSubheadingEnd(c);
 
-            imLayoutBegin(c, ROW); imFlexWrap(c); {
+            imui.Begin(c, ROW); imui.FlexWrap(c); {
                 im.For(c); for (const userAgent in previousResultsByUserAgent) {
                     if (imButtonIsClicked(c, userAgent, prevResultsState.currentUserAgent === userAgent)) {
                         prevResultsState.currentUserAgent = userAgent;
                     }
                 } im.ForEnd(c);
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             im.Switch(c, prevResultsState.currentUserAgent); {
                 const prevResults = previousResultsByUserAgent[prevResultsState.currentUserAgent as UserAgentString];
@@ -398,7 +377,7 @@ function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
                 } im.ForEnd(c);
             } im.SwitchEnd(c);
         }
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: BenchmarkResult | undefined) {
@@ -408,7 +387,7 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
 
     let regressions = 0;
 
-    imLayoutBegin(c, BLOCK); {
+    imui.Begin(c, BLOCK); {
         if (im.isFirstishRender(c)) {
             imdom.setStyle(c, "display", "grid");
             imdom.setStyle(c, "gap", "1px");
@@ -420,14 +399,14 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
             imdom.setStyle(c, "gridTemplateColumns", "1fr ".repeat(res.variable2.length + 1));
         }
 
-        imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, "↓" + res.variable1Name + " x " + res.variable2Name + "->"); imLayoutEnd(c);
+        imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, "↓" + res.variable1Name + " x " + res.variable2Name + "->"); imui.End(c);
         im.For(c); for (const v2 of res.variable2) {
-            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, v2); imLayoutEnd(c);
+            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, v2); imui.End(c);
         } im.ForEnd(c);
 
 
         im.For(c); for (let v1Idx = 0; v1Idx < res.variable1.length; v1Idx++) {
-            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, res.variable1[v1Idx]); imLayoutEnd(c);
+            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, res.variable1[v1Idx]); imui.End(c);
 
             im.For(c); for (let v2Idx = 0; v2Idx < res.variable2.length; v2Idx++) {
                 imTableCellBegin(c, CENTER); {
@@ -459,12 +438,12 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
                     imdom.Str(c, " x");
                     imdom.Str(c, thisMeasurement.values.length);
 
-                    imLayoutBegin(c, INLINE); {
+                    imui.Begin(c, INLINE); {
                         if (im.If(c) && resPrev && split !== 0) {
 
                             const withinTolerance = Math.abs(split) < measurementState.tolerancePrev;
 
-                            imFg(c, withinTolerance ? "" : split < 0 ? "rgb(0, 180, 0)" : "rgb(255, 0, 0)");
+                            imui.Fg(c, withinTolerance ? "" : split < 0 ? "rgb(0, 180, 0)" : "rgb(255, 0, 0)");
 
                             imdom.Str(c, " (");
                             imdom.Str(c, split < 0 ? "-" : "+");
@@ -479,11 +458,11 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
 
                             imdom.Str(c, ")");
                         } im.IfEnd(c);
-                    } imLayoutEnd(c);
-                } imLayoutEnd(c);
+                    } imui.End(c);
+                } imui.End(c);
             } im.ForEnd(c);
         } im.ForEnd(c);
-    } imLayoutEnd(c);
+    } imui.End(c);
 
     // xd
     return regressions;

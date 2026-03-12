@@ -1,4 +1,4 @@
-// IM-DOM 1.69
+// IM-DOM 1.70
 
 import { assert } from "./assert";
 import { im, ImCache, ImCacheEntries } from "./im-core";
@@ -238,9 +238,9 @@ function finalizeDomAppender(a: DomAppender<ValidElement>) {
 
 /**
  * NOTE: SVG elements are actually different from normal HTML elements, and 
- * will need to be created wtih {@link ElSvgBegin}
+ * will need to be created wtih {@link imElSvgBegin}
  */
-function ElBegin<K extends keyof HTMLElementTagNameMap>(
+function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
@@ -271,7 +271,7 @@ function BeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, child
 /**
  * Svg nodes are different from normal DOM nodes, so you'll need to use this function to create them instead.
  */
-function ElSvgBegin<K extends keyof SVGElementTagNameMap>(
+function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<SVGElementTagNameMap[K]> {
@@ -293,7 +293,7 @@ function ElSvgBegin<K extends keyof SVGElementTagNameMap>(
 }
 
 
-function ElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
+function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
     const appender = im.getEntriesParent(c, newDomAppender);
     assert(appender.keyRef === r) // make sure we're popping the right thing
 
@@ -308,7 +308,7 @@ function ElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElem
     im.ImmediateModeBlockEnd(c);
 }
 
-const ElSvgEnd = ElEnd;
+const imElSvgEnd = imElEnd;
 
 
 /**
@@ -324,7 +324,7 @@ const ElSvgEnd = ElEnd;
  *      } CacheEnd(c);
  * }
  */
-function RootBegin(c: ImCache, root: ValidElement) {
+function imRootBegin(c: ImCache, root: ValidElement) {
     let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
         appender = im.Set(c, newDomAppender(root, null, []));
@@ -335,7 +335,7 @@ function RootBegin(c: ImCache, root: ValidElement) {
     im.ImmediateModeBlockBegin(c, newDomAppender, appender);
 
     // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
-    FinalizeDeferred(c);
+    imFinalizeDeferred(c);
 
     appender.idx = -1;
     
@@ -352,7 +352,7 @@ function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
 
 // Use this whenever you expect to render to a particular dom node from a place in the code that
 // would otherwise not have access to this dom node.
-function RootExistingBegin(c: ImCache, existing: DomAppender<any>) {
+function imRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     // If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
     // I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
     // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
@@ -363,19 +363,19 @@ function RootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     im.ImmediateModeBlockBegin(c, newDomAppender, existing);
 }
 
-function RootExistingEnd(c: ImCache, existing: DomAppender<any>) {
+function imRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
     let appender = im.getEntriesParent(c, newDomAppender);
     assert(appender === existing);
     im.ImmediateModeBlockEnd(c);
 }
 
 /** @deprecated TODO: remove this method in favour of explicitly finalizing */
-function FinalizeDeferred(c: ImCache) {
+function imFinalizeDeferred(c: ImCache) {
     getAppender(c).finalizeType = FINALIZE_DEFERRED;
 }
 
 
-function RootEnd(c: ImCache, root: ValidElement) {
+function imRootEnd(c: ImCache, root: ValidElement) {
     let appender = im.getEntriesParent(c, newDomAppender);
     assert(appender.keyRef === root);
 
@@ -424,13 +424,13 @@ export interface Stringifyable {
 }
 
 /**
- * This method manages a HTML Text node. So of course, we named it
- * `Str`.
+ * This method manages a HTML Text node. So of course, I named it
+ * `Str`. 
  */
-function Str(c: ImCache, value: Stringifyable): Text {
+function imStr(c: ImCache, value: Stringifyable): Text {
     const domAppender = im.getEntriesParent(c, newDomAppender);
 
-    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, Str);
+    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
         domAppender,
@@ -450,10 +450,10 @@ function Str(c: ImCache, value: Stringifyable): Text {
 }
 
 // TODO: not scaleable for the same reason State isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
-function StrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
+function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
     const domAppender = im.getEntriesParent(c, newDomAppender);
 
-    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, Str);
+    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
         domAppender.domRoot,
@@ -528,11 +528,11 @@ function getElement(c: ImCache) {
 
 // NOTE: you should only use this if you don't already have some form of global event handling set up,
 // or in cases where you can't use global event handling.
-function On<K extends keyof HTMLElementEventMap>(
+function imOn<K extends keyof HTMLElementEventMap>(
     c: ImCache,
     type: KeyRef<K>,
 ): HTMLElementEventMap[K] | null {
-    let state; state = im.GetInline(c, On);
+    let state; state = im.GetInline(c, imOn);
     if (state === undefined) {
         const val: {
             el: ValidElement;
@@ -651,7 +651,7 @@ export type MouseState = {
 
     /**
      * NOTE: if you want to use this, you'll have to prevent scroll event propagation.
-     * See {@link PreventScrollEventPropagation}
+     * See {@link imPreventScrollEventPropagation}
      */
     scrollWheel: number;
 
@@ -844,7 +844,7 @@ function resetImKeyboardState(keyboard: KeyboardState) {
 let globalEventSystem: GlobalEventSystem | undefined;
 
 // TODO: is there any point in separating this from DomRoot ?
-function GlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
+function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
     let state = im.Get(c, newImGlobalEventSystem);
     if (state === undefined) {
         // Can't make two of these
@@ -861,7 +861,7 @@ function GlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
     return state;
 }
 
-function GlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
+function imGlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
     updateMouseState(eventSystem.mouse);
     updateKeysState(eventSystem.keyboard.keys, null, null, false);
 
@@ -870,8 +870,8 @@ function GlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
     eventSystem.blur = false;
 }
 
-function TrackSize(c: ImCache, rerender = false) {
-    let state; state = im.GetInline(c, TrackSize);
+function imTrackSize(c: ImCache, rerender = false) {
+    let state; state = im.GetInline(c, imTrackSize);
     if (state === undefined) {
         const root = getElement(c);
 
@@ -908,8 +908,8 @@ function TrackSize(c: ImCache, rerender = false) {
     return state;
 }
 
-function TrackVisibility(c: ImCache, threshold: number) {
-    let state; state = im.GetInline(c, TrackVisibility);
+function imTrackVisibility(c: ImCache, threshold: number) {
+    let state; state = im.GetInline(c, imTrackVisibility);
     if (state === undefined) {
         const root = getElement(c);
 
@@ -960,8 +960,8 @@ function newPreventScrollEventPropagationState() {
     };
 }
 
-function PreventScrollEventPropagation(c: ImCache, isBlocking: boolean): number {
-    const wheel = On(c, ev.WHEEL);
+function imPreventScrollEventPropagation(c: ImCache, isBlocking: boolean): number {
+    const wheel = imOn(c, ev.WHEEL);
     if (wheel && isBlocking) {
         wheel.preventDefault();
     }
@@ -1665,14 +1665,16 @@ export const imdom = {
     getElement,      // Short for getAppender().root
 
     /** Begin DOM root. Required before any calls to {@link imdom.ElBegin} */
-    RootBegin, RootEnd,
+    RootBegin: imRootBegin, RootEnd: imRootEnd,
 
     /** DOM-node creation */
 
-    ElBegin, ElEnd,          // DOM nodes
-    ElSvgBegin, ElSvgEnd,    // SVG Dom nodes (technically different :nerd-emoji:)
-    Str,       // Text node
-    StrFmt,    // Text node, custom formatter for arbitrary object. Try to make formatter a constant! Otherwise, expect terrible performance
+    ElBegin:    imElBegin,    ElEnd: imElEnd,          // DOM nodes
+    ElSvgBegin: imElSvgBegin, ElSvgEnd: imElSvgEnd,    // SVG Dom nodes (technically different :nerd-emoji:)
+    Str:    imStr,       // Text node
+    StrFmt: imStrFmt,    // Text node, custom formatter for arbitrary object. Try to make formatter a constant! Otherwise, expect terrible performance
+    Text:   imStr,
+    TextFmt: imStrFmt,
 
     /** 
      * These methods allow re-pushing a node we created somewhere else in the DOM to the immediate-mode stack.
@@ -1680,9 +1682,9 @@ export const imdom = {
      * Not useful without FinalizeDeferred. Although maybe there should be the option to explicitly finalize the node yourself, instead of having
      * deferred finalization at all...
      **/
-    RootExistingBegin,
-    RootExistingEnd,
-    FinalizeDeferred,
+    RootExistingBegin: imRootExistingBegin,
+    RootExistingEnd:   imRootExistingEnd,
+    FinalizeDeferred:  imFinalizeDeferred,
     FINALIZE_IMMEDIATELY,
     FINALIZE_DEFERRED,
 
@@ -1693,15 +1695,15 @@ export const imdom = {
     setTextUnsafe, // Don't call this on an element that has non-text children! You'll delete them.
 
     /** Utility hooks */
-    On, // Wrapper for .addEventListener. No, there is no corresponding Off - it doesn't make sense here
-    TrackSize,          // Wrapper for ResizeObserver. Not comprehensive
-    TrackVisibility,    // Wrapper for IntersectionObserver. Not comprehensive
-    PreventScrollEventPropagation, // Allows you to block the default scrolling action, and use the scroll delta for yourself. Probably didn't need to write this method actually
+    On:                            imOn, // Wrapper for .addEventListener. No, there is no corresponding Off - it doesn't make sense here
+    TrackSize:                     imTrackSize,          // Wrapper for ResizeObserver. Not comprehensive
+    TrackVisibility:               imTrackVisibility,    // Wrapper for IntersectionObserver. Not comprehensive
+    PreventScrollEventPropagation: imPreventScrollEventPropagation, // Allows you to block the default scrolling action, and use the scroll delta for yourself. Probably didn't need to write this method actually
 
     /** Global event system */
 
     // These must be called at the root of the program for the global event system to work
-    GlobalEventSystemBegin, GlobalEventSystemEnd, 
+    GlobalEventSystemBegin: imGlobalEventSystemBegin, GlobalEventSystemEnd: imGlobalEventSystemEnd, 
 
     getMouse,
     getKeyboard,
@@ -1709,16 +1711,8 @@ export const imdom = {
     hasMouseUp,
     hasMouseClick,
     hasMouseOver,
-    isKeyPressed,
-    isKeyRepeated,
-    isKeyPressedOrRepeated,
-    isKeyReleased,
-    isKeyHeld,
-    isLetterPressed,
-    isLetterRepeated,
-    isLetterPressedOrRepeated,
-    isLetterReleased,
-    isLetterHeld,
+    isKeyPressed, isKeyRepeated, isKeyPressedOrRepeated, isKeyReleased, isKeyHeld,
+    isLetterPressed, isLetterRepeated, isLetterPressedOrRepeated, isLetterReleased, isLetterHeld,
 
     /** Global event system - internal methods */
     newImGlobalEventSystem,

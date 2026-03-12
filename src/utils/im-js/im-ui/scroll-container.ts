@@ -1,5 +1,5 @@
 import { im, ImCache } from "../im-core";
-import { COL, imFlex, imLayoutBegin, imLayoutEnd, imScrollOverflow, ROW } from "./ui-core";
+import { COL, imui, ROW } from "./im-ui";
 import { getScrollVHEx } from "./dom-utils";
 
 
@@ -60,14 +60,14 @@ export function imScrollContainerBegin(
     sc: ScrollContainer,
     orientation: typeof ROW | typeof COL = COL
 ): HTMLElement {
-    const scrollParent = imLayoutBegin(c, orientation); imFlex(c); 
-    imScrollOverflow(c, orientation === COL, orientation === ROW);
+    const scrollParent = imui.Begin(c, orientation); imui.Flex(c); 
+    imui.ScrollOverflow(c, orientation === COL, orientation === ROW);
     sc.root = scrollParent;
     return scrollParent;
 }
 
 export function imScrollContainerEnd(c: ImCache) {
-    imLayoutEnd(c);
+    imui.End(c);
 }
 
 // NOTE: it's up to you to only ever call this on one item at a time

@@ -11,6 +11,7 @@ import { assert } from "./assert";
 //    Conversely, methods that don't touch the Cache, or that will only ever _read_ from the imCache, should NOT be prefixed with 'im'.
 //    This allows developers (and in the future, static analysis tools) to know that this method can't be rendered conditionally, or
 //    out of order, similar to how React hooks work. This is really the only convention I would recommend you actually follow.
+//    - If you want to expose these methods on a namespace, the im can be dropped from the alias, if the namespace itself starts with 'im'
 //
 //  - Methods that begin a scope and have a corresponding method to end that scope should be called `im<Name>Begin` and `im<Name>End`. 
 //    Some day, I plan on making an eslint rule that will make use of this convention to flag missing closing statements.
@@ -48,7 +49,7 @@ const CACHE_CURRENT_WAITING_FOR_SET      = 18;
 const CACHE_ROOT_ENTRIES                 = 19;
 const CACHE_CURRENT_ENTRIES              = 20;
 const CACHE_IDX                          = 21;
-export const CACHE_ENTRIES_START         = 22; // Not in the struct implementation, but we'll need it for the array implementation
+const CACHE_ENTRIES_START         = 22; // Not in the struct implementation, but we'll need it for the array implementation
 
 
 const ENTRIES_REMOVE_LEVEL                    = 1;
@@ -64,41 +65,41 @@ const ENTRIES_INTERNAL_TYPE                   = 10;
 const ENTRIES_COMPLETED_ONE_RENDER            = 11;
 const ENTRIES_LAST_IDX                        = 12;
 const ENTRIES_IDX                             = 13;
-export const ENTRIES_ITEMS_START              = 14; // Not in the struct implementation, but we'll need it for the array implementation
+const ENTRIES_ITEMS_START              = 14; // Not in the struct implementation, but we'll need it for the array implementation
 
-export function newCache(): ImCache {
+function newCache(): ImCache {
     return [];
 }
 
-export function getItemsIterated(c: ImCache): number {
+function getItemsIterated(c: ImCache): number {
     return c[CACHE_ITEMS_ITERATED_LAST_FRAME];
 }
 
-export function getTotalMapEntries(c: ImCache): number {
+function getTotalMapEntries(c: ImCache): number {
     return c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME];
 }
 
-export function getTotalDestructors(c: ImCache): number {
+function getTotalDestructors(c: ImCache): number {
     return c[CACHE_TOTAL_DESTRUCTORS];
 }
 
-export function getCurrentCacheEntries(c: ImCache) {
+function getCurrentCacheEntries(c: ImCache) {
     return c[CACHE_CURRENT_ENTRIES] as unknown as ImCacheEntries;
 }
 
-export function getRootEntries(c: ImCache): ImCacheEntries {
+function getRootEntries(c: ImCache): ImCacheEntries {
     return c[CACHE_ROOT_ENTRIES];
 }
 
-export function getEntriesRemoveLevel(entries: ImCacheEntries) {
+function getEntriesRemoveLevel(entries: ImCacheEntries) {
     return entries[ENTRIES_REMOVE_LEVEL];
 }
 
-export function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
+function getEntriesIsInConditionalPathway(entries: ImCacheEntries) {
     return entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY];
 }
 
-export function getStackLength(c: ImCache) {
+function getStackLength(c: ImCache) {
     return c.length - CACHE_ENTRIES_START;
 }
 
@@ -120,7 +121,7 @@ export type FpsCounterState = {
     renderMs: number;
 }
 
-export function newFpsCounterState(): FpsCounterState {
+function newFpsCounterState(): FpsCounterState {
     return {
         renderCount: 0,
         lastRenderCount: 0,
@@ -131,7 +132,7 @@ export function newFpsCounterState(): FpsCounterState {
     }
 }
 
-export function fpsMarkRenderingStart(fps: FpsCounterState) {
+function fpsMarkRenderingStart(fps: FpsCounterState) {
     const t = performance.now();;
 
     fps.renderMs = fps.renderEnd - fps.renderStart;
@@ -141,20 +142,20 @@ export function fpsMarkRenderingStart(fps: FpsCounterState) {
     fps.renderCount = 0;
 }
 
-export function fpsMarkRenderingEnd(fps: FpsCounterState) {
+function fpsMarkRenderingEnd(fps: FpsCounterState) {
     fps.renderEnd = performance.now();
 }
 
-export const REMOVE_LEVEL_NONE = 1;
+const REMOVE_LEVEL_NONE = 1;
 // This is the default remove level for im-blocks, im-arrays, im-if/else conditionals, and im-switch.
 // The increase in performance far oughtweighs any memory problems.
-export const REMOVE_LEVEL_DETATCHED = 2;
+const REMOVE_LEVEL_DETATCHED = 2;
 // This is the default for im-keyed map entries. This is because we can key components on arbitrary values. 
 // It is common (and intended behaviour) to use object references directly as keys.
 // However, if those objects are constantly created and destroyed, this can pose a problem for REMOVE_LEVEL_DETATCHED. 
 // Using REMOVE_LEVEL_DESTROYED instead allows the map to clean up and remove those keys, so 
 // that the size of the map isn't constantly increasing.
-export const REMOVE_LEVEL_DESTROYED = 3;
+const REMOVE_LEVEL_DESTROYED = 3;
 
 export type RemovedLevel
     = typeof REMOVE_LEVEL_NONE
@@ -184,7 +185,7 @@ export type TypeId<T> = (...args: any[]) => T;
  * let pingPong; pingPong = Get(c, inlineTypeId(Math.sin));
  * if (!pingPong) pingPong = Set(c, { t: 0 });
  * ```
- * // NOTE: You probably just want {@link GetInline}
+ * // NOTE: You probably just want {@link imGetInline}
  */
 function inlineTypeId<T = undefined>(fn: Function) {
     return fn as TypeId<T>;
@@ -203,7 +204,7 @@ export type ImCacheRerenderFn = (c: ImCache) => void;
  * The main point of this framework is that rerendering your components as an animation eliminates and simplifies various problems, 
  * so it's pretty pointless if you have to start issuing manual rerenders.
  */
-export function CacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
+function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     if (c.length === 0) {
         c.length = CACHE_ENTRIES_START;
         c.fill(undefined);
@@ -305,25 +306,25 @@ export function CacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
     c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
 
-    CacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], CacheBegin, c, INTERNAL_TYPE_CACHE);
+    CacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], imCacheBegin, c, INTERNAL_TYPE_CACHE);
 
     return c;
 }
 
-export function getFpsCounterState(c: ImCache): FpsCounterState {
+function getFpsCounterState(c: ImCache): FpsCounterState {
     assert(c[CACHE_FPS_COUNTER_STATE] != null);
     return c[CACHE_FPS_COUNTER_STATE];
 }
 
 // Enqueues a cache rerender. Usually to process an event again after the 
 // current render without waiting for the next animation frame, or rerender once outside the animation frame.
-export function rerenderCache(c: ImCache) {
+function rerenderCache(c: ImCache) {
     c[CACHE_RERENDER_FN](c);
 }
 
 function noOp() {}
 
-export function CacheEnd(c: ImCache) {
+function imCacheEnd(c: ImCache) {
     CacheEntriesEnd(c);
 
     const startIdx = CACHE_ENTRIES_START - 1;
@@ -376,7 +377,7 @@ function internalTypeToString(internalType: number): string {
     return "Custom user type: " + internalType
 }
 
-export function CacheEntriesBegin<T>(
+function CacheEntriesBegin<T>(
     c: ImCache,
     entries: ImCacheEntries,
     parentTypeId: TypeId<T>,
@@ -431,7 +432,7 @@ function __Push(c: ImCache, entries: ImCacheEntries) {
     c[CACHE_CURRENT_ENTRIES] = entries;
 }
 
-export function CacheEntriesEnd(c: ImCache) {
+function CacheEntriesEnd(c: ImCache) {
     __Pop(c);
 }
 
@@ -445,7 +446,7 @@ function __Pop(c: ImCache): ImCacheEntries {
 
 
 /**
- * Allows you to get/set state inline without using lambdas, when used with {@link Set}:
+ * Allows you to get/set state inline without using lambdas, when used with {@link imSet}:
  * ```ts
  * const s = Get(c, fn) ?? imSet(c, { blah });
  * ```
@@ -457,7 +458,7 @@ function __Pop(c: ImCache): ImCacheEntries {
  *
  * The type of the value is assumed to have the return type of the `typeId` function that was specified.
  * It does not necessarily need to actually be constructed by that function. 
- * See {@link GetInline} - it does not make this assumption, and allows you to use typeIds
+ * See {@link imGetInline} - it does not make this assumption, and allows you to use typeIds
  * purely as an ID.
  *
  * You might need to refresh the state more often:
@@ -475,7 +476,7 @@ function __Pop(c: ImCache): ImCacheEntries {
  * An assertion will throw if this is not the case.
  * NOTE: This function is a fundamental primitive that most of the other methods in this framework are built with.
  */
-export function Get<T>(
+function imGet<T>(
     c: ImCache,
     typeId: TypeId<T>,
     initialValue: T | undefined = undefined
@@ -543,12 +544,12 @@ export function Get<T>(
  * if (SetRequired(c) || valueChanged) imSet(c, value);
  * ```
  */
-export function isSetRequired(c: ImCache): boolean {
+function isSetRequired(c: ImCache): boolean {
     return c[CACHE_CURRENT_WAITING_FOR_SET];
 }
 
 /**
- * Allows you to get/set state inline. Unlike {@link Get},
+ * Allows you to get/set state inline. Unlike {@link imGet},
  * the type returned by {@link typeIdInline} is not necessarily
  * the type being stored.
  *
@@ -558,14 +559,14 @@ export function isSetRequired(c: ImCache): boolean {
  * const = GetInline(c, fn) ?? imSet(c, { blah });
  * ```
  */
-export function GetInline<T = undefined>(
+function imGetInline<T = undefined>(
     c: ImCache,
     typeIdInline: TypeId<unknown>,
     initialValue: T | undefined = undefined
 ): T | undefined {
     // NOTE: undefined return type is a lie! Will also return whatever you set with Set.
     // But we want typescript to infer the value of `x = Get(c) ?? imSet(c, val)` to always be the type of val.
-    return Get(c, inlineTypeId(typeIdInline), initialValue as T);
+    return imGet(c, inlineTypeId(typeIdInline), initialValue as T);
 }
 
 
@@ -573,13 +574,13 @@ export function GetInline<T = undefined>(
  * A shorthand for a pattern that is very common.
  * NOTE: if your state gains dependencies, you can just use Get and imSet directly, as intended.
  */
-export function State<T>(c: ImCache, fn: () => T): T {
-    let val = Get(c, fn);
-    if (val === undefined) val = Set(c, fn());
+function imState<T>(c: ImCache, fn: () => T): T {
+    let val = imGet(c, fn);
+    if (val === undefined) val = imSet(c, fn());
     return val;
 }
 
-export function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
+function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const type = entries.at(ENTRIES_ITEMS_START + idx);
     if (type !== typeId) {
@@ -591,14 +592,14 @@ export function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
 }
 
 
-export function getEntriesParent<T>(c: ImCache, typeId: TypeId<T>): T {
+function getEntriesParent<T>(c: ImCache, typeId: TypeId<T>): T {
     // If this assertion fails, then you may have forgotten to pop some things you've pushed onto the stack
     const entries = c[CACHE_CURRENT_ENTRIES];
     assert(entries[ENTRIES_PARENT_TYPE] === typeId);
     return entries[ENTRIES_PARENT_VALUE] as T;
 }
 
-export function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: TypeId<T>): T | undefined {
+function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: TypeId<T>): T | undefined {
     if (entries[ENTRIES_PARENT_TYPE] === typeId) {
         return entries[ENTRIES_PARENT_VALUE] as T;
     }
@@ -606,7 +607,7 @@ export function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: 
 }
 
 
-export function Set<T>(c: ImCache, val: T): T {
+function imSet<T>(c: ImCache, val: T): T {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const idx = entries[ENTRIES_IDX];
     entries[idx + 1] = val;
@@ -676,16 +677,16 @@ function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel)
  * } ForEnd(c);
  * ```
  */
-export function KeyedBegin(c: ImCache, key: ValidKey) {
+function imKeyedBegin(c: ImCache, key: ValidKey) {
     __BlockKeyedBegin(c, key, REMOVE_LEVEL_DESTROYED);
 }
 
-export function KeyedEnd(c: ImCache) {
+function imKeyedEnd(c: ImCache) {
     __BlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
 // You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
-export function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
+function onImmediateModeBlockDestroyed(c: ImCache, destructor: () => void) {
     const entries = c[CACHE_CURRENT_ENTRIES];
     let destructors = entries[ENTRIES_DESTRUCTORS];
     if (destructors === undefined) {
@@ -703,13 +704,13 @@ function CacheEntriesOnRemove(entries: ImCacheEntries) {
     }
 }
 
-export function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
+function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCacheEntries) => boolean) {
     const shouldEnumerate = fn(entries);
     if (shouldEnumerate) {
         for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === ImmediateModeBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 recursivelyEnumerateEntries(v, fn);
             }
         }
@@ -728,7 +729,7 @@ export function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entrie
  * Iterates every item in an entries list. You only need this if you're working on 
  * dev-tools for this framework.
  */
-export function ForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
+function imForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
     for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
         const t = entries[i];
         const v = entries[i + 1];
@@ -738,7 +739,7 @@ export function ForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<un
     let map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
     if (map !== undefined) {
         for (const block of map.values()) {
-            ForEachCacheEntryItem(block.entries, fn);
+            imForEachCacheEntryItem(block.entries, fn);
         }
     }
 }
@@ -762,7 +763,7 @@ function CacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
         for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === ImmediateModeBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 CacheEntriesOnDestroy(c, v);
             }
         }
@@ -783,15 +784,15 @@ function CacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
 }
 
 // This is the typeId for a list of cache entries.
-export function ImmediateModeBlockBegin<T>(
+function imImmediateModeBlockBegin<T>(
     c: ImCache,
     parentTypeId: TypeId<T>,
     parent: T,
     internalType: number = INTERNAL_TYPE_NORMAL_BLOCK
 ): ImCacheEntries {
-    let entries; entries = Get(c, ImmediateModeBlockBegin);
+    let entries; entries = imGet(c, imImmediateModeBlockBegin);
     if (entries === undefined) {
-        entries = Set(c, [] as unknown as ImCacheEntries);
+        entries = imSet(c, [] as unknown as ImCacheEntries);
     }
 
     CacheEntriesBegin(c, entries, parentTypeId, parent, internalType);
@@ -799,12 +800,12 @@ export function ImmediateModeBlockBegin<T>(
     return entries;
 }
 
-export function __GetEntries(c: ImCache): ImCacheEntries {
+function __GetEntries(c: ImCache): ImCacheEntries {
     const entries = c[CACHE_CURRENT_ENTRIES];
     return entries;
 }
 
-export function ImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
+function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK) {
     const entries = c[CACHE_CURRENT_ENTRIES];
 
     if (entries[ENTRIES_INTERNAL_TYPE] !== internalType) {
@@ -855,12 +856,12 @@ export function ImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNA
     CacheEntriesEnd(c);
 }
 
-export function __BlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
+function __BlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const parentType = entries[ENTRIES_PARENT_TYPE];
     const parent = entries[ENTRIES_PARENT_VALUE];
 
-    return ImmediateModeBlockBegin(c, parentType, parent, internalType);
+    return imImmediateModeBlockBegin(c, parentType, parent, internalType);
 }
 
 // Not quite the first render - 
@@ -873,17 +874,17 @@ export function __BlockDerivedBegin(c: ImCache, internalType: number): ImCacheEn
 // } DivEnd(c);
 // ```
 // Each of those methods that 'augment' the call to `Div` may have their own initialization logic.
-export function isFirstishRender(c: ImCache): boolean {
+function isFirstishRender(c: ImCache): boolean {
     const entries = c[CACHE_CURRENT_ENTRIES];
     return entries[ENTRIES_COMPLETED_ONE_RENDER] === false;
 }
 
-export function isEventRerender(c: ImCache) {
+function isEventRerender(c: ImCache) {
     return c[CACHE_IS_EVENT_RERENDER];
 }
 
 
-export function __BlockDerivedEnd(c: ImCache, internalType: number) {
+function __BlockDerivedEnd(c: ImCache, internalType: number) {
     // The DOM appender will automatically update and diff the children if they've changed.
     // However we can't just do
     // ```
@@ -907,7 +908,7 @@ export function __BlockDerivedEnd(c: ImCache, internalType: number) {
     // NOTE: I've now moved this functionality into core. Your immediate mode tree builder will need
     // to resolve diffs in basically the same way.
 
-    ImmediateModeBlockEnd(c, internalType);
+    imImmediateModeBlockEnd(c, internalType);
 }
 
 /**
@@ -959,28 +960,28 @@ export function __BlockDerivedEnd(c: ImCache, internalType: number) {
  * This means the framework has no way of telling the difference between the else-if block
  * and the else block (else blocks and else-if blocks are handled the same internally).
  */
-export function If(c: ImCache): true {
+function imIf(c: ImCache): true {
     __BlockArrayBegin(c);
     __BlockConditionalBegin(c);
     return true;
 }
 
-export function IfElse(c: ImCache): true {
+function imIfElse(c: ImCache): true {
     __BlockConditionalEnd(c);
     __BlockConditionalBegin(c);
     return true;
 }
 
-export function IfEnd(c: ImCache) {
+function imIfEnd(c: ImCache) {
     __BlockConditionalEnd(c);
     __BlockArrayEnd(c);
 }
 
 // All roads lead to rome (TM) design pattern. not sure if good idea or shit idea
-export const EndIf = IfEnd;
-export const Else = IfElse;
-export const EndSwitch = SwitchEnd;
-export const EndFor = ForEnd;
+const EndIf = imIfEnd;
+const imElse = imIfElse;
+const EndSwitch = imSwitchEnd;
+const EndFor = imForEnd;
 
 /**
  * Example usage:
@@ -1005,7 +1006,7 @@ export const EndFor = ForEnd;
  *      with none of the same state.
  * 
  */
-export function Switch(c: ImCache, key: ValidKey, cached: boolean = false) {
+function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
     __BlockDerivedBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
     // I expect the keys to a switch statement to be constants that are known at 'compile time', 
     // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
@@ -1014,7 +1015,7 @@ export function Switch(c: ImCache, key: ValidKey, cached: boolean = false) {
     __BlockKeyedBegin(c, key, cached ? REMOVE_LEVEL_DETATCHED : REMOVE_LEVEL_DESTROYED);
 }
 
-export function SwitchEnd(c: ImCache) {
+function imSwitchEnd(c: ImCache) {
     __BlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
     __BlockDerivedEnd(c, INTERNAL_TYPE_SWITCH_BLOCK);
 }
@@ -1038,11 +1039,11 @@ function __BlockConditionalEnd(c: ImCache) {
     __BlockDerivedEnd(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
 }
 
-export function For(c: ImCache) {
+function imFor(c: ImCache) {
     __BlockArrayBegin(c);
 }
 
-export function ForEnd(c: ImCache) {
+function imForEnd(c: ImCache) {
     __BlockArrayEnd(c);
 }
 
@@ -1056,7 +1057,7 @@ function __BlockArrayEnd(c: ImCache) {
         for (let i = idx + 2; i <= lastIdx; i += 2) {
             const t = entries[i];
             const v = entries[i + 1];
-            if (t === ImmediateModeBlockBegin) {
+            if (t === imImmediateModeBlockBegin) {
                 CacheEntriesOnRemove(v);
             }
         }
@@ -1071,20 +1072,20 @@ function __BlockArrayEnd(c: ImCache) {
 // This is the initial value, so that anything, even `undefined`, can trigger Memo
 const IM_MEMO_FIRST_EVER = {};
 
-export const MEMO_NOT_CHANGED = 0;
-/** returned by {@link Memo} if the value changed */
-export const MEMO_CHANGED = 1;
+const MEMO_NOT_CHANGED = 0;
+/** returned by {@link imMemo} if the value changed */
+const MEMO_CHANGED = 1;
 /** 
- * returned by {@link Memo} if this is simply the first render. 
+ * returned by {@link imMemo} if this is simply the first render. 
  * Most of the time the distinction is not important, but sometimes,
  * you want to happen on a change but NOT the initial renderer.
  */
-export const MEMO_FIRST_RENDER = 2;
+const MEMO_FIRST_RENDER = 2;
 /** 
- * returned by {@link Memo} if this is is caused by the component
+ * returned by {@link imMemo} if this is is caused by the component
  * re-entering the conditional rendering codepath.
  */
-export const MEMO_FIRST_RENDER_CONDITIONAL = 3;
+const MEMO_FIRST_RENDER_CONDITIONAL = 3;
 
 export type MemoResult
     = typeof MEMO_NOT_CHANGED
@@ -1135,7 +1136,7 @@ export type MemoResult
  * }
  * ```
  */
-export function Memo(c: ImCache, val: unknown): MemoResult {
+function imMemo(c: ImCache, val: unknown): MemoResult {
     /**
      * NOTE: I had previously implemented Memo() and imMemoEnd():
      *
@@ -1145,7 +1146,7 @@ export function Memo(c: ImCache, val: unknown): MemoResult {
      * } MemoEnd();
      * ```
      * It can be done, but I've found that it's a terrible idea in practice.
-     * I had initially thought {@link Memo} was bad too, but it has turned out to be very useful.
+     * I had initially thought {@link imMemo} was bad too, but it has turned out to be very useful.
      * turned out to be very useful, more so even, than Memo2(c, ...manyArgs)
      */
 
@@ -1153,9 +1154,9 @@ export function Memo(c: ImCache, val: unknown): MemoResult {
 
     const entries = c[CACHE_CURRENT_ENTRIES];
 
-    let lastVal = Get(c, inlineTypeId(Memo), IM_MEMO_FIRST_EVER);
+    let lastVal = imGet(c, inlineTypeId(imMemo), IM_MEMO_FIRST_EVER);
     if (lastVal !== val) {
-        Set(c, val);
+        imSet(c, val);
         if (lastVal === IM_MEMO_FIRST_EVER) {
             result = MEMO_FIRST_RENDER;
         } else {
@@ -1195,10 +1196,10 @@ export type TryState = {
  * } TryEnd(c, tryState); 
  * ```
  */
-export function Try(c: ImCache): TryState {
+function imTry(c: ImCache): TryState {
     const entries = __BlockDerivedBegin(c, INTERNAL_TYPE_TRY_BLOCK);
 
-    let tryState = Get(c, Try);
+    let tryState = imGet(c, imTry);
     if (tryState === undefined) {
         const val: TryState = {
             err: null,
@@ -1209,7 +1210,7 @@ export function Try(c: ImCache): TryState {
             entries,
             unwoundThisFrame: false,
         };
-        tryState = Set(c, val);
+        tryState = imSet(c, val);
     }
 
     tryState.unwoundThisFrame = false;
@@ -1217,7 +1218,7 @@ export function Try(c: ImCache): TryState {
     return tryState;
 }
 
-export function Catch(c: ImCache, tryState: TryState, err: any) {
+function imCatch(c: ImCache, tryState: TryState, err: any) {
     tryState.unwoundThisFrame = true;
 
     if (tryState.err != null) {
@@ -1235,7 +1236,7 @@ export function Catch(c: ImCache, tryState: TryState, err: any) {
     c[CACHE_CURRENT_ENTRIES] = c[idx - 1];
 }
 
-export function TryEnd(c: ImCache, tryState: TryState) {
+function imTryEnd(c: ImCache, tryState: TryState) {
     if (tryState.unwoundThisFrame === true) {
         // nothing to end.
         assert(c[c[CACHE_IDX] + 1] === tryState.entries);
@@ -1246,12 +1247,12 @@ export function TryEnd(c: ImCache, tryState: TryState) {
     }
 }
 
-export function getDeltaTimeSeconds(c: ImCache): number {
+function getDeltaTimeSeconds(c: ImCache): number {
     return c[CACHE_ANIMATION_DELTA_TIME_SECONDS];
 }
 
 // Events can trigger rerenders in the same frame.
-export function getRenderCount(c: ImCache) {
+function getRenderCount(c: ImCache) {
     return c[CACHE_RENDER_COUNT];
 }
 
@@ -1260,17 +1261,17 @@ export const im = {
     newCache,
 
     /** Need to call these two for the immediate-mode cache to work */
-    CacheBegin, CacheEnd,
+    CacheBegin: imCacheBegin, CacheEnd: imCacheEnd,
 
     /** Internal methods and variables */
     CACHE_ENTRIES_START, // Offset into an Imcache where the actual entries start
     ENTRIES_ITEMS_START, // Offset into an ImCacheEntries where the actual items start
 
     /** State management - all different flavours of Get/Set */
-    Get, Set,
-    GetInline,  
+    Get: imGet, Set: imSet,
+    GetInline: imGetInline,  
     isSetRequired,  // Useful for when you want to store `undefined` as a valid value
-    State,
+    State: imState,
     // Use this to add a destructor. Destructors should not be relied upon to execute business logic on entry-list exit, because
     // they may or may not run depending on the 'remove level' you've set, which is purely based on
     // the performance characteristics you want.
@@ -1279,14 +1280,14 @@ export const im = {
 
     /** Conditional rendering, list rendering */
 
-    KeyedBegin, KeyedEnd,
-    If, IfElse, Else, IfEnd,
-    Switch, SwitchEnd,
-    For, ForEnd,
-    Try, Catch, TryEnd, TryCatch: Catch,
+    KeyedBegin: imKeyedBegin, KeyedEnd: imKeyedEnd,
+    If: imIf, IfElse: imIfElse, Else: imElse, IfEnd: imIfEnd,
+    Switch: imSwitch, SwitchEnd: imSwitchEnd,
+    For: imFor, ForEnd: imForEnd,
+    Try: imTry, Catch: imCatch, TryEnd: imTryEnd, TryCatch: imCatch,
 
     /** Executing code when something else has changed */
-    Memo,
+    Memo: imMemo,
     MEMO_NOT_CHANGED, MEMO_CHANGED, MEMO_FIRST_RENDER, MEMO_FIRST_RENDER_CONDITIONAL,
 
     /** Animation */
@@ -1303,9 +1304,8 @@ export const im = {
     // Useful to avoid expensive canvas rendering when true.
     isEventRerender,
 
-    /** State management - surprisingly useless methods */
+    /** State management - surprisingly useless method */
     getEntryAt,
-    ForEachCacheEntryItem,
 
     /** You won't need these for your app, but you may need these to build a custom adapter */
 
@@ -1318,8 +1318,8 @@ export const im = {
     recursivelyEnumerateEntries, // Recursively enumerate your entries
     getEntriesParent, getEntriesParentFromEntries, // Get the 'parent item' associated with an entry list
 
-    ImmediateModeBlockBegin, // This is the typeId of an ImCacheEntries object
-    ImmediateModeBlockEnd,
+    ImmediateModeBlockBegin: imImmediateModeBlockBegin, // This is the typeId of an ImCacheEntries object
+    ImmediateModeBlockEnd: imImmediateModeBlockEnd,
 
     /** Internal diagnostics */
     getFpsCounterState,
@@ -1328,4 +1328,7 @@ export const im = {
     getTotalDestructors,
     getStackLength,
     getRenderCount,
+
+    /** I made this literally for some demo that I canned, but might be useful idk */
+    ForEachCacheEntryItem: imForEachCacheEntryItem,
 };

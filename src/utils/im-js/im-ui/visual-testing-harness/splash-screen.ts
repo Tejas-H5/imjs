@@ -1,7 +1,7 @@
 import { im, ImCache } from "../../im-core";
 import { imdom } from "../../im-dom";
+import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "../im-ui";
 import { lerp01 } from "../math-utils";
-import { BLOCK, COL, cssVars, imAbsolute, imAbsoluteXY, imAlign, imBg, imFg, imFlex, imGap, imJustify, imLayoutBegin, imLayoutEnd, imOpacity, imRelative, imSize, PERCENT, PX, ROW } from "../ui-core";
 import { VisualTestHarnessState } from "./harness";
 
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
@@ -16,41 +16,41 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             a.scaleFactor = lerp01(a.scaleFactor, target, 10 * im.getDeltaTimeSeconds(c));
             animationComplete = Math.abs(a.scaleFactor - target) < 0.0001;
 
-            imLayoutBegin(c, BLOCK); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+            imui.Begin(c, BLOCK); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
-                imLayoutBegin(c, BLOCK); {
-                    imAbsoluteXY(c, width * a.scaleFactor, PX, height * a.scaleFactor, PX);
+                imui.Begin(c, BLOCK); {
+                    imui.AbsoluteXY(c, width * a.scaleFactor, PX, height * a.scaleFactor, PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
                     imdom.Str(c, "im");
-                } imLayoutEnd(c);
+                } imui.End(c);
 
-                imLayoutBegin(c, BLOCK); imBg(c, cssVars.fg); {
+                imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); {
                     imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateZ(-${(70 - 45 * a.scaleFactor)}deg)`);
 
-                    imSize(c, 100 * a.scaleFactor, PERCENT, 5 * a.scaleFactor, PERCENT);
-                    imAbsoluteXY(c, width / 2, PX, height / 2, PX);
-                } imLayoutEnd(c);
+                    imui.Size(c, 100 * a.scaleFactor, PERCENT, 5 * a.scaleFactor, PERCENT);
+                    imui.AbsoluteXY(c, width / 2, PX, height / 2, PX);
+                } imui.End(c);
 
-                imLayoutBegin(c, BLOCK); {
-                    imAbsoluteXY(c, width * (1 - a.scaleFactor), PX, height * (1 - a.scaleFactor), PX);
+                imui.Begin(c, BLOCK); {
+                    imui.AbsoluteXY(c, width * (1 - a.scaleFactor), PX, height * (1 - a.scaleFactor), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
                     if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
 
                     imdom.Str(c, "JS");
-                } imLayoutEnd(c);
+                } imui.End(c);
 
-                imLayoutBegin(c, BLOCK); {
-                    imAbsoluteXY(c, width * 0.5, PX, height * (1 - a.scaleFactor * 0.5), PX);
+                imui.Begin(c, BLOCK); {
+                    imui.AbsoluteXY(c, width * 0.5, PX, height * (1 - a.scaleFactor * 0.5), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
                     if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                     imdom.Str(c, "Visual testing harness");
-                } imLayoutEnd(c);
+                } imui.End(c);
 
-            } imLayoutEnd(c);
+            } imui.End(c);
         } break;
         case 1: { // Some visual that stuck in my head after watching Billain third impact AMV
             a.t += im.getDeltaTimeSeconds(c);
@@ -64,7 +64,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
 
             const numCols = 4;
             let start = 0;
-            imLayoutBegin(c, ROW); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+            imui.Begin(c, ROW); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
                 im.For(c); for (let colIdx = 0; colIdx < numCols; colIdx++) {
                     const colDuration = rowsDuration / numCols;
 
@@ -77,7 +77,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                     const colWidth  = width / numCols;
                     const colHeight = height / MAX_COUNT;
 
-                    imLayoutBegin(c, COL); imRelative(c); imFlex(c); imGap(c, 2, PX); {
+                    imui.Begin(c, COL); imui.Relative(c); imui.Flex(c); imui.Gap(c, 2, PX); {
                         let y = -colHeight * 4;
                         im.For(c); for (let i = 0; i < MAX_COUNT + 10; i++) {
                             const isOddColumn = colIdx % 2 === 0;
@@ -91,28 +91,28 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
 
                             const text = rendered ? "Rendered" : "Rendering";
 
-                            imLayoutBegin(c, ROW); imBg(c, bg); imFg(c, fg); imAlign(c); imJustify(c); {
+                            imui.Begin(c, ROW); imui.Bg(c, bg); imui.Fg(c, fg); imui.Align(c); imui.Justify(c); {
                                 if (im.isFirstishRender(c)) {
                                     imdom.setStyle(c, "transform", `rotateZ(${isOddColumn ? "" : "-"}45deg)`);
                                 }
 
-                                imSize(c, colWidth, PX, colHeight, PX); 
-                                imAbsoluteXY(c, 0, PX, yOffset, PX);
+                                imui.Size(c, colWidth, PX, colHeight, PX); 
+                                imui.AbsoluteXY(c, 0, PX, yOffset, PX);
 
                                 // lookahead
                                 const la = 5;
 
-                                imLayoutBegin(c, BLOCK); {
-                                    imOpacity(c, t + la);
+                                imui.Begin(c, BLOCK); {
+                                    imui.Opacity(c, t + la);
                                     imdom.Str(c, text);
-                                } imLayoutEnd(c);
-                            } imLayoutEnd(c);
+                                } imui.End(c);
+                            } imui.End(c);
 
                             y += colHeight * 2;
                         } im.ForEnd(c);
-                    } imLayoutEnd(c);
+                    } imui.End(c);
                 } im.ForEnd(c);
-            } imLayoutEnd(c);
+            } imui.End(c);
 
             start += rowsDuration;
 
@@ -123,21 +123,21 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                 const bg = tPhase === 0 ? cssVars.fg : cssVars.bg;
                 const fg = tPhase === 0 ? cssVars.bg : cssVars.fg;
 
-                imLayoutBegin(c, ROW); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, PX); imAlign(c); imJustify(c); {
-                    imLayoutBegin(c, COL); imAlign(c); {
-                        imBg(c, bg); imFg(c, fg);
+                imui.Begin(c, ROW); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); imui.Align(c); imui.Justify(c); {
+                    imui.Begin(c, COL); imui.Align(c); {
+                        imui.Bg(c, bg); imui.Fg(c, fg);
 
                         if (im.Memo(c, fg)) imdom.setStyle(c, "border", `${height * 0.05}px solid ${fg}`);
                         if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (height / 6) + "px");
                         if (im.Memo(c, height)) imdom.setStyle(c, "fontWeight", "bold");
                         imdom.Str(c, "imJS");
 
-                        imLayoutBegin(c, COL); imAlign(c); {
+                        imui.Begin(c, COL); imui.Align(c); {
                             imdom.Str(c, "Visual testing harness");
                             if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (height / 12) + "px");
-                        } imLayoutEnd(c);
-                    } imLayoutEnd(c);
-                } imLayoutEnd(c);
+                        } imui.End(c);
+                    } imui.End(c);
+                } imui.End(c);
             } im.IfEnd(c);
         } break;
         case 2: { // Which way it rotating tho?
@@ -152,22 +152,22 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                 animationComplete = true;
             }
 
-            imLayoutBegin(c, BLOCK); imAbsoluteXY(c, width / 2, PX, height / 2, PX); {
+            imui.Begin(c, BLOCK); imui.AbsoluteXY(c, width / 2, PX, height / 2, PX); {
                 const flip = angle < Math.PI / 2;
 
                 imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateY(${angle}rad) scaleX(${flip ? "1" : "-1"})`);
                 if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
                 imdom.Str(c, flip ? "im" : "JS");
-            } imLayoutEnd(c);
+            } imui.End(c);
 
-            imLayoutBegin(c, BLOCK); {
-                imAbsoluteXY(c, width * 0.5, PX, height * 0.8, PX);
+            imui.Begin(c, BLOCK); {
+                imui.AbsoluteXY(c, width * 0.5, PX, height * 0.8, PX);
                 if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
                 if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                 imdom.Str(c, "Visual testing harness");
-            } imLayoutEnd(c);
+            } imui.End(c);
         } break;
         // We need more of these. I want 90% lok of this harness to just be various intro screens.
         // That being said. Maybe this is the mindset that is preventing me from shipping things...

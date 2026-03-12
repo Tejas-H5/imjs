@@ -1,7 +1,7 @@
 import { im, ImCache }from "../im-core.ts";
 import { imdom } from "../im-dom.ts";
 import { clamp, inverseLerp, lerp } from "./math-utils.ts";
-import { BLOCK, cssVars, imLayoutBegin, imLayoutEnd } from "./ui-core.ts";
+import { BLOCK, cssVars, imui } from "./im-ui.ts";
 
 const MIN_STEP = 0.0001;
 
@@ -26,7 +26,7 @@ export function imSliderInput(
 
     const width = end - start;
 
-    const sliderBody = imLayoutBegin(c, BLOCK); {
+    const sliderBody = imui.Begin(c, BLOCK); {
         const { size } = imdom.TrackSize(c);
 
         if (im.isFirstishRender(c)) {
@@ -49,7 +49,7 @@ export function imSliderInput(
                     let t = (i + 1) / count;
                     const sliderPos = lerp(0, size.width - sliderHandleSize, t);
 
-                    imLayoutBegin(c, BLOCK); {
+                    imui.Begin(c, BLOCK); {
                         if (im.isFirstishRender(c)) {
                             imdom.setStyle(c, "position", "absolute");
                             imdom.setStyle(c, "aspectRatio", "1 / 1");
@@ -60,13 +60,13 @@ export function imSliderInput(
                         }
 
                         imdom.setStyle(c, "left", sliderPos + "px");
-                    } imLayoutEnd(c);
+                    } imui.End(c);
                 }
             }
         } im.ForEnd(c);
 
         // slider handle
-        imLayoutBegin(c, BLOCK); {
+        imui.Begin(c, BLOCK); {
             if (im.isFirstishRender(c)) {
                 imdom.setStyle(c, "position", "absolute");
                 imdom.setStyle(c, "backgroundColor", cssVars.fg);
@@ -81,7 +81,7 @@ export function imSliderInput(
             const t = inverseLerp(value, start, end);
             const sliderPos = lerp(0, size.width - sliderHandleSize, t);
             if (im.Memo(c, sliderPos)) imdom.setStyle(c, "left", sliderPos + "px");
-        } imLayoutEnd(c);
+        } imui.End(c);
 
         const mouse = imdom.getMouse();
 
@@ -108,7 +108,7 @@ export function imSliderInput(
             }
             value = clamp(value, start, end);
         }
-    } imLayoutEnd(c);
+    } imui.End(c);
 
     return value;
 }

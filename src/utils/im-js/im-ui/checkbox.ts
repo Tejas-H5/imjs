@@ -1,8 +1,8 @@
 import { im, ImCache } from "../im-core.ts";
 import { imdom } from "../im-dom.ts";
-import { BLOCK, EM, imAlign, imBg, imLayoutBegin, imLayoutEnd, imSize, INLINE_BLOCK, PERCENT , newCssBuilder, cssVars } from "./ui-core.ts";
+import { BLOCK, EM, INLINE_BLOCK, PERCENT , imui, cssVars } from "./im-ui.ts";
 
-const cssb = newCssBuilder();
+const cssb = imui.newCssBuilder();
 
 const cnCheckboxButton = cssb.cn("checkboxButton", []);
 
@@ -40,43 +40,43 @@ export function imCheckbox(c: ImCache, checked: boolean): { checked: boolean } |
 }
 
 export function imCheckboxBegin(c: ImCache) {
-    imLayoutBegin(c, INLINE_BLOCK); imAlign(c); {
+    imui.Begin(c, INLINE_BLOCK); imui.Align(c); {
         if (im.isFirstishRender(c)) {
             imdom.setClass(c, root);
             imdom.setStyle(c, "cursor", "pointer");
         }
-    } // imLayoutEnd
+    } // imui.End
 }
 
 export function imCheckboxEnd(c: ImCache) {
-    // imLayout
+    // imui.
     {
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 export function imCheckboxCheckBegin(c: ImCache, checked: boolean) {
-    imLayoutBegin(c, BLOCK); imSize(c, 0.65, EM, 0.65, EM); {
+    imui.Begin(c, BLOCK); imui.Size(c, 0.65, EM, 0.65, EM); {
         if (im.isFirstishRender(c)) {
             imdom.setClass(c, cnL.solidBorderSmRounded);
             imdom.setStyle(c, "padding", "4px");
         }
 
-        imLayoutBegin(c, BLOCK); imSize(c, 100, PERCENT, 100, PERCENT);
-        imBg(c, checked ? cssVars.fg : ""); {
+        imui.Begin(c, BLOCK); imui.Size(c, 100, PERCENT, 100, PERCENT);
+        imui.Bg(c, checked ? cssVars.fg : ""); {
             if (im.isFirstishRender(c)) {
                 imdom.setClass(c, cnL.checkboxButton);
             }
-        } // imLayoutEnd(c);
-    } // imLayoutEnd(c);
+        } // imui.End(c);
+    } // imui.End(c);
 }
 
 export function imCheckboxCheckEnd(c: ImCache) {
-    // imLayout
+    // imui.
     {
-        // imLayout
+        // imui.
         {
 
-        } imLayoutEnd(c);
-    } imLayoutEnd(c);
+        } imui.End(c);
+    } imui.End(c);
 }
 

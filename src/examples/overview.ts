@@ -1,7 +1,8 @@
 import { im, ImCache, ImCacheEntries, imdom, el, DomAppender, ev } from "src/utils/im-js";
 import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
-import { BLOCK, imLayoutBegin, imLayoutEnd, imLink, imSize, NA, newColor, newColorFromHsv, newCssBuilder, PX, Url } from "src/utils/im-js/im-ui";
+import { BLOCK, imui, NA, PX } from "src/utils/im-js/im-ui";
 import { imBaseContainerBegin, imBaseContainerEnd, imParaBegin, imParaEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
+import { imLink, Url } from "src/utils/im-js/im-ui/link";
 
 export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
@@ -273,7 +274,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         } imdom.ElEnd(c, el.UL);
 
         // End of the line
-        imLayoutBegin(c, BLOCK); imSize(c, 0, NA, 100, PX); imLayoutEnd(c);
+        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 100, PX); imui.End(c);
     } imBaseContainerEnd(c);
 }
 
@@ -652,7 +653,7 @@ function imMemoExamples(c: ImCache) {
     if (!s || becameVisible) {
         s = im.Set(c, {
             secondsElapsed: 0,
-            color: newColor(0, 0, 0, 1),
+            color: imui.newColor(0, 0, 0, 1),
             count: 0,
         });
     }
@@ -663,7 +664,7 @@ function imMemoExamples(c: ImCache) {
     }
 
     if (im.Memo(c, thisSecond) | im.Memo(c, s.count)) {
-        s.color = newColorFromHsv(Math.random(), 0.5, 0.5);
+        s.color = imui.newColorFromHsv(Math.random(), 0.5, 0.5);
     }
 
     imDivBegin(c); {
@@ -690,7 +691,7 @@ function imMemoExamples(c: ImCache) {
 
 
 // TODO: Put somewhere
-const cnHighlight = newCssBuilder().cn("highlight", [` { outline: 10px solid #FF00FF }`]);
+const cnHighlight = imui.newCssBuilder().cn("highlight", [` { outline: 10px solid #FF00FF }`]);
 
 let lastDomNode: DomAppender | undefined;
 let nextDomNode: DomAppender | undefined;

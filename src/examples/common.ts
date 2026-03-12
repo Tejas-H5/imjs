@@ -1,8 +1,8 @@
-import { BLOCK, imJustify, imLayout, imLayoutBegin, imLayoutEnd, imPadding, PX, ROW } from "src/utils/im-js/im-ui";
+import { BLOCK, imui, PX, ROW } from "src/utils/im-js/im-ui";
 import { im, imdom, el, ImCache } from "src/utils/im-js";
 
 export function imHeadingBegin(c: ImCache) {
-    imdom.ElBegin(c, el.H1); imLayout(c, ROW); imJustify(c);
+    imdom.ElBegin(c, el.H1); imui.Layout(c, ROW); imui.Justify(c);
 }
 
 export function imHeadingEnd(c: ImCache) {
@@ -10,12 +10,12 @@ export function imHeadingEnd(c: ImCache) {
 }
 
 export function imParaBegin(c: ImCache) {
-    imLayoutBegin(c, BLOCK);
+    imui.Begin(c, BLOCK);
     if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingTop", "10px");
     if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingBottom", "10px");
 }
 export function imParaEnd(c: ImCache) {
-    return imLayoutEnd(c);
+    return imui.End(c);
 }
 
 export function imSubheadingBegin(c: ImCache) {
@@ -26,9 +26,9 @@ export function imSubheadingEnd(c: ImCache) {
 }
 
 export function imBaseContainerBegin(c: ImCache) {
-    imLayoutBegin(c, BLOCK); imPadding(c, 0, PX, 10, PX, 10, PX, 10, PX);
+    imui.Begin(c, BLOCK); imui.Padding(c, 0, PX, 10, PX, 10, PX, 10, PX);
 }
 export function imBaseContainerEnd(c: ImCache) {
-    imLayoutEnd(c);
+    imui.End(c);
 }
 

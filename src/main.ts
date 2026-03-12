@@ -1,12 +1,10 @@
 import { im } from "src/utils/im-js";
 import { imMain } from "./examples/examples";
-import { cssVars, initImUi, newCssBuilder } from "./utils/im-js/im-ui";
-
-const cssb = newCssBuilder();
+import { cssVars, imui, } from "./utils/im-js/im-ui";
 
 const SPACING_1 = "10px";
 
-cssb.s(`
+imui.newCssBuilder().s(`
 html {
 	color: ${cssVars.fg};
 	font-family: "Inter", sans-serif;
@@ -32,7 +30,7 @@ p {
 }
 `);
 
-initImUi();
+imui.init();
 
 const globalCache = im.newCache();
 imMain(globalCache);

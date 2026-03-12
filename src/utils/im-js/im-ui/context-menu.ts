@@ -1,4 +1,4 @@
-import { COL, imAbsolute, imFixed, imJustify, imLayoutBegin, imLayoutEnd, imZIndex, NA, PX, ROW, cssVars } from "./ui-core";
+import { COL, imui, NA, PX, ROW, cssVars } from "./im-ui";
 import { im, ImCache } from "../im-core";
 import { imdom } from "../im-dom";
 
@@ -26,8 +26,8 @@ export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
     const x = s.position.x;
     const y = s.position.y;
 
-    imLayoutBegin(c, COL); imFixed(c, 0, PX, 0, PX, 0, PX, 0, PX); imZIndex(c, 10000); {
-        const root = imLayoutBegin(c, COL); imAbsolute(c, y, PX, 0, NA, 0, NA, x, PX); {
+    imui.Begin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); imui.ZIndex(c, 10000); {
+        const root = imui.Begin(c, COL); imui.Absolute(c, y, PX, 0, NA, 0, NA, x, PX); {
             const mouse = imdom.getMouse();
             const rect = root.getBoundingClientRect();
 
@@ -56,41 +56,41 @@ export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
                 imdom.setStyle(c, "border", `1px solid ${cssVars.bg2}`);
             }
 
-        } // imLayoutEnd(c);
-    } // imLayoutEnd(c);
+        } // imui.End(c);
+    } // imui.End(c);
 }
 
 export function imContextMenuEnd(c: ImCache, s: ContextMenuState) {
-    // imLayout
+    // imui.
     {
-        // imLayout
+        // imui.
         {
             if (imdom.hasMousePress(c)) {
                 const mouse = imdom.getMouse();
                 mouse.mouseDownElements.clear();
                 mouse.mouseClickElements.clear();
             }
-        } imLayoutEnd(c);
+        } imui.End(c);
 
         if (imdom.hasMousePress(c)) {
             s.open = false;
         }
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 // This is not as important as imContextMenuBegin/End, and can be changed for something else.
 export function imContextMenuItemBegin(c: ImCache) {
-    imLayoutBegin(c, ROW); imJustify(c); {
+    imui.Begin(c, ROW); imui.Justify(c); {
         if (im.isFirstishRender(c)) {
             imdom.setStyle(c, "borderBottom", "1px solid rgba(0,0,0,0.37)");
         }
-    } // imLayoutEnd
+    } // imui.End
 }
 
 export function imContextMenuItemEnd(c: ImCache) {
-    // imLayout
+    // imui.
     {
-    } imLayoutEnd(c);
+    } imui.End(c);
 }
 
 export function openContextMenu(s: ContextMenuState, x: number, y: number) {

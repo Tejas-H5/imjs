@@ -1,6 +1,6 @@
 import { im, ImCache } from '../im-core';
 import { imdom, el } from '../im-dom';
-import { BLOCK, imFlex, imLayoutBegin, imLayoutEnd, imRelative } from "./ui-core.ts";
+import { BLOCK, imui } from "./im-ui.ts";
 
 type ImCanvasRenderingContext = [
     canvas: HTMLCanvasElement,
@@ -20,7 +20,7 @@ export function imBeginCanvasRenderingContext2D(c: ImCache): ImCanvasRenderingCo
     // causes the parent to get larger, which causes the canvas to get larger, and so on.
     // This relative -> absolute pattern is being used here to fix this.
 
-    imLayoutBegin(c, BLOCK); imRelative(c); imFlex(c);
+    imui.Begin(c, BLOCK); imui.Relative(c); imui.Flex(c);
     const { size } = imdom.TrackSize(c);
 
     const canvas = imdom.ElBegin(c, el.CANVAS).root;
@@ -60,5 +60,5 @@ export function imBeginCanvasRenderingContext2D(c: ImCache): ImCanvasRenderingCo
 
 export function imEndCanvasRenderingContext2D(c: ImCache) {
     imdom.ElEnd(c, el.CANVAS);
-    imLayoutEnd(c);
+    imui.End(c);
 }

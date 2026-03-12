@@ -20,6 +20,7 @@ Over the years, there are several heuristics I have learned that have greatly im
 - The code should be the source of truth for itself, as much as possible. 
     - The entire program and possibly even the build script should be written in the same language if at all possible, and DSLs/scripting languages should be avoided unless inconvenient or actually needed
     - If your program has logic relating to styling, it should just live in the code, so that it can be dynamically driven by any variable in the future
+    - Turns out that they actually have a marketing buzzword for this - "Code first". Actually, this term seems to only be associated with MS EF Core, but even stuff like build.zig, nob.c, Jai using itself to build itself all fall under this IMO.
 - Only use libraries/dependencies for things where the productivity it offers or the robustness of it's code is actually worth the hit in build times, CI run times, and increase to the program's size. 
     - In web, the size might matter a lot more than in native. 100mb of javascript is possibly too much, whereas a 100mb dll isn't anything to be concerned with
     - Do not use dependencies that the entire industry says they are 'best practice', but all you ever seem to encounter when you use them are the downsides
