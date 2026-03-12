@@ -25,6 +25,7 @@ Over the years, there are several heuristics I have learned that have greatly im
     - In web, the size might matter a lot more than in native. 100mb of javascript is possibly too much, whereas a 100mb dll isn't anything to be concerned with
     - Do not use dependencies that the entire industry says they are 'best practice', but all you ever seem to encounter when you use them are the downsides
 - Prefer reimplementable ideas over reuseable code. If your code is tightly coupled to a specific language feature, like annotations, decorators, Aspects/pointcuts, async-await, typescript type inference, comptime/reflection, etc. it becomes difficult to transfer the knowledge/ideas elsewhere. 
+    - There is a plan to port to Odin at some point.
 - You can make pretty much anything with procedural code that just makes use of structs and functions.
 
 Regardless of wheter you may or may not agree with them, my experience with web in general has been that most of the frameworks make it very difficult for me to make use of these principles. 
@@ -176,7 +177,7 @@ to reasonably do this is to render the exact same number of dom nodes every sing
 This is extremely restrictive, and would never be useful for any sort of app...
 
 ... or, would it? Now that I understand the true benefit of immediate mode (keeping computation code and rendering code close together), 
-would this idea be useful? If you recall with my first framework, every single component was specified with a static array of DOM elements, and despite that, I was able to pretty much code anything I wanted to.
+would this idea be useful? If you recall with my first framework, every single component, including conditional and list rendering, was specified with a static array of DOM elements, and despite that, I was able to pretty much code anything I wanted to.
 This means that even though an immediate mode framework is forced to render the same number of things every frame,
 it will be functionally equivelant to something that I already know was useful.
 
@@ -188,13 +189,16 @@ But I fully intend to finish and put a feature-freeze on this framework once I'v
 Let's rewrite our previous example component in this new framework:
 
 ```ts
+
+const imStr = imdom.imStr;
+
 function imExampleOfABitOfEverything(c: ImCache, s: CounterState) {
-    if (imMemo(c, appState.someSignalOfSomeSort)) {
+    if (im.Memo(c, appState.someSignalOfSomeSort)) {
         console.log("This runs before all the element effects run")
     }
 
     imDivBegin(c); {
-        if (isFirstishRender(c)) elSetClass(cn.blah);
+        if (im.isFirstishRender(c)) imdom.elSetClass(cn.blah);
 
         imStr(c, "The count is: ");
         imStr(c, s.value);
@@ -203,31 +207,31 @@ function imExampleOfABitOfEverything(c: ImCache, s: CounterState) {
             s.value += 1;
         }
 
-        imFor(c); for (let i = 0; i < count; i++) {
+        im.For(c); for (let i = 0; i < count; i++) {
             imDivBegin(c); {
                 if (isFirstishRender(c)) elSetClass(cn.blah);
 
                 imStr(c, "Item "); imStr(c, i);
             } imDivEnd(c);
-        } imForEnd(c);
+        } im.ForEnd(c);
 
-        if (imIf(c) && count > 10) {
+        if (im.If(c) && count > 10) {
             imStr(c, "Gee that's a high count, man");
         } else {
-            imIfElse(c);
+            im.IfElse(c);
             imStr(c, "Keep clicking lil bro");
-        } imIfEnd(c);
+        } im.IfEnd(c);
 
         imDivBegin(c); {
-            elSetStyle("color", getColorForTime(new Date()));
-            elSetStyle("class", getCssClasForTime(new Date()));
+            imdom.elSetStyle("color", getColorForTime(new Date()));
+            imdom.elSetStyle("class", getCssClasForTime(new Date()));
 
             imStr(c, "The current time is ");
             imStr(c, new Date().toIsoString());
         } imDivEnd(c);
     } imDivEnd(c);
 
-    if (imMemo(c, appState.someSignalOfSomeSort)) {
+    if (im.Memo(c, appState.someSignalOfSomeSort)) {
         console.log("This runs after all the element effects run")
     }
 }
@@ -302,7 +306,8 @@ There are more explanations for how it all works in the code itself, so I won't 
 ## Drawbacks
 
 - You are running javascript 60 times a second (or more depending on your monitor).
-    - I doubt whether this is actually that bad though
+    - I doubt whether this is actually that bad though. I actually couldn't care less about battery life or optimum performance - I would rather every UI interaction ran at 60fps,
+        over my static app idling at 60fps and then a 200ms lagspike every time I click something.
 - It is very easy to forget to end something after you've begun it. Even rendering a different number of 'immediate mode state' items every frame can cause difficult bugs. For example, if function call #6 doesn't get called in a render, then function call #7 will be pulling state from where function call #6 used to write to, which causes data corruption.
     - Sounds pretty bad, but the framework has endless assertions everywhere to make it impossible for two state objects of a different type to be read from or written to the same slot, assuming correct use of typeIds. You could still encounter bugs if all the state in a row was of the same type, but it is far more convenient to bundle up state into a singular object anyway that I've never encounted this bug in practice.
 - You'll need to be cognisant of mutating collections while you're iterating and rendering them, since rendering is synchronous. A common pattern is to assign to a `let deferredAction: (() => void) |undefined` and then running it at the end if it was assigned to.

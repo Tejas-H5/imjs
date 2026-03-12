@@ -40,13 +40,13 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
             imdom.Str(c, `There is actually a LOT going on here, so let's unpack it:`);
             imdom.ElBegin(c, el.UL); {
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `imDom.ElBegin is a method from im-dom that opens an immediate-mode scope, within which more DOM nodes may be rendered. This scope must eventually be closed off with another call to imElEnd(c, el.DIV). The convention here is that any function named imXBegin can be assumed to open some kind of scope that must be closed off with a call to a corresponding imXEnd method. User methods that aren't postfixed with 'Begin' can be assumed to not create a scope.`);
+                    imdom.Str(c, `imdom.ElBegin is a method that opens an immediate-mode scope, within which more DOM nodes may be rendered. This scope must eventually be closed off with another call to imdom.ElEnd. The convention here is that any function named imXBegin can be assumed to open some kind of scope that must be closed off with a call to a corresponding imXEnd method. User methods that aren't suffixed with 'Begin' can be assumed to not create a scope.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `For imDom.ElBegin to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. The 'c' is the immediate-mode cache where imElBegin saves it's div. This cache is passed to every immediate mode function, as that makes it more explicit that a function reads from the immediate-mode cache somehow. The 'im' prefix is only given to methods that actually write entries into the immediate mode state, which will be important later`);
+                    imdom.Str(c, `For imdom.ElBegin to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. The 'c' is the immediate-mode cache where imdom.ElBegin saves it's div. This cache is passed to every immediate mode function, as that makes it more explicit that a function reads from the immediate-mode cache somehow. The 'im' prefix is only given to methods that actually write entries into the immediate mode state, which will be important later`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `Between imBegin and imEnd, there are two calls to imdom.Str. This method is an im-dom method that creates a single Text node under the current DOM element, and updates the text whenever the object reference changes by calling by calling toString() on this object.`);
+                    imdom.Str(c, `Between imdom.Begin and imdom.End, there are two calls to imdom.Str. This method creates a single Text node under the current DOM element, and updates the text whenever the object reference changes by calling by calling toString() on this object.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
                     imdom.Str(c, `Since the entire framework runs in an animation loop, state can be read directly from anywhere without making any framework-specific adapters. This expression will always be up-to-date.`);
@@ -64,13 +64,13 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
             imdom.Str(c, `This example is not much more complicated than the other example, but a couple more things are happening:`);
             imdom.ElBegin(c, el.UL); {
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `imGet, im.GetInline, im.Set are the state-management primitives that all methods use to save immediate-mode state entries. imGet(c, typeId) requests state of type 'typeId', and either returns what we set in the previous frame, or undefined. It will panic if the typeId passed in does not line up with the typeId at the 'current' slot - this flags conditional and out-of-order rendering bugs. A typeId is simply a function (any) => T that we use for type-inference, and also a way to assume what the type of some state is. imGetInline is like imGet, except we can specify any typeId at all, and it will not use type-inference to link the typeId to a return type, so it is good to use _inline_ instead of in some other component. As long as the typeIds in a row are all unique, it will (mostly) prevent out-of-order rendering bugs.`);
+                    imdom.Str(c, `im.Get, im.GetInline, im.Set are the state-management primitives that all methods use to save immediate-mode state entries. imGet(c, typeId) requests state of type 'typeId', and either returns what we set in the previous frame, or undefined. It will panic if the typeId passed in does not line up with the typeId at the 'current' slot - this flags conditional and out-of-order rendering bugs. A typeId is simply a function (any) => T that we use for type-inference, and also a way to assume what the type of some state is. im.GetInline is like im.Get, except we can specify any typeId at all, and it will not use type-inference to link the typeId to a return type, so it is good to use _inline_ instead of in some other component. As long as the typeIds in a row are all unique, it will (mostly) prevent out-of-order rendering bugs.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `im.Set will write to the current immediate-mode slot. It MUST be called after the first call to imGet. All other calls to imGet will throw if imSet was not called for the previous call to imGet.`);
+                    imdom.Str(c, `im.Set will write to the current immediate-mode slot. It MUST be called after the first call to im.Get. All other calls to im.Get will throw if im.Set was not called for the previous call to im.Get.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `imOn is an immediate-mode helper that wraps the 'addeventListener' callback. Whenever that callback fires, your entire app will be synchronously rerendered, so thatyou can call ev.preventDefault() on it if you needed to, and it will work. When the particular subtree is 'destroyed', the event listener will automatically be removed.`);
+                    imdom.Str(c, `imdom.On is an immediate-mode helper that wraps the 'addeventListener' callback. Whenever that callback fires, your entire app will be synchronously rerendered, so thatyou can call ev.preventDefault() on it if you needed to, and it will work. When the particular subtree is 'destroyed', the event listener will automatically be removed.`);
                 } imdom.ElEnd(c, el.LI);
             } imdom.ElEnd(c, el.UL);
         } imParaEnd(c);
@@ -99,13 +99,13 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         imParaBegin(c); {
             imdom.Str(c, `"Error: Expected to populate this cache entry with type=imdom.Str, but got newDomAppender . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state". `);
             imdom.Str(c, `This is because in one render, the code on line 13 requests the state for imdom.Str. But in the next render, the code accessing that immediate-mode slot would be line 15, which requests the state for a DOM element instead. `);
-            imdom.Str(c, `This framework's solution is for you to annotate if-blocks with calls to imIf, imIfElse, imDom.Else and imIfEnd:`);
+            imdom.Str(c, `This framework's solution is for you to annotate if-blocks with calls to im.If, im.IfElse, im.Else and im.IfEnd:`);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "Conditional rendering", harness, imConditionalRenderingExampleIfStatementNotBad, TEST_CENTERED);
 
         imParaBegin(c); {
-            imdom.Str(c, `Now, in one render, the  method calls look like 'imIf', 'imIfEnd', and in a subsequent render, the method calls look like 'imIf', 'imDom.Else', 'imIfEnd'. If imIfElse was called, the framework can infer that the first if-branch wasn't taken, and can prepare a separate entries list for the next branch. `);
+            imdom.Str(c, `Now, in one render, the  method calls look like 'im.If', 'im.IfEnd', and in a subsequent render, the method calls look like 'im.If', 'im.Else', 'im.IfEnd'. If im.IfElse was called, the framework can infer that the first if-branch wasn't taken, and can prepare a separate entries list for the next branch. `);
         } imParaEnd(c);
 
         imParaBegin(c); {
@@ -115,7 +115,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
 
         imParaBegin(c); {
             imdom.Str(c, `"Error: You should be rendering the same number of things in every render cycle". If the framework doesn't emit this error, we have no way of knowing about this state-collision bug because the types of the two state are actually the same. `);
-            imdom.Str(c, `The framework deals with for-loops with the imFor and im.ForEnd methods: `);
+            imdom.Str(c, `The framework deals with for-loops with the im.For and im.ForEnd methods: `);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "List rendering", harness, imListRenderingExampleFixed, TEST_CENTERED);
@@ -125,7 +125,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         } imParaEnd(c);
 
         imParaBegin(c); {
-            imdom.Str(c, `In order to render a list of complicated items, it can be more performant to reuse the same 'entries block' for the same item. To do this, you can key your list items with imKeyedBegin/End. You may also want to render a different 'type' of component per item:`);
+            imdom.Str(c, `In order to render a list of complicated items, it can be more performant to reuse the same 'entries block' for the same item. To do this, you can key your list items with im.KeyedBegin/End. You may also want to render a different 'type' of component per item:`);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "List rendering - keyed", harness, imListRenderingExampleKeyed, TEST_CENTERED);
@@ -141,25 +141,25 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         } imParaEnd(c);
 
         imParaBegin(c); {
-            imdom.Str(c, `There are other times where you'll want to to dispatch to a particular component based on 'the current view', however that may be represented. You may think to reach for imKeyed:`);
+            imdom.Str(c, `There are other times where you'll want to to dispatch to a particular component based on 'the current view', however that may be represented. You may think to reach for im.Keyed:`);
         } imParaEnd(c);
 
-        imVisualTestInstallation(c, "imKeyed wrong tool for the job", harness, imSwitchExampleWithKeyedDontDoItLikeThis, TEST_CENTERED);
+        imVisualTestInstallation(c, "im.Keyed wrong tool for the job", harness, imSwitchExampleWithKeyedDontDoItLikeThis, TEST_CENTERED);
 
         imParaBegin(c); {
             imdom.Str(c, `However, there is a problem. Usage code that might reuse your component in the same scope will no longer work: `);
         } imParaEnd(c);
 
-        imVisualTestInstallation(c, "imKeyed wrong tool for the job - usage code", harness, imSwitchExampleWithKeyedUsageCode, TEST_CENTERED);
+        imVisualTestInstallation(c, "im.Keyed wrong tool for the job - usage code", harness, imSwitchExampleWithKeyedUsageCode, TEST_CENTERED);
 
         imParaBegin(c); {
-            imdom.Str(c, `The same key cannot be rendered to twice. I am thinking about other ways to handle duplicate keys more gracefully, but this bug in particular actually a you problem, and will be present in all those alternate iterations of the framework as well. imKeyed shares it's keys amongst all other entries under the current scope, and it is a bug to render to the same key twice. This is where im.Switch comes in:`);
+            imdom.Str(c, `The same key cannot be rendered to twice. I am thinking about other ways to handle duplicate keys more gracefully, but this bug in particular actually a you problem, and will be present in all those alternate iterations of the framework as well. im.Keyed shares it's keys amongst all other entries under the current scope, and it is a bug to render to the same key twice. This is where im.Switch comes in:`);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "use im.Switch instead", harness, imSwitchExample, TEST_CENTERED);
 
         imParaBegin(c); {
-            imdom.Str(c, `It's the same as imKeyed, but within it's own separate immediate-mode scope. The usage code from earlier should work now:`);
+            imdom.Str(c, `It's the same as im.Keyed, but within it's own separate immediate-mode scope. The usage code from earlier should work now:`);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "im.Switch usage code", harness, imSwitchExampleWithUsageCode, TEST_CENTERED);
@@ -184,7 +184,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         imVisualTestInstallation(c, "isFirstishRender", harness, imisFirstishRenderExample);
 
         imParaBegin(c); {
-            imdom.Str(c, `If your component encounters an error, and you decide to recover from that error, the component will rerender, with isFirstishRender still returning true, despite having already returned true once before, hence the name 'firstish' and not 'first'. Because so many components need some way of initializing some idempotent state on the first render, this eliminates the need for a LOT of immediate-mode state entries to be created.`);
+            imdom.Str(c, `If your component encounters an error, and you decide to recover from that error, the component will rerender, with im.isFirstishRender still returning true, despite having already returned true once before, hence the name 'firstish' and not 'first'. Because so many components need some way of initializing some idempotent state on the first render, this eliminates the need for a LOT of immediate-mode state entries to be created.`);
         } imParaEnd(c);
 
         imParaBegin(c); {
