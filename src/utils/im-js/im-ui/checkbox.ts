@@ -1,5 +1,5 @@
-import { ImCache, isFirstishRender } from "../im-core.ts";
-import { elHasMousePress, elSetClass, elSetStyle } from "../im-dom.ts";
+import { im, ImCache } from "../im-core.ts";
+import { imdom } from "../im-dom.ts";
 import { BLOCK, EM, imAlign, imBg, imLayoutBegin, imLayoutEnd, imSize, INLINE_BLOCK, PERCENT , newCssBuilder, cssVars } from "./ui-core.ts";
 
 const cssb = newCssBuilder();
@@ -29,7 +29,7 @@ export function imCheckbox(c: ImCache, checked: boolean): { checked: boolean } |
 
     // I didn't think a checkbox could be broken down any further ...
     imCheckboxBegin(c); {
-        if (elHasMousePress(c)) {
+        if (imdom.hasMousePress(c)) {
             result = { checked: !checked }
         }
         imCheckboxCheckBegin(c, checked);
@@ -41,9 +41,9 @@ export function imCheckbox(c: ImCache, checked: boolean): { checked: boolean } |
 
 export function imCheckboxBegin(c: ImCache) {
     imLayoutBegin(c, INLINE_BLOCK); imAlign(c); {
-        if (isFirstishRender(c)) {
-            elSetClass(c, root);
-            elSetStyle(c, "cursor", "pointer");
+        if (im.isFirstishRender(c)) {
+            imdom.setClass(c, root);
+            imdom.setStyle(c, "cursor", "pointer");
         }
     } // imLayoutEnd
 }
@@ -56,15 +56,15 @@ export function imCheckboxEnd(c: ImCache) {
 
 export function imCheckboxCheckBegin(c: ImCache, checked: boolean) {
     imLayoutBegin(c, BLOCK); imSize(c, 0.65, EM, 0.65, EM); {
-        if (isFirstishRender(c)) {
-            elSetClass(c, cnL.solidBorderSmRounded);
-            elSetStyle(c, "padding", "4px");
+        if (im.isFirstishRender(c)) {
+            imdom.setClass(c, cnL.solidBorderSmRounded);
+            imdom.setStyle(c, "padding", "4px");
         }
 
         imLayoutBegin(c, BLOCK); imSize(c, 100, PERCENT, 100, PERCENT);
         imBg(c, checked ? cssVars.fg : ""); {
-            if (isFirstishRender(c)) {
-                elSetClass(c, cnL.checkboxButton);
+            if (im.isFirstishRender(c)) {
+                imdom.setClass(c, cnL.checkboxButton);
             }
         } // imLayoutEnd(c);
     } // imLayoutEnd(c);

@@ -1,5 +1,5 @@
-import { getDeltaTimeSeconds, ImCache, imCatch, imFor, imForEnd, imGet, imIf, imIfElse, imIfEnd, imMemo, imSet, imSwitch, imSwitchEnd, imTry, imTryEnd, isFirstishRender } from "../../im-core";
-import { EL_H1, elHasMouseOver, elSetAttr, elSetStyle, getGlobalEventSystem, imElBegin, imElEnd, imStr } from "../../im-dom";
+import { im, ImCache } from '../../im-core';
+import { imdom, el } from '../../im-dom';
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
 import { BLOCK, COL, END, imAbsolute, imAlign, imFlex, imFlexWrap, imGap, imJustify, imLayout, imLayoutBegin, imLayoutEnd, imRelative, imScrollOverflow, NA, PX, ROW } from "../ui-core";
@@ -60,10 +60,10 @@ function parseUrl(search: string) {
 
 
 export function imHeading(c: ImCache, text: string, id: string) {
-    imElBegin(c, EL_H1); imLayout(c, ROW); imJustify(c); {
-        if (imMemo(c, id)) elSetAttr(c, "id", id);
-        imStr(c, text);
-    } imElEnd(c, EL_H1);
+    imdom.ElBegin(c, el.H1); imLayout(c, ROW); imJustify(c); {
+        if (im.Memo(c, id)) imdom.setAttr(c, "id", id);
+        imdom.Str(c, text);
+    } imdom.ElEnd(c, el.H1);
 }
 
 function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
@@ -92,17 +92,17 @@ export function imVisualTestHarness(
     tests: VisualTest[],
 ) {
     const windowLocationSearch = window.location.search;
-    const windowLocationSearchChanged = imMemo(c, windowLocationSearch);
+    const windowLocationSearchChanged = im.Memo(c, windowLocationSearch);
 
-    let queryParams = imGet(c, parseUrl);
+    let queryParams = im.Get(c, parseUrl);
     if (!queryParams || windowLocationSearchChanged) {
-        queryParams = imSet(c, parseUrl(windowLocationSearch));
+        queryParams = im.Set(c, parseUrl(windowLocationSearch));
     }
 
-    const testsChanged = imMemo(c, tests);
-    let s = imGet(c, newState);
+    const testsChanged = im.Memo(c, tests);
+    let s = im.Get(c, newState);
     if (!s || testsChanged) {
-        s = imSet(c, newState());
+        s = im.Set(c, newState());
     }
 
     s.installations.length = 0;
@@ -130,33 +130,33 @@ export function imVisualTestHarness(
     const root = imLayoutBegin(c, COL); imFlex(c); {
         const rootClientRect = root.getBoundingClientRect();
 
-        if (imIf(c) && s.currentTest) {
-            if (imIf(c) && tests.length === 0) {
+        if (im.If(c) && s.currentTest) {
+            if (im.If(c) && tests.length === 0) {
                 imLayoutBegin(c, ROW); imFlex(c); imAlign(c); imJustify(c); {
-                    imStr(c, "No tests yet");
+                    imdom.Str(c, "No tests yet");
                 } imLayoutEnd(c);
             } else {
-                imIfElse(c);
+                im.IfElse(c);
 
                 // Top bar
                 imLayoutBegin(c, ROW); imAlign(c); imFlexWrap(c); imGap(c, 10, PX); {
-                    if (isFirstishRender(c)) elSetStyle(c, "overflow", "clip");
-                    if (imMemo(c, s.animations.topBarOpen)) elSetStyle(c, "fontSize", s.animations.topBarOpen + "em");
+                    if (im.isFirstishRender(c)) imdom.setStyle(c, "overflow", "clip");
+                    if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
                     imLayoutBegin(c, ROW); imFlexWrap(c); {
-                        imFor(c); for (const test of tests) {
+                        im.For(c); for (const test of tests) {
                             if (imButtonIsClicked(c, test.name, s.currentTest === test)) {
                                 setCurrentTest(s, test, true);
                             }
-                        } imForEnd(c);
+                        } im.ForEnd(c);
                     } imLayoutEnd(c);
                 } imLayoutEnd(c);
 
                 // Main view
                 scrollView = imLayoutBegin(c, COL); imFlex(c); imRelative(c); imScrollOverflow(c); {
-                    if (isFirstishRender(c)) {
+                    if (im.isFirstishRender(c)) {
                         // makes way for the sidebar. Not ideal code but eh
-                        elSetStyle(c, "paddingRight", "2em");
+                        imdom.setStyle(c, "paddingRight", "2em");
                     }
 
                     imHeading(c, s.currentTest.name, "heading");
@@ -166,7 +166,7 @@ export function imVisualTestHarness(
 
                 scrolledToTop = scrollView.scrollTop < 20;
 
-                const mouse = getGlobalEventSystem().mouse;
+                const mouse = imdom.getMouse();
 
                 // Animate the top bar
                 {
@@ -179,29 +179,29 @@ export function imVisualTestHarness(
                             target = 1;
                         }
                     }
-                    s.animations.topBarOpen = lerp01(s.animations.topBarOpen, target, 30 * getDeltaTimeSeconds(c));
+                    s.animations.topBarOpen = lerp01(s.animations.topBarOpen, target, 30 * im.getDeltaTimeSeconds(c));
                 }
 
                 // Sidebar
                 imLayoutBegin(c, COL); imAbsolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imJustify(c); imScrollOverflow(c); {
-                    if (imMemo(c, s.animations.sideBarOpenEm)) elSetStyle(c, "fontSize", s.animations.sideBarOpenEm + "em");
+                    if (im.Memo(c, s.animations.sideBarOpenEm)) imdom.setStyle(c, "fontSize", s.animations.sideBarOpenEm + "em");
 
                     let isHoveringSidebar = false;
 
-                    imFor(c); for (let i = -1; i < s.installations.length; i++) {
+                    im.For(c); for (let i = -1; i < s.installations.length; i++) {
                         const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
 
                         imLayoutBegin(c, ROW); imJustify(c, END); {
                             imLayoutBegin(c, ROW); imAlign(c); imGap(c, 10, PX); {
-                                const hasMouseOver = elHasMouseOver(c);
+                                const hasMouseOver = imdom.hasMouseOver(c);
                                 if (hasMouseOver) {
                                     isHoveringSidebar = true;
                                     scrollToInstalllation(s, installation);
                                 }
 
-                                if (imIf(c) && hasMouseOver && s.currentInstallation !== installation) {
-                                    imStr(c, " -> ");
-                                } imIfEnd(c);
+                                if (im.If(c) && hasMouseOver && s.currentInstallation !== installation) {
+                                    imdom.Str(c, " -> ");
+                                } im.IfEnd(c);
 
                                 if (imButtonIsClicked(c, installation?.title ?? s.currentTest.name, installation === s.currentInstallation)) {
                                     scrollToInstalllation(s, installation);
@@ -210,9 +210,9 @@ export function imVisualTestHarness(
                                 }
                             } imLayoutEnd(c);
                         } imLayoutEnd(c);
-                    } imForEnd(c);
+                    } im.ForEnd(c);
 
-                    if (imMemo(c, isHoveringSidebar) && !isHoveringSidebar) {
+                    if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
                         scrollToInstalllation(s, s.currentInstallation);
                     }
 
@@ -227,19 +227,19 @@ export function imVisualTestHarness(
                         }
 
                         const target = s.animations.sideBarOpen ? 1 : 0;
-                        s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 30 * getDeltaTimeSeconds(c));
+                        s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 30 * im.getDeltaTimeSeconds(c));
                     }
                 } imLayoutEnd(c);
-            } imIfEnd(c);
+            } im.IfEnd(c);
         } else {
-            imIfElse(c);
+            im.IfElse(c);
             if (imSplashScreen(c, s)) {
                 s.seenIntro = true;
             }
-        } imIfEnd(c);
+        } im.IfEnd(c);
     } imLayoutEnd(c);
 
-    if (imMemo(c, s.currentVisibleInstallation) | imMemo(c, scrolledToTop)) {
+    if (im.Memo(c, s.currentVisibleInstallation) | im.Memo(c, scrolledToTop)) {
         if (!s.animations.sideBarOpen) {
             if (s.currentVisibleInstallation || scrolledToTop) {
                 if (scrolledToTop) {
@@ -258,28 +258,28 @@ export function imRenderWithErrorBoundary(
     harness: VisualTestHarnessState,
     test: (c: ImCache, harness: VisualTestHarnessState) => void
 ) {
-    imSwitch(c, test); {
-        const tryState = imTry(c); try {
+    im.Switch(c, test); {
+        const tryState = im.Try(c); try {
             const { err, recover } = tryState;
-            if (imIf(c) && !err) {
+            if (im.If(c) && !err) {
                 test(c, harness);
             } else {
-                imIfElse(c);
+                im.IfElse(c);
 
                 imLayoutBegin(c, BLOCK); {
-                    imStr(c, "An error occured while rendering your component: ");
+                    imdom.Str(c, "An error occured while rendering your component: ");
                     if (imButtonIsClicked(c, "Try again")) {
                         recover();
                     }
                 } imLayoutEnd(c);
                 imLayoutBegin(c, BLOCK); {
-                    imStr(c, err);
+                    imdom.Str(c, err);
                 } imLayoutEnd(c);
-            } imIfEnd(c);
+            } im.IfEnd(c);
         } catch (err) {
-            imCatch(c, tryState, err);
-        } imTryEnd(c, tryState);
-    } imSwitchEnd(c);
+            im.Catch(c, tryState, err);
+        } im.TryEnd(c, tryState);
+    } im.SwitchEnd(c);
 }
 
 

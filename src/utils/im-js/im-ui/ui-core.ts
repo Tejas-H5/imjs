@@ -1,7 +1,7 @@
 // core-ui V.0.1.2
 
-import { ImCache, imGet, imMemo, imSet, inlineTypeId, isFirstishRender } from '../im-core';
-import { EL_DIV, elSetClass, elSetStyle, imElBegin, imElEnd } from '../im-dom';
+import { im, ImCache } from '../im-core';
+import { imdom, el } from '../im-dom';
 
 
 ///////////////////////////
@@ -218,39 +218,39 @@ export function imSize(
 ) {
     // TODO: Cross browser testing. Seems a bit sus here
 
-    if (imMemo(c, width) | imMemo(c, wType)) {
+    if (im.Memo(c, width) | im.Memo(c, wType)) {
         const sizeCss = getSize(width, wType);
-        elSetStyle(c, "width",    sizeCss); 
-        elSetStyle(c, "minWidth", sizeCss);
-        elSetStyle(c, "maxWidth", sizeCss);
+        imdom.setStyle(c, "width",    sizeCss); 
+        imdom.setStyle(c, "minWidth", sizeCss);
+        imdom.setStyle(c, "maxWidth", sizeCss);
     }
 
-    if (imMemo(c, height) | imMemo(c, hType)) {
+    if (im.Memo(c, height) | im.Memo(c, hType)) {
         const sizeCss = getSize(height, hType);
-        elSetStyle(c, "height",    sizeCss); 
-        elSetStyle(c, "minHeight", sizeCss);
-        elSetStyle(c, "maxHeight", sizeCss);
+        imdom.setStyle(c, "height",    sizeCss); 
+        imdom.setStyle(c, "minHeight", sizeCss);
+        imdom.setStyle(c, "maxHeight", sizeCss);
     }
 }
 
 export function imOpacity(c: ImCache, val: number) {
-    if (imMemo(c, val)) elSetStyle(c, "opacity", "" + val);
+    if (im.Memo(c, val)) imdom.setStyle(c, "opacity", "" + val);
 }
 
 export function imRelative(c: ImCache) {
-    if (isFirstishRender(c)) elSetStyle(c, "position", "relative");
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "relative");
 }
 
 export function imBg(c: ImCache, colour: string) {
-    if (imMemo(c, colour)) elSetStyle(c, "backgroundColor", colour);
+    if (im.Memo(c, colour)) imdom.setStyle(c, "backgroundColor", colour);
 }
 
 export function imFg(c: ImCache, colour: string) {
-    if (imMemo(c, colour)) elSetStyle(c, "color", colour);
+    if (im.Memo(c, colour)) imdom.setStyle(c, "color", colour);
 }
 
 export function imFontSize(c: ImCache, size: number, units: SizeUnits) {
-    if (imMemo(c, size) | imMemo(c, units)) elSetStyle(c, "fontSize", getSize(size, units));
+    if (im.Memo(c, size) | im.Memo(c, units)) imdom.setStyle(c, "fontSize", getSize(size, units));
 }
 
 export type DisplayTypeInstance = number & { __displayType: void; };
@@ -260,7 +260,7 @@ export type DisplayTypeInstance = number & { __displayType: void; };
  * ```ts
  * imLayout(c, BLOCK); { 
  *      imLayout(c, INLINE); {
- *          if (isFirstishRender(c)) elSetStyle(c, "fontWeight", "bold");
+ *          if (im.isFirstishRender(c)) imdom.setStyle(c, "fontWeight", "bold");
  *          imStr(c, "Hello, "); // imLayout(c, ROW) would ignore this whitespace.
  *      } imLayoutEnd(c);
  *      imStr(c, "World"); 
@@ -297,7 +297,7 @@ export type DisplayType
  */
 export function imFlex1(c: ImCache) {
     imLayoutBegin(c, BLOCK); {
-        if (isFirstishRender(c)) elSetStyle(c, "flex", "1");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
     } imLayoutEnd(c);
 }
 
@@ -312,38 +312,38 @@ const cnInlineCol   = cssb.cn("inline-col",  [` { display: inline-flex; flex-dir
 const cnColReverse  = cssb.cn("col-reverse", [` { display: flex; flex-direction: column-reverse; }`]);
 
 export function imLayoutBeginInternal(c: ImCache, type: DisplayType) {
-    const root = imElBegin(c, EL_DIV);
+    const root = imdom.ElBegin(c, el.DIV);
     imLayout(c, type);
     return root;
 }
 
 export function imLayout(c: ImCache, type: DisplayType) {
-    const last = imGet(c, inlineTypeId(imLayoutBegin), -1);
+    const last = im.GetInline(c, imLayoutBegin, -1);
     if (last !== type) {
-        imSet(c, type);
+        im.Set(c, type);
 
         switch(last) {
             case BLOCK:        /* Do nothing - this is the default style */ break;
-            case INLINE_BLOCK: elSetClass(c, cnInlineBlock, false);        break;
-            case INLINE:       elSetClass(c, cnInline, false);             break;
-            case ROW:          elSetClass(c, cnRow, false);                break;
-            case ROW_REVERSE:  elSetClass(c, cnRowReverse, false);         break;
-            case COL:          elSetClass(c, cnCol, false);                break;
-            case COL_REVERSE:  elSetClass(c, cnColReverse, false);         break;
-            case INLINE_ROW:   elSetClass(c, cnInlineRow, false);          break;
-            case INLINE_COL:   elSetClass(c, cnInlineCol, false);          break;
+            case INLINE_BLOCK: imdom.setClass(c, cnInlineBlock, false);        break;
+            case INLINE:       imdom.setClass(c, cnInline, false);             break;
+            case ROW:          imdom.setClass(c, cnRow, false);                break;
+            case ROW_REVERSE:  imdom.setClass(c, cnRowReverse, false);         break;
+            case COL:          imdom.setClass(c, cnCol, false);                break;
+            case COL_REVERSE:  imdom.setClass(c, cnColReverse, false);         break;
+            case INLINE_ROW:   imdom.setClass(c, cnInlineRow, false);          break;
+            case INLINE_COL:   imdom.setClass(c, cnInlineCol, false);          break;
         }
 
         switch(type) {
             case BLOCK:        /* Do nothing - this is the default style */ break;
-            case INLINE_BLOCK: elSetClass(c, cnInlineBlock, true);         break;
-            case INLINE:       elSetClass(c, cnInline, true);              break;
-            case ROW:          elSetClass(c, cnRow, true);                 break;
-            case ROW_REVERSE:  elSetClass(c, cnRowReverse, true);          break;
-            case COL:          elSetClass(c, cnCol, true);                 break;
-            case COL_REVERSE:  elSetClass(c, cnColReverse, true);          break;
-            case INLINE_ROW:   elSetClass(c, cnInlineRow, true);           break;
-            case INLINE_COL:   elSetClass(c, cnInlineCol, true);           break;
+            case INLINE_BLOCK: imdom.setClass(c, cnInlineBlock, true);         break;
+            case INLINE:       imdom.setClass(c, cnInline, true);              break;
+            case ROW:          imdom.setClass(c, cnRow, true);                 break;
+            case ROW_REVERSE:  imdom.setClass(c, cnRowReverse, true);          break;
+            case COL:          imdom.setClass(c, cnCol, true);                 break;
+            case COL_REVERSE:  imdom.setClass(c, cnColReverse, true);          break;
+            case INLINE_ROW:   imdom.setClass(c, cnInlineRow, true);           break;
+            case INLINE_COL:   imdom.setClass(c, cnInlineCol, true);           break;
         }
     }
 }
@@ -353,40 +353,40 @@ export function imLayoutBegin(c: ImCache, type: DisplayType) {
 }
 
 export function imLayoutEnd(c: ImCache) {
-    imElEnd(c, EL_DIV);
+    imdom.ElEnd(c, el.DIV);
 }
 
 export function imPre(c: ImCache) {
-    if (isFirstishRender(c)) elSetStyle(c, "whiteSpace", "pre");
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "pre");
 }
 
 export function imPreWrap(c: ImCache) {
-    if (isFirstishRender(c)) elSetStyle(c, "whiteSpace", "pre-wrap");
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "pre-wrap");
 }
 
 export function imNoWrap(c: ImCache) {
-    if (isFirstishRender(c)) elSetStyle(c, "whiteSpace", "nowrap");
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "whiteSpace", "nowrap");
 }
 
 
 export function imFlex(c: ImCache, ratio = 1) {
-    if (imMemo(c, ratio)) {
-        elSetStyle(c, "flex", "" + ratio);
+    if (im.Memo(c, ratio)) {
+        imdom.setStyle(c, "flex", "" + ratio);
         // required to make flex work the way I had thought it already worked
-        elSetStyle(c, "minWidth", "0");
-        elSetStyle(c, "minHeight", "0");
+        imdom.setStyle(c, "minWidth", "0");
+        imdom.setStyle(c, "minHeight", "0");
     }
 }
 
 export function imFlexWrap(c: ImCache) {
-    if (isFirstishRender(c)) elSetStyle(c, "flexWrap", "wrap");
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "flexWrap", "wrap");
 }
 
 export function imGap(c: ImCache, val = 0, units: SizeUnits) {
-    const valChanged = imMemo(c, val);
-    const unitsChanged = imMemo(c, units);
+    const valChanged = im.Memo(c, val);
+    const unitsChanged = im.Memo(c, units);
     if (valChanged || unitsChanged) {
-        elSetStyle(c, "gap", getSize(val, units));
+        imdom.setStyle(c, "gap", getSize(val, units));
     }
 }
 
@@ -415,20 +415,20 @@ function getAlignment(alignment: Alignment) {
 }
 
 export function imAlign(c: ImCache, alignment = CENTER) {
-    if (imMemo(c, alignment)) {
-        elSetStyle(c, "alignItems", getAlignment(alignment));
+    if (im.Memo(c, alignment)) {
+        imdom.setStyle(c, "alignItems", getAlignment(alignment));
     }
 }
 
 export function imJustify(c: ImCache, alignment = CENTER) {
-    if (imMemo(c, alignment)) {
-        elSetStyle(c, "justifyContent", getAlignment(alignment));
+    if (im.Memo(c, alignment)) {
+        imdom.setStyle(c, "justifyContent", getAlignment(alignment));
     }
 }
 
 export function imScrollOverflow(c: ImCache, vScroll = true, hScroll = false) {
-    if (imMemo(c, vScroll)) elSetStyle(c, "overflowY", vScroll ? "auto" : "");
-    if (imMemo(c, hScroll)) elSetStyle(c, "overflowX", hScroll ? "auto" : "");
+    if (im.Memo(c, vScroll)) imdom.setStyle(c, "overflowY", vScroll ? "auto" : "");
+    if (im.Memo(c, hScroll)) imdom.setStyle(c, "overflowX", hScroll ? "auto" : "");
 }
 
 export function imFixed(
@@ -438,11 +438,11 @@ export function imFixed(
     bottom: number, bottomType: SizeUnits,
     left: number, leftType: SizeUnits,
 ) {
-    if (isFirstishRender(c)) elSetStyle(c, "position", "fixed");
-    if (imMemo(c, top) | imMemo(c, topType))       elSetStyle(c, "top",    getSize(top, topType)); 
-    if (imMemo(c, right) | imMemo(c, rightType))   elSetStyle(c, "right",  getSize(right, rightType)); 
-    if (imMemo(c, bottom) | imMemo(c, bottomType)) elSetStyle(c, "bottom", getSize(bottom, bottomType)); 
-    if (imMemo(c, left) | imMemo(c, leftType))     elSetStyle(c, "left",   getSize(left, leftType)); 
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "fixed");
+    if (im.Memo(c, top) | im.Memo(c, topType))       imdom.setStyle(c, "top",    getSize(top, topType)); 
+    if (im.Memo(c, right) | im.Memo(c, rightType))   imdom.setStyle(c, "right",  getSize(right, rightType)); 
+    if (im.Memo(c, bottom) | im.Memo(c, bottomType)) imdom.setStyle(c, "bottom", getSize(bottom, bottomType)); 
+    if (im.Memo(c, left) | im.Memo(c, leftType))     imdom.setStyle(c, "left",   getSize(left, leftType)); 
 }
 
 export function imPadding(
@@ -452,10 +452,10 @@ export function imPadding(
     bottom: number, bottomType: SizeUnits, 
     left: number,   leftType: SizeUnits,
 ) {
-    if (imMemo(c, top) | imMemo(c, topType))       elSetStyle(c, "paddingTop",    getSize(top, topType)); 
-    if (imMemo(c, right) | imMemo(c, rightType))   elSetStyle(c, "paddingRight",  getSize(right, rightType)); 
-    if (imMemo(c, bottom) | imMemo(c, bottomType)) elSetStyle(c, "paddingBottom", getSize(bottom, bottomType)); 
-    if (imMemo(c, left) | imMemo(c, leftType))     elSetStyle(c, "paddingLeft",   getSize(left, leftType)); 
+    if (im.Memo(c, top) | im.Memo(c, topType))       imdom.setStyle(c, "paddingTop",    getSize(top, topType)); 
+    if (im.Memo(c, right) | im.Memo(c, rightType))   imdom.setStyle(c, "paddingRight",  getSize(right, rightType)); 
+    if (im.Memo(c, bottom) | im.Memo(c, bottomType)) imdom.setStyle(c, "paddingBottom", getSize(bottom, bottomType)); 
+    if (im.Memo(c, left) | im.Memo(c, leftType))     imdom.setStyle(c, "paddingLeft",   getSize(left, leftType)); 
 }
 
 /**
@@ -470,28 +470,28 @@ export function imAbsolute(
     bottom: number, bottomType: SizeUnits, 
     left: number, leftType: SizeUnits,
 ) {
-    if (isFirstishRender(c)) elSetStyle(c, "position", "absolute");
-    if (imMemo(c, top) | imMemo(c, topType))       elSetStyle(c, "top",    getSize(top, topType)); 
-    if (imMemo(c, right) | imMemo(c, rightType))   elSetStyle(c, "right",  getSize(right, rightType)); 
-    if (imMemo(c, bottom) | imMemo(c, bottomType)) elSetStyle(c, "bottom", getSize(bottom, bottomType)); 
-    if (imMemo(c, left) | imMemo(c, leftType))     elSetStyle(c, "left",   getSize(left, leftType)); 
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "absolute");
+    if (im.Memo(c, top) | im.Memo(c, topType))       imdom.setStyle(c, "top",    getSize(top, topType)); 
+    if (im.Memo(c, right) | im.Memo(c, rightType))   imdom.setStyle(c, "right",  getSize(right, rightType)); 
+    if (im.Memo(c, bottom) | im.Memo(c, bottomType)) imdom.setStyle(c, "bottom", getSize(bottom, bottomType)); 
+    if (im.Memo(c, left) | im.Memo(c, leftType))     imdom.setStyle(c, "left",   getSize(left, leftType)); 
 }
 
 export function imAbsoluteXY(c: ImCache, x: number, xType: SizeUnits, y: number, yType: SizeUnits) {
-    if (isFirstishRender(c)) elSetStyle(c, "position", "absolute");
-    if (imMemo(c, x) | imMemo(c, xType)) elSetStyle(c, "left", getSize(x, xType)); 
-    if (imMemo(c, y) | imMemo(c, yType)) elSetStyle(c, "top",  getSize(y, yType)); 
+    if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "absolute");
+    if (im.Memo(c, x) | im.Memo(c, xType)) imdom.setStyle(c, "left", getSize(x, xType)); 
+    if (im.Memo(c, y) | im.Memo(c, yType)) imdom.setStyle(c, "top",  getSize(y, yType)); 
 }
 
 export function imOverflowContainer(c: ImCache, noScroll: boolean = false) {
     const root = imLayoutBegin(c, BLOCK);
 
-    if (imMemo(c, noScroll)) {
+    if (im.Memo(c, noScroll)) {
         if (noScroll) {
-            elSetStyle(c, "overflow", "hidden");
+            imdom.setStyle(c, "overflow", "hidden");
         } else {
-            elSetStyle(c, "overflow", "");
-            elSetStyle(c, "overflowY", "auto");
+            imdom.setStyle(c, "overflow", "");
+            imdom.setStyle(c, "overflowY", "auto");
         }
     }
 
@@ -504,27 +504,27 @@ export function imOverflowContainerEnd(c: ImCache) {
 
 // NOTE: should be before imSize
 export function imAspectRatio(c: ImCache, w: number, h: number) {
-    if (isFirstishRender(c)) {
-        elSetStyle(c, "width", "auto");
-        elSetStyle(c, "height", "auto");
+    if (im.isFirstishRender(c)) {
+        imdom.setStyle(c, "width", "auto");
+        imdom.setStyle(c, "height", "auto");
     }
 
     const ar = w / h;
-    if (imMemo(c, ar)) {
-        elSetStyle(c, "aspectRatio", w + " / " + h);
+    if (im.Memo(c, ar)) {
+        imdom.setStyle(c, "aspectRatio", w + " / " + h);
     }
 }
 
 export function imZIndex(c: ImCache, z: number) {
-    if (imMemo(c, z)) {
-        elSetStyle(c, "zIndex", "" + z);
+    if (im.Memo(c, z)) {
+        imdom.setStyle(c, "zIndex", "" + z);
     }
 }
 
 export function imHandleLongWords(c: ImCache) {
-    if (isFirstishRender(c)) {
-        elSetStyle(c, "overflowWrap", "anywhere");
-        elSetStyle(c, "wordBreak", "normal");
+    if (im.isFirstishRender(c)) {
+        imdom.setStyle(c, "overflowWrap", "anywhere");
+        imdom.setStyle(c, "wordBreak", "normal");
     }
 }
 

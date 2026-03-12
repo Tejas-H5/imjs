@@ -1,7 +1,29 @@
 import { assert } from "src/utils/assert";
-import { DomAppender, EL_DIV, elSetStyle, imDomRootBegin, imDomRootEnd, imElBegin, imElEnd, imStr } from "src/utils/im-js";
-import { getDeltaTimeSeconds, getFpsCounterState, ImCache, imCacheBegin, imCacheEnd, imFor, imForEnd, imGetInline, imIf, imIfElse, imIfEnd, imKeyedBegin, imKeyedEnd, imMemo, imSet, imState, imSwitch, imSwitchEnd, isEventRerender, isFirstishRender } from "src/utils/im-js/im-core";
-import { BLOCK, CENTER, COL, cssVars, imAlign, imAspectRatio, imBg, imButtonIsClicked, imFg, imFlex, imFlexWrap, imGap, imJustify, imLayoutBegin, imLayoutEnd, imScrollOverflow, imSliderInput, INLINE, LEFT, newColorFromHsv, PX, ROW } from "src/utils/im-js/im-ui";
+import { im, ImCache, imdom, el, DomAppender } from "src/utils/im-js";
+import {
+    BLOCK,
+    CENTER,
+    COL,
+    cssVars,
+    imAlign,
+    imAspectRatio,
+    imBg,
+    imButtonIsClicked,
+    imFg,
+    imFlex,
+    imFlexWrap,
+    imGap,
+    imJustify,
+    imLayoutBegin,
+    imLayoutEnd,
+    imScrollOverflow,
+    imSliderInput,
+    INLINE,
+    LEFT,
+    newColorFromHsv,
+    PX,
+    ROW
+} from "src/utils/im-js/im-ui";
 import { imVisualTestInstallation, TEST_SCROLLABLE, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
 import { getPreviousResult, getUserAgentString, previousResults, previousResultsByUserAgent, UserAgentString } from "./prev-results";
@@ -10,7 +32,7 @@ export function imJsPerformanceBenchmarks(c: ImCache, harness: VisualTestHarness
     imBaseContainerBegin(c); {
         imVisualTestInstallation(c, "Benchmark Runner", harness, imBenchmarkRunner, TEST_SCROLLABLE);
 
-        imSubheadingBegin(c); imStr(c, "What the benchmarks actually look like"); imSubheadingEnd(c);
+        imSubheadingBegin(c); imdom.Str(c, "What the benchmarks actually look like"); imSubheadingEnd(c);
 
         imVisualTestInstallation(c, "Lots of boxes", harness, imLotsOfBoxesWithUI, TEST_SCROLLABLE);
     } imBaseContainerEnd(c);
@@ -81,9 +103,9 @@ function newBenchmarkRunnerState(): BenchmarkRunnerState {
 
 
 function imBenchmarkRunner(c: ImCache) {
-    const s = imState(c, newBenchmarkRunnerState);
+    const s = im.State(c, newBenchmarkRunnerState);
 
-    if (imMemo(c, s)) {
+    if (im.Memo(c, s)) {
         if (previousResults.length > 0) {
             s.report = { results: previousResults };
         }
@@ -95,17 +117,17 @@ function imBenchmarkRunner(c: ImCache) {
             generateReport(s, s.stubNode.root);
         }
 
-        s.stubNode = imElBegin(c, EL_DIV); {
+        s.stubNode = imdom.ElBegin(c, el.DIV); {
             s.stubNode.manualDom = true;
-        } imElEnd(c, EL_DIV);
+        } imdom.ElEnd(c, el.DIV);
 
-        if (imIf(c) && s.report && !s.isGeneratingReport) {
+        if (im.If(c) && s.report && !s.isGeneratingReport) {
             imBenchmarkReportViewer(c, s.report.results);
         } else {
-            imIfElse(c);
+            im.IfElse(c);
 
-            imStr(c, s.isGeneratingReport ? "Running benchmarks..." : "No report");
-        } imIfEnd(c);
+            imdom.Str(c, s.isGeneratingReport ? "Running benchmarks..." : "No report");
+        } im.IfEnd(c);
 
     } imLayoutEnd(c);
 }
@@ -115,8 +137,8 @@ const CELL_BOLD = (1 << 0);
 function imTableCellBegin(c: ImCache, alignment = LEFT, flags = 0) {
     const bold = !!(CELL_BOLD & flags);
     imLayoutBegin(c, ROW); imJustify(c, alignment); {
-        if (isFirstishRender(c)) elSetStyle(c, "backgroundColor", cssVars.bg);
-        if (imMemo(c, bold)) elSetStyle(c, "fontWeight", bold ? "bold" : "");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+        if (im.Memo(c, bold)) imdom.setStyle(c, "fontWeight", bold ? "bold" : "");
     } // imLayoutEnd(c);
 }
 
@@ -128,18 +150,18 @@ function imTableCellEnd(c: ImCache) {
 
 
 function imLotsOfBoxesWithUI(c: ImCache) {
-    const s = imGetInline(c, imLotsOfBoxesWithUI) ??
-        imSet(c, {
+    const s = im.GetInline(c, imLotsOfBoxesWithUI) ??
+        im.Set(c, {
             rows: 10,
             cols: 10,
             renderBudgetMs: 1,
             timeElapsed: 0,
         });
 
-    const fps = getFpsCounterState(c);
+    const fps = im.getFpsCounterState(c);
 
-    if (!isEventRerender(c)) {
-        s.timeElapsed += getDeltaTimeSeconds(c);
+    if (!im.isEventRerender(c)) {
+        s.timeElapsed += im.getDeltaTimeSeconds(c);
     }
     if (s.timeElapsed > 1) {
         s.timeElapsed = 0;
@@ -153,16 +175,16 @@ function imLotsOfBoxesWithUI(c: ImCache) {
     imLayoutBegin(c, COL); imGap(c, 10, PX); imFlex(c); {
         imLayoutBegin(c, ROW); {
             imLayoutBegin(c, BLOCK); {
-                if (isFirstishRender(c)) elSetStyle(c, "minWidth", "200px");
-                imStr(c, "Render ms budget: "); imStr(c, s.renderBudgetMs);
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "minWidth", "200px");
+                imdom.Str(c, "Render ms budget: "); imdom.Str(c, s.renderBudgetMs);
             } imLayoutEnd(c);
 
             s.renderBudgetMs = imSliderInput(c, 1, 17, 1, s.renderBudgetMs);
         } imLayoutEnd(c);
 
         imLayoutBegin(c, BLOCK); {
-            imStr(c, "Boxes rendered: "); imStr(c, Math.floor(s.rows) * s.cols);
-            imStr(c, ", "); imStr(c, "Current render ms: "); imStr(c, fps.renderMs.toFixed(0));
+            imdom.Str(c, "Boxes rendered: "); imdom.Str(c, Math.floor(s.rows) * s.cols);
+            imdom.Str(c, ", "); imdom.Str(c, "Current render ms: "); imdom.Str(c, fps.renderMs.toFixed(0));
         } imLayoutEnd(c);
 
         imLotsOfBoxes(c, s.rows, s.cols);
@@ -173,18 +195,18 @@ function imLotsOfBoxesWithUI(c: ImCache) {
 function imLotsOfBoxes(c: ImCache, rows: number, cols: number) {
     imLayoutBegin(c, COL); imGap(c, 10, PX); imFlex(c); imScrollOverflow(c); {
         let idx = 0;
-        imFor(c); for (let rowIdx = 0; rowIdx < rows; rowIdx++) {
+        im.For(c); for (let rowIdx = 0; rowIdx < rows; rowIdx++) {
             imLayoutBegin(c, ROW); imGap(c, 10, PX); {
-                imFor(c); for (let colIdx = 0; colIdx < cols; colIdx++) {
-                    const boxState = imGetInline(c, imLotsOfBoxes) ??
-                        imSet(c, { color: newColorFromHsv(Math.random(), 0.5, 0.5).toCssString() });
+                im.For(c); for (let colIdx = 0; colIdx < cols; colIdx++) {
+                    const boxState = im.GetInline(c, imLotsOfBoxes) ??
+                        im.Set(c, { color: newColorFromHsv(Math.random(), 0.5, 0.5).toCssString() });
                     imLayoutBegin(c, ROW); imBg(c, boxState.color); imFlex(c); imAspectRatio(c, 1, 1); imAlign(c); imJustify(c); {
-                        imStr(c, idx);
+                        imdom.Str(c, idx);
                     } imLayoutEnd(c);
                     idx++;
-                } imForEnd(c);
+                } im.ForEnd(c);
             } imLayoutEnd(c);
-        } imForEnd(c);
+        } im.ForEnd(c);
     } imLayoutEnd(c);
 }
 
@@ -209,11 +231,11 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
             );
 
             function renderFn(c: ImCache, rows = 10, cols = 10) {
-                imCacheBegin(c, renderFn); {
-                    imDomRootBegin(c, root); {
+                im.CacheBegin(c, renderFn); {
+                    imdom.RootBegin(c, root); {
                         imLotsOfBoxes(c, rows, cols);
-                    } imDomRootEnd(c, root);
-                } imCacheEnd(c);
+                    } imdom.RootEnd(c, root);
+                } im.CacheEnd(c);
             }
 
             runRenderingBenchmark(renderingBenchmark, renderFn, root);
@@ -318,36 +340,36 @@ function getTime(timer: Timer) {
 }
 
 function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
-    imSubheadingBegin(c); imStr(c, "Results"); imSubheadingEnd(c);
+    imSubheadingBegin(c); imdom.Str(c, "Results"); imSubheadingEnd(c);
 
-    imStr(c, "Currently on"); imStr(c, getUserAgentString());
+    imdom.Str(c, "Currently on"); imdom.Str(c, getUserAgentString());
 
     let regressions = 0;
 
     imLayoutBegin(c, BLOCK); {
 
         imLayoutBegin(c, BLOCK); {
-            if (imIf(c) && results === previousResults) {
-                imStr(c, "NOTE: viewing previous results");
-            } imIfEnd(c);
+            if (im.If(c) && results === previousResults) {
+                imdom.Str(c, "NOTE: viewing previous results");
+            } im.IfEnd(c);
         } imLayoutEnd(c);
 
-        imFor(c); for (const res of results) {
-            imKeyedBegin(c, res); {
-                let resState; resState = imGetInline(c, imGetInline);
+        im.For(c); for (const res of results) {
+            im.KeyedBegin(c, res); {
+                let resState; resState = im.GetInline(c, im.GetInline);
                 if (!resState) {
                     const prevResult = getPreviousResult(res);
-                    resState = imSet(c, { prevResult });
+                    resState = im.Set(c, { prevResult });
                 }
 
                 regressions += imBenchmarkResultsViewer(c, res, resState.prevResult);
-            } imKeyedEnd(c);
-        } imForEnd(c);
+            } im.KeyedEnd(c);
+        } im.ForEnd(c);
 
         // TODO: view results for other user agents.
 
-        imStr(c, "Regressions: ");
-        imStr(c, regressions);
+        imdom.Str(c, "Regressions: ");
+        imdom.Str(c, regressions);
 
         if (imButtonIsClicked(c, "Copy to clipboard")) {
             const code = `[${JSON.stringify(getUserAgentString())} as UserAgentString]: ${JSON.stringify(results)},`;
@@ -356,64 +378,64 @@ function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
 
         // Previous results
         {
-            const prevResultsState = imGetInline(c, imBenchmarkReportViewer) ??
-                imSet(c, { currentUserAgent: Object.keys(previousResultsByUserAgent)[0] });
+            const prevResultsState = im.GetInline(c, imBenchmarkReportViewer) ??
+                im.Set(c, { currentUserAgent: Object.keys(previousResultsByUserAgent)[0] });
 
-            imSubheadingBegin(c); imStr(c, "Previous results"); imSubheadingEnd(c);
+            imSubheadingBegin(c); imdom.Str(c, "Previous results"); imSubheadingEnd(c);
 
             imLayoutBegin(c, ROW); imFlexWrap(c); {
-                imFor(c); for (const userAgent in previousResultsByUserAgent) {
+                im.For(c); for (const userAgent in previousResultsByUserAgent) {
                     if (imButtonIsClicked(c, userAgent, prevResultsState.currentUserAgent === userAgent)) {
                         prevResultsState.currentUserAgent = userAgent;
                     }
-                } imForEnd(c);
+                } im.ForEnd(c);
             } imLayoutEnd(c);
 
-            imSwitch(c, prevResultsState.currentUserAgent); {
+            im.Switch(c, prevResultsState.currentUserAgent); {
                 const prevResults = previousResultsByUserAgent[prevResultsState.currentUserAgent as UserAgentString];
-                imFor(c); for (const result of prevResults) {
+                im.For(c); for (const result of prevResults) {
                     imBenchmarkResultsViewer(c, result, undefined);
-                } imForEnd(c);
-            } imSwitchEnd(c);
+                } im.ForEnd(c);
+            } im.SwitchEnd(c);
         }
     } imLayoutEnd(c);
 }
 
 function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: BenchmarkResult | undefined) {
     imTableCellBegin(c, CENTER, CELL_BOLD); {
-        imStr(c, res.name);
+        imdom.Str(c, res.name);
     } imTableCellEnd(c);
 
     let regressions = 0;
 
     imLayoutBegin(c, BLOCK); {
-        if (isFirstishRender(c)) {
-            elSetStyle(c, "display", "grid");
-            elSetStyle(c, "gap", "1px");
-            elSetStyle(c, "padding", "1px");
-            elSetStyle(c, "backgroundColor", cssVars.fg);
+        if (im.isFirstishRender(c)) {
+            imdom.setStyle(c, "display", "grid");
+            imdom.setStyle(c, "gap", "1px");
+            imdom.setStyle(c, "padding", "1px");
+            imdom.setStyle(c, "backgroundColor", cssVars.fg);
         }
 
-        if (imMemo(c, res.variable2.length)) {
-            elSetStyle(c, "gridTemplateColumns", "1fr ".repeat(res.variable2.length + 1));
+        if (im.Memo(c, res.variable2.length)) {
+            imdom.setStyle(c, "gridTemplateColumns", "1fr ".repeat(res.variable2.length + 1));
         }
 
-        imTableCellBegin(c, CENTER, CELL_BOLD); imStr(c, "↓" + res.variable1Name + " x " + res.variable2Name + "->"); imLayoutEnd(c);
-        imFor(c); for (const v2 of res.variable2) {
-            imTableCellBegin(c, CENTER, CELL_BOLD); imStr(c, v2); imLayoutEnd(c);
-        } imForEnd(c);
+        imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, "↓" + res.variable1Name + " x " + res.variable2Name + "->"); imLayoutEnd(c);
+        im.For(c); for (const v2 of res.variable2) {
+            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, v2); imLayoutEnd(c);
+        } im.ForEnd(c);
 
 
-        imFor(c); for (let v1Idx = 0; v1Idx < res.variable1.length; v1Idx++) {
-            imTableCellBegin(c, CENTER, CELL_BOLD); imStr(c, res.variable1[v1Idx]); imLayoutEnd(c);
+        im.For(c); for (let v1Idx = 0; v1Idx < res.variable1.length; v1Idx++) {
+            imTableCellBegin(c, CENTER, CELL_BOLD); imdom.Str(c, res.variable1[v1Idx]); imLayoutEnd(c);
 
-            imFor(c); for (let v2Idx = 0; v2Idx < res.variable2.length; v2Idx++) {
+            im.For(c); for (let v2Idx = 0; v2Idx < res.variable2.length; v2Idx++) {
                 imTableCellBegin(c, CENTER); {
                     const thisMeasurement = getBenchmarkMeasurement(res, v1Idx, v2Idx);
                     const prevResult = !resPrev ? thisMeasurement :
                         getBenchmarkMeasurement(resPrev, v1Idx, v2Idx);
 
-                    let measurementState; measurementState = imGetInline(c, imGetInline);
+                    let measurementState; measurementState = im.GetInline(c, im.GetInline);
                     if (!measurementState) {
                         const mean = computeMean(thisMeasurement);
                         const tolerance = computeStandardDeviation(thisMeasurement, mean);
@@ -421,7 +443,7 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
                         const meanPrev = computeMean(prevResult);
                         const tolerancePrev = computeStandardDeviation(prevResult, meanPrev);
 
-                        measurementState = imSet(c, {
+                        measurementState = im.Set(c, {
                             mean,
                             meanPrev,
                             tolerance,
@@ -431,36 +453,36 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
 
                     const split = measurementState.mean - measurementState.meanPrev;
 
-                    imStr(c, measurementState.mean.toFixed(0));
-                    imStr(c, " +/- ");
-                    imStr(c, measurementState.tolerance.toFixed(0));
-                    imStr(c, " x");
-                    imStr(c, thisMeasurement.values.length);
+                    imdom.Str(c, measurementState.mean.toFixed(0));
+                    imdom.Str(c, " +/- ");
+                    imdom.Str(c, measurementState.tolerance.toFixed(0));
+                    imdom.Str(c, " x");
+                    imdom.Str(c, thisMeasurement.values.length);
 
                     imLayoutBegin(c, INLINE); {
-                        if (imIf(c) && resPrev && split !== 0) {
+                        if (im.If(c) && resPrev && split !== 0) {
 
                             const withinTolerance = Math.abs(split) < measurementState.tolerancePrev;
 
                             imFg(c, withinTolerance ? "" : split < 0 ? "rgb(0, 180, 0)" : "rgb(255, 0, 0)");
 
-                            imStr(c, " (");
-                            imStr(c, split < 0 ? "-" : "+");
-                            imStr(c, Math.abs(split).toFixed(0));
-                            imStr(c, "ms");
+                            imdom.Str(c, " (");
+                            imdom.Str(c, split < 0 ? "-" : "+");
+                            imdom.Str(c, Math.abs(split).toFixed(0));
+                            imdom.Str(c, "ms");
 
-                            imStr(c, withinTolerance ? " (ok)" : split < 0 ? "(good)" : "(bad)");
+                            imdom.Str(c, withinTolerance ? " (ok)" : split < 0 ? "(good)" : "(bad)");
 
                             if (!withinTolerance && split > 0) {
                                 regressions++
                             }
 
-                            imStr(c, ")");
-                        } imIfEnd(c);
+                            imdom.Str(c, ")");
+                        } im.IfEnd(c);
                     } imLayoutEnd(c);
                 } imLayoutEnd(c);
-            } imForEnd(c);
-        } imForEnd(c);
+            } im.ForEnd(c);
+        } im.ForEnd(c);
     } imLayoutEnd(c);
 
     // xd

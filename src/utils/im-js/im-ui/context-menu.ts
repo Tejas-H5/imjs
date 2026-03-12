@@ -1,8 +1,8 @@
-// context-menu V0.01
-
 import { COL, imAbsolute, imFixed, imJustify, imLayoutBegin, imLayoutEnd, imZIndex, NA, PX, ROW, cssVars } from "./ui-core";
-import { ImCache, imState, isFirstishRender } from "../im-core";
-import { elHasMousePress, elSetStyle, getGlobalEventSystem } from "../im-dom";
+import { im, ImCache } from "../im-core";
+import { imdom } from "../im-dom";
+
+// context-menu V0.01
 
 export type ContextMenuState = {
     open: boolean;
@@ -19,7 +19,7 @@ export function newContextMenuState(): ContextMenuState {
 }
 
 export function imContextMenu(c: ImCache) {
-    return imState(c, newContextMenuState);
+    return im.State(c, newContextMenuState);
 }
 
 export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
@@ -28,7 +28,7 @@ export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
 
     imLayoutBegin(c, COL); imFixed(c, 0, PX, 0, PX, 0, PX, 0, PX); imZIndex(c, 10000); {
         const root = imLayoutBegin(c, COL); imAbsolute(c, y, PX, 0, NA, 0, NA, x, PX); {
-            const mouse = getGlobalEventSystem().mouse;
+            const mouse = imdom.getMouse();
             const rect = root.getBoundingClientRect();
 
             if (Math.abs(rect.x - rect.y) > 10) {
@@ -48,12 +48,12 @@ export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
                 s.position.y = wantedTop;
             }
 
-            if (isFirstishRender(c)) {
-                elSetStyle(c, "padding", "3px");
-                elSetStyle(c, "userSelect", "none");
-                elSetStyle(c, "backgroundColor", cssVars.bg);
-                elSetStyle(c, "boxShadow", `4px 4px 5px 0px ${cssVars.bg2}`);
-                elSetStyle(c, "border", `1px solid ${cssVars.bg2}`);
+            if (im.isFirstishRender(c)) {
+                imdom.setStyle(c, "padding", "3px");
+                imdom.setStyle(c, "userSelect", "none");
+                imdom.setStyle(c, "backgroundColor", cssVars.bg);
+                imdom.setStyle(c, "boxShadow", `4px 4px 5px 0px ${cssVars.bg2}`);
+                imdom.setStyle(c, "border", `1px solid ${cssVars.bg2}`);
             }
 
         } // imLayoutEnd(c);
@@ -65,14 +65,14 @@ export function imContextMenuEnd(c: ImCache, s: ContextMenuState) {
     {
         // imLayout
         {
-            if (elHasMousePress(c)) {
-                const mouse = getGlobalEventSystem().mouse;
+            if (imdom.hasMousePress(c)) {
+                const mouse = imdom.getMouse();
                 mouse.mouseDownElements.clear();
                 mouse.mouseClickElements.clear();
             }
         } imLayoutEnd(c);
 
-        if (elHasMousePress(c)) {
+        if (imdom.hasMousePress(c)) {
             s.open = false;
         }
     } imLayoutEnd(c);
@@ -81,8 +81,8 @@ export function imContextMenuEnd(c: ImCache, s: ContextMenuState) {
 // This is not as important as imContextMenuBegin/End, and can be changed for something else.
 export function imContextMenuItemBegin(c: ImCache) {
     imLayoutBegin(c, ROW); imJustify(c); {
-        if (isFirstishRender(c)) {
-            elSetStyle(c, "borderBottom", "1px solid rgba(0,0,0,0.37)");
+        if (im.isFirstishRender(c)) {
+            imdom.setStyle(c, "borderBottom", "1px solid rgba(0,0,0,0.37)");
         }
     } // imLayoutEnd
 }
@@ -100,7 +100,7 @@ export function openContextMenu(s: ContextMenuState, x: number, y: number) {
 }
 
 export function openContextMenuAtMouse(s: ContextMenuState) {
-    const mouse = getGlobalEventSystem().mouse;
+    const mouse = imdom.getMouse();
     openContextMenu(s, mouse.X, mouse.Y);
 }
 

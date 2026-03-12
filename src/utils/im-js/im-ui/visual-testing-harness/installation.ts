@@ -1,9 +1,28 @@
-import { ImCache, ImCacheRerenderFn, imFor, imForEnd, imGetInline, imMemo, imSet, isFirstishRender } from "../../im-core";
-import { EL_BR, EL_I, elHasMouseOver, elSetAttr, elSetStyle, getGlobalEventSystem, imElBegin, imElEnd, imStr, imTrackVisibility } from "../../im-dom";
+import { ImCacheRerenderFn, im, ImCache } from '../../im-core';
+import { imdom, el } from '../../im-dom';
 import { inverseLerp } from "../math-utils";
-import { BLOCK, CENTER, COL, cssVars, imAlign, imBg, imFlex, imJustify, imLayoutBegin, imLayoutEnd, imPreWrap, imScrollOverflow, imSize, INLINE, NA, NONE, PX, ROW, STRETCH } from "../ui-core";
+import {
+    BLOCK,
+    CENTER,
+    COL,
+    cssVars,
+    imAlign,
+    imBg,
+    imFlex,
+    imJustify,
+    imLayoutBegin,
+    imLayoutEnd,
+    imPreWrap,
+    imScrollOverflow,
+    imSize,
+    INLINE,
+    NA,
+    NONE,
+    PX,
+    ROW,
+    STRETCH
+} from "../ui-core";
 import { imRenderWithErrorBoundary, VisualTestHarnessState } from "./harness";
-
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -18,7 +37,7 @@ export type VisualTestHarnessInstallationState = {
 function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, code?: string): VisualTestHarnessInstallationState {
     return {
         test: test,
-        code: formatCode(code ?? test.toString()),
+        code: formatCode(code ?? test.toString(), code ? 4 : 2),
         hash: test.name,
         title: "",
     };
@@ -32,12 +51,12 @@ export function imVisualTestInstallation(
     flags = 0,
     code?: string,
 ) {
-    const testChanged = imMemo(c, test);
-    const codeChanged = imMemo(c, code);
+    const testChanged = im.Memo(c, test);
+    const codeChanged = im.Memo(c, code);
 
-    let s; s = imGetInline(c, imVisualTestInstallation); 
+    let s; s = im.GetInline(c, imVisualTestInstallation); 
     if (!s || testChanged || codeChanged) {
-        s = imSet(c, newVisualTestHarnessInstallationState(test, code));
+        s = im.Set(c, newVisualTestHarnessInstallationState(test, code));
     }
 
     harness.installations.push(s);
@@ -46,14 +65,14 @@ export function imVisualTestInstallation(
     const scroll = !!(flags & TEST_SCROLLABLE);
 
     imLayoutBegin(c, BLOCK); {
-        const visibility = imTrackVisibility(c, 1);
+        const visibility = imdom.TrackVisibility(c, 1);
 
         imLayoutBegin(c, ROW); imAlign(c); imJustify(c); {
-            if (imMemo(c, s.hash)) {
-                elSetAttr(c, "id", s.hash);
+            if (im.Memo(c, s.hash)) {
+                imdom.setAttr(c, "id", s.hash);
             }
 
-            imElBegin(c, EL_I); imStr(c, title); imElEnd(c, EL_I);
+            imdom.ElBegin(c, el.I); imdom.Str(c, title); imdom.ElEnd(c, el.I);
         } imLayoutEnd(c);
 
         if (visibility.isVisible && !harness.currentVisibleInstallation) {
@@ -61,12 +80,12 @@ export function imVisualTestInstallation(
         }
 
         const root = imLayoutBegin(c, ROW); imAlign(c, STRETCH); {
-            if (isFirstishRender(c)) elSetStyle(c, "maxHeight", "80vh");
+            if (im.isFirstishRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
 
             const center = !!(flags & TEST_CENTERED);
 
-            const split = imGetInline(c, imVisualTestInstallation) ?? 
-                imSet(c, { vSplit: 0.5, dragging: false });
+            const split = im.GetInline(c, imVisualTestInstallation) ?? 
+                im.Set(c, { vSplit: 0.5, dragging: false });
 
             // Test Component
             imLayoutBegin(c, COL); imFlex(c, split.vSplit); imScrollOverflow(c, scroll); {
@@ -77,16 +96,16 @@ export function imVisualTestInstallation(
             } imLayoutEnd(c);
 
             // Middle draggable splitter thing
-            imLayoutBegin(c, BLOCK); imSize(c, 10, PX, 0, NA); imBg(c, (elHasMouseOver(c) || split.dragging) ? cssVars.fg : ""); {
-                const mouse = getGlobalEventSystem().mouse;
-                if (elHasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
+            imLayoutBegin(c, BLOCK); imSize(c, 10, PX, 0, NA); imBg(c, (imdom.hasMouseOver(c) || split.dragging) ? cssVars.fg : ""); {
+                const mouse = imdom.getMouse();
+                if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
 
-                if (isFirstishRender(c)) elSetStyle(c, "transition", "background-color 0.1s ease-in");
-                if (isFirstishRender(c)) elSetStyle(c, "cursor", "ew-resize");
-                if (isFirstishRender(c)) elSetStyle(c, "userSelect", "none");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "userSelect", "none");
 
-                if (imMemo(c, mouse.X) && split.dragging) {
+                if (im.Memo(c, mouse.X) && split.dragging) {
                     const rect = root.getBoundingClientRect();
                     split.vSplit = inverseLerp(mouse.X, rect.left, rect.right);
                 }
@@ -94,24 +113,24 @@ export function imVisualTestInstallation(
 
             // Code
             imLayoutBegin(c, BLOCK); imPreWrap(c); imScrollOverflow(c); imFlex(c, 1 - split.vSplit); {
-                if (isFirstishRender(c)) elSetStyle(c, "fontFamily", "monospace");
-                if (isFirstishRender(c)) elSetStyle(c, "fontSize", "18px");
-                if (isFirstishRender(c)) elSetStyle(c, "tabSize", "4");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "fontSize", "18px");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "tabSize", "4");
                 
 
                 const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
-                imFor(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
+                im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
                     const line = s.code[lineIdx];
                     // Line numbers. Exclude them from the user selection
                     imLayoutBegin(c, INLINE); {
-                        if (isFirstishRender(c)) elSetStyle(c, "userSelect", "none");
-                        imStr(c, lineNumberToStr(lineIdx, maxLineNumberSize));
-                        imStr(c, " | ");
+                        if (im.isFirstishRender(c)) imdom.setStyle(c, "userSelect", "none");
+                        imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
+                        imdom.Str(c, " | ");
                     } imLayoutEnd(c);
 
-                    imStr(c, line);
-                    imElBegin(c, EL_BR); imElEnd(c, EL_BR);
-                } imForEnd(c);
+                    imdom.Str(c, line);
+                    imdom.ElBegin(c, el.BR); imdom.ElEnd(c, el.BR);
+                } im.ForEnd(c);
 
             } imLayoutEnd(c);
         } imLayoutEnd(c);
@@ -138,7 +157,7 @@ function lineNumberToStr(num: number, maxLineNumberSize: number) {
 };
 
 
-function formatCode(fnSource: string): string[] {
+function formatCode(fnSource: string, srcTabSize: number): string[] {
     // Can't be used for tooling, because it does not ignore comments and strings.
     // It's fine to reformat the example snippets to be more like the idiomatic format.
     // TODO: Typescript version? more curated examples?
@@ -174,9 +193,7 @@ function formatCode(fnSource: string): string[] {
     return lines.map((line, lineNumber) => {
         const lineStart = countLeadingWhitespace(line);
         const wantedWs = Math.max(0, lineStart - minWhitespaceLen);
-
-        const BUILD_TAB_SIZE = 2;
-        return '    '.repeat(wantedWs / BUILD_TAB_SIZE) + line.substring(lineStart);
+        return '    '.repeat(wantedWs / srcTabSize) + line.substring(lineStart);
     })
 }
 

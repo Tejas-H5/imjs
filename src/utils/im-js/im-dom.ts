@@ -1,26 +1,7 @@
 // IM-DOM 1.69
 
 import { assert } from "./assert";
-import {
-    __GetEntries,
-    onImmediateModeBlockDestroyed as onImmediateModeBlockDestroyed,
-    getEntriesParent,
-    getEntriesParentFromEntries,
-    globalStateStackGet,
-    globalStateStackPop,
-    globalStateStackPush,
-    imImmediateModeBlockBegin,
-    imImmediateModeBlockEnd,
-    ImCache,
-    ImCacheEntries,
-    imGet,
-    imMemo,
-    imSet,
-    inlineTypeId,
-    rerenderImCache,
-    imSetRequired,
-    imGetInline,
-} from "./im-core";
+import { im, ImCache, ImCacheEntries } from "./im-core";
 
 ///////////////////////////
 // DOM-node management
@@ -28,12 +9,12 @@ import {
 export type ValidElement = HTMLElement | SVGElement;
 export type AppendableElement = (ValidElement | Text);
 
-// The children of this dom node get diffed and inserted as soon as you call `imEndEl`
-export const FINALIZE_IMMEDIATELY = 0;
-// The diffing and inserting will be deferred to when we do `imDomRootEnd` instead. Useful for portal-like rendering.
+// The children of this dom node get diffed and inserted as soon as you call `EndEl`
+const FINALIZE_IMMEDIATELY = 0;
+// The diffing and inserting will be deferred to when we do `DomRootEnd` instead. Useful for portal-like rendering.
 // BTW. wouldn't deferring a region just break all finalize_immediately code anyway though? We should just remove this and
 // defer everything. Some code migration will be required.
-export const FINALIZE_DEFERRED = 1;
+const FINALIZE_DEFERRED = 1; // TOOD: finalize_manually
 
 export type FinalizationType
     = typeof FINALIZE_IMMEDIATELY
@@ -41,7 +22,7 @@ export type FinalizationType
 
 // NOTE: This dom appender is true immediate mode. No control-flow annotations are required for the elements to show up at the right place.
 // However, you do need to store your dom appender children somewhere beforehand for stable references. 
-// That is what the ImCache helps with - but the ImCache does need control-flow annotations to work. eh, It is what it is
+// That is what the im.Cache helps with - but the im.Cache does need control-flow annotations to work. eh, It is what it is
 export type DomAppender<E extends AppendableElement = AppendableElement> = {
     label?: string; // purely for debug
 
@@ -73,7 +54,7 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     deferList: DomAppender<ValidElement>[] | undefined;
 };
 
-export function newDomAppender<E extends AppendableElement>(
+function newDomAppender<E extends AppendableElement>(
     root: E,
     domRoot: DomAppender<ValidElement> | null,
     children: (DomAppender<any>[] | null)
@@ -118,7 +99,7 @@ function domAppenderClearParentAndShift(
     child.parent = null;
 }
 
-export function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<AppendableElement>) {
+function appendToDomRoot(a: DomAppender<ValidElement>, child: DomAppender<AppendableElement>) {
     if (a.children !== null) {
         a.idx++;
         const idx = a.idx;
@@ -187,32 +168,32 @@ function assertInvariants(appender: DomAppender<ValidElement>) {
  TODO: test case
 
 let useDiv1 = false;
-export function imGraphMappingsEditorView(c: ImCache) {
-    imLayoutBegin(c, BLOCK); imButton(c); {
-        imStr(c, "toggle");
+function GraphMappingsEditorView(c: im.Cache) {
+    LayoutBegin(c, BLOCK); imButton(c); {
+        Str(c, "toggle");
         if (elHasMousePress(c)) useDiv1 = !useDiv1;
-    } imLayoutEnd(c);
+    } LayoutEnd(c);
 
-    imLayoutBegin(c, COL); imFlex(c); {
+    LayoutBegin(c, COL); imFlex(c); {
         let div1, div2
-        imLayoutBegin(c, ROW); imFlex(c); {
-            imLayoutBegin(c, COL); imFlex(c); {
-                imStr(c, "Div 1");
+        LayoutBegin(c, ROW); imFlex(c); {
+            LayoutBegin(c, COL); imFlex(c); {
+                Str(c, "Div 1");
 
-                div1 = imLayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
+                div1 = LayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
 
-                imStr(c, "Div 1 end");
-            } imLayoutEnd(c);
-            imLayoutBegin(c, COL); imFlex(c); {
-                imStr(c, "Div 2");
+                Str(c, "Div 1 end");
+            } LayoutEnd(c);
+            LayoutBegin(c, COL); imFlex(c); {
+                Str(c, "Div 2");
 
-                div2 = imLayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
+                div2 = LayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
 
-                imStr(c, "Div 2 end");
-            } imLayoutEnd(c);
-        } imLayoutEnd(c);
+                Str(c, "Div 2 end");
+            } LayoutEnd(c);
+        } LayoutEnd(c);
 
-        const s = imGetInline(c, imGraphMappingsEditorView) ?? imSet(c, {
+        const s = GetInline(c, imGraphMappingsEditorView) ?? imSet(c, {
             choices: [],
         }) as any;
 
@@ -224,17 +205,17 @@ export function imGraphMappingsEditorView(c: ImCache) {
             }
         }
 
-        imFor(c); for (let i = 0; i < num; i++) {
+        For(c); for (let i = 0; i < num; i++) {
             const randomChoice = s.choices[i] ? div1 : div2;
 
-            imDomRootExistingBegin(c, randomChoice); {
-                imLayoutBegin(c, COL); {
+            DomRootExistingBegin(c, randomChoice); {
+                LayoutBegin(c, COL); {
                     addDebugLabelToAppender(c, "bruv " + i);
-                    imStr(c, "Naww: " + i);
-                } imLayoutEnd(c);
-            } imDomRootExistingEnd(c, randomChoice);
-        } imForEnd(c);
-    } imLayoutEnd(c);
+                    Str(c, "Naww: " + i);
+                } LayoutEnd(c);
+            } DomRootExistingEnd(c, randomChoice);
+        } ForEnd(c);
+    } LayoutEnd(c);
 }
 
 */
@@ -257,32 +238,32 @@ function finalizeDomAppender(a: DomAppender<ValidElement>) {
 
 /**
  * NOTE: SVG elements are actually different from normal HTML elements, and 
- * will need to be created wtih {@link imElSvgBegin}
+ * will need to be created wtih {@link ElSvgBegin}
  */
-export function imElBegin<K extends keyof HTMLElementTagNameMap>(
+function ElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
     // TODO: support changing tne type
     // Make this entry in the current entry list, so we can delete it easily
-    const appender = getEntriesParent(c, newDomAppender);
+    const appender = im.getEntriesParent(c, newDomAppender);
 
-    let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = imGet(c, newDomAppender);
+    let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
         const element = document.createElement(r.val);
-        childAppender = imSet(c, newDomAppender(element, appender.domRoot, []));
+        childAppender = im.Set(c, newDomAppender(element, appender.domRoot, []));
         childAppender.keyRef = r;
     }
 
-    imBeginDomAppender(c, appender, childAppender);
+    BeginDomAppender(c, appender, childAppender);
 
     return childAppender;
 }
 
-function imBeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
+function BeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
     appendToDomRoot(appender, childAppender);
 
-    imImmediateModeBlockBegin(c, newDomAppender, childAppender);
+    im.ImmediateModeBlockBegin(c, newDomAppender, childAppender);
 
     childAppender.idx = -1;
 }
@@ -290,30 +271,30 @@ function imBeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, chi
 /**
  * Svg nodes are different from normal DOM nodes, so you'll need to use this function to create them instead.
  */
-export function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
+function ElSvgBegin<K extends keyof SVGElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<SVGElementTagNameMap[K]> {
     // Make this entry in the current entry list, so we can delete it easily
-    const appender = getEntriesParent(c, newDomAppender);
+    const appender = im.getEntriesParent(c, newDomAppender);
 
-    let childAppender: DomAppender<SVGElementTagNameMap[K]> | undefined = imGet(c, newDomAppender);
+    let childAppender: DomAppender<SVGElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
         const svgElement = document.createElementNS("http://www.w3.org/2000/svg", r.val);
         // Seems unnecessary. 
         // svgElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        childAppender = imSet(c, newDomAppender(svgElement, appender.domRoot, []));
+        childAppender = im.Set(c, newDomAppender(svgElement, appender.domRoot, []));
         childAppender.keyRef = r;
     }
 
-    imBeginDomAppender(c, appender, childAppender);
+    BeginDomAppender(c, appender, childAppender);
 
     return childAppender;
 }
 
 
-export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
-    const appender = getEntriesParent(c, newDomAppender);
+function ElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
+    const appender = im.getEntriesParent(c, newDomAppender);
     assert(appender.keyRef === r) // make sure we're popping the right thing
 
     if (appender.finalizeType === FINALIZE_IMMEDIATELY) {
@@ -324,37 +305,37 @@ export function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyo
         deferList.push(appender);
     }
 
-    imImmediateModeBlockEnd(c);
+    im.ImmediateModeBlockEnd(c);
 }
 
-export const imElSvgEnd = imElEnd;
+const ElSvgEnd = ElEnd;
 
 
 /**
  * Typicaly just used at the very root of the program:
  *
- * const globalImCache: ImCache = [];
- * main(globalImCache);
+ * const globalim.Cache: im.Cache = [];
+ * main(globalim.Cache);
  *
- * function main(c: ImCache) {
- *      imCacheBegin(c); {
- *          imDomRootBegin(c, document.body); {
+ * function main(c: im.Cache) {
+ *      CacheBegin(c); {
+ *          DomRootBegin(c, document.body); {
  *          }
- *      } imCacheEnd(c);
+ *      } CacheEnd(c);
  * }
  */
-export function imDomRootBegin(c: ImCache, root: ValidElement) {
-    let appender = imGet(c, newDomAppender);
+function RootBegin(c: ImCache, root: ValidElement) {
+    let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
-        appender = imSet(c, newDomAppender(root, null, []));
+        appender = im.Set(c, newDomAppender(root, null, []));
         appender.domRoot = appender;
         appender.keyRef = root;
     }
 
-    imImmediateModeBlockBegin(c, newDomAppender, appender);
+    im.ImmediateModeBlockBegin(c, newDomAppender, appender);
 
-    // well we kinda have to. imDomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
-    imFinalizeDeferred(c);
+    // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
+    FinalizeDeferred(c);
 
     appender.idx = -1;
     
@@ -364,37 +345,38 @@ export function imDomRootBegin(c: ImCache, root: ValidElement) {
     return appender;
 }
 
-export function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
-    const appender = elGetAppender(c);
+function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
+    const appender = getAppender(c);
     appender.label = str;
 }
 
 // Use this whenever you expect to render to a particular dom node from a place in the code that
 // would otherwise not have access to this dom node.
-export function imDomRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
-    // If you want to re-push this DOM node to the immediate mode stack, use imFinalizeDeferred(c).
-    // I.e imElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
+function RootExistingBegin(c: ImCache, existing: DomAppender<any>) {
+    // If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
+    // I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
     // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
     // This isn't the default, because it breaks some code that expects the node to have been inserted - 
     // calls to textInput.focus() for example, won't work till the next frame, for example.
     assert(existing.finalizeType === FINALIZE_DEFERRED);
 
-    imImmediateModeBlockBegin(c, newDomAppender, existing);
+    im.ImmediateModeBlockBegin(c, newDomAppender, existing);
 }
 
-export function imDomRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
-    let appender = getEntriesParent(c, newDomAppender);
+function RootExistingEnd(c: ImCache, existing: DomAppender<any>) {
+    let appender = im.getEntriesParent(c, newDomAppender);
     assert(appender === existing);
-    imImmediateModeBlockEnd(c);
+    im.ImmediateModeBlockEnd(c);
 }
 
-export function imFinalizeDeferred(c: ImCache) {
-    elGetAppender(c).finalizeType = FINALIZE_DEFERRED;
+/** @deprecated TODO: remove this method in favour of explicitly finalizing */
+function FinalizeDeferred(c: ImCache) {
+    getAppender(c).finalizeType = FINALIZE_DEFERRED;
 }
 
 
-export function imDomRootEnd(c: ImCache, root: ValidElement) {
-    let appender = getEntriesParent(c, newDomAppender);
+function RootEnd(c: ImCache, root: ValidElement) {
+    let appender = im.getEntriesParent(c, newDomAppender);
     assert(appender.keyRef === root);
 
     // By finalizing at the very end, we get two things:
@@ -417,14 +399,14 @@ export function imDomRootEnd(c: ImCache, root: ValidElement) {
     // Finally, finalize the root
     finalizeDomAppender(appender);
 
-    imImmediateModeBlockEnd(c);
+    im.ImmediateModeBlockEnd(c);
 }
 
 function domFinalizeEnumerator(entries: ImCacheEntries): boolean {
     // TODO: only if any mutations
     // TODO: handle global keyed elements
 
-    const domAppender = getEntriesParentFromEntries(entries, newDomAppender);
+    const domAppender = im.getEntriesParentFromEntries(entries, newDomAppender);
     if (domAppender !== undefined) {
         if (domAppender.finalizeType === FINALIZE_DEFERRED) {
             finalizeDomAppender(domAppender);
@@ -443,22 +425,22 @@ export interface Stringifyable {
 
 /**
  * This method manages a HTML Text node. So of course, we named it
- * `imStr`.
+ * `Str`.
  */
-export function imStr(c: ImCache, value: Stringifyable): Text {
-    const domAppender = getEntriesParent(c, newDomAppender);
+function Str(c: ImCache, value: Stringifyable): Text {
+    const domAppender = im.getEntriesParent(c, newDomAppender);
 
-    let textNodeLeafAppender; textNodeLeafAppender = imGet(c, inlineTypeId(imStr));
-    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(
+    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, Str);
+    if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
         domAppender,
         null
     ));
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
-    let lastValue = imGet(c, inlineTypeId(document.createTextNode));
-    if (imSetRequired(c) === true || lastValue !== value) {
-        imSet(c, value);
+    let lastValue = im.GetInline(c, document.createTextNode);
+    if (im.isSetRequired(c) === true || lastValue !== value) {
+        im.Set(c, value);
         textNodeLeafAppender.root.nodeValue = (value != null && value.toString) ? value.toString() : "<couldn't stringify>";
     }
 
@@ -467,23 +449,23 @@ export function imStr(c: ImCache, value: Stringifyable): Text {
     return textNodeLeafAppender.root;
 }
 
-// TODO: not scaleable for the same reason imState isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
-export function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
-    const domAppender = getEntriesParent(c, newDomAppender);
+// TODO: not scaleable for the same reason State isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
+function StrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
+    const domAppender = im.getEntriesParent(c, newDomAppender);
 
-    let textNodeLeafAppender; textNodeLeafAppender = imGet(c, inlineTypeId(imStr));
-    if (textNodeLeafAppender === undefined) textNodeLeafAppender = imSet(c, newDomAppender(
+    let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, Str);
+    if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
         domAppender.domRoot,
         null
     ));
 
-    const formatterChanged = imMemo(c, formatter);
+    const formatterChanged = im.Memo(c, formatter);
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
-    let lastValue = imGet(c, inlineTypeId(document.createTextNode));
+    let lastValue = im.GetInline(c, document.createTextNode);
     if (lastValue !== value || formatterChanged !== 0) {
-        imSet(c, value);
+        im.Set(c, value);
         textNodeLeafAppender.root.nodeValue = formatter(value);
     }
 
@@ -492,32 +474,27 @@ export function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string)
     return textNodeLeafAppender.root;
 }
 
-export let stylesSet = 0;
-export let classesSet = 0;
-export let attrsSet = 0;
-
-export function elSetStyle<K extends (keyof ValidElement["style"])>(
+function setStyle<K extends (keyof ValidElement["style"])>(
     c: ImCache,
     key: K,
     value: string,
-    root = elGet(c),
+    root = getElement(c),
 ) {
     // @ts-expect-error its fine tho
     root.style[key] = value;
-    stylesSet++;
 }
 
-export function elSetTextSafetyRemoved(c: ImCache, val: string) {
-    let el = elGet(c);
+function setTextUnsafe(c: ImCache, val: string) {
+    let el = getElement(c);
     el.textContent = val;
 }
 
 
-export function elSetClass(
+function setClass(
     c: ImCache,
     className: string,
     enabled: boolean | number = true,
-    el = elGet(c)
+    el = getElement(c)
 ): boolean {
     if (enabled !== false && enabled !== 0) {
         el.classList.add(className);
@@ -525,52 +502,37 @@ export function elSetClass(
         el.classList.remove(className);
     }
 
-    classesSet++;
-
     return !!enabled;
 }
 
-export function elSetAttr(
+function setAttr(
     c: ImCache,
     attr: string,
     val: string | null,
-    root = elGet(c),
+    root = getElement(c),
 ) {
     if (val !== null) {
         root.setAttribute(attr, val);
     } else {
         root.removeAttribute(attr);
     }
-
-    attrsSet++;
 }
 
-// Nicer API, but generating the attributes dict is expensive. Don't call this every frame!
-export function elSetAttributes(c: ImCache, attrs: Record<string, string | string[]>) {
-    const el = elGet(c);
-    for (const key in attrs) {
-        let val = attrs[key];
-        if (Array.isArray(val) === true) val = val.join(" ");
-        el.setAttribute(key, val);
-    }
+function getAppender(c: ImCache): DomAppender<ValidElement> {
+    return im.getEntriesParent(c, newDomAppender);
 }
 
-
-export function elGetAppender(c: ImCache): DomAppender<ValidElement> {
-    return getEntriesParent(c, newDomAppender);
-}
-
-export function elGet(c: ImCache) {
-    return elGetAppender(c).root;
+function getElement(c: ImCache) {
+    return getAppender(c).root;
 }
 
 // NOTE: you should only use this if you don't already have some form of global event handling set up,
 // or in cases where you can't use global event handling.
-export function imOn<K extends keyof HTMLElementEventMap>(
+function On<K extends keyof HTMLElementEventMap>(
     c: ImCache,
     type: KeyRef<K>,
 ): HTMLElementEventMap[K] | null {
-    let state; state = imGet(c, inlineTypeId(imOn));
+    let state; state = im.GetInline(c, On);
     if (state === undefined) {
         const val: {
             el: ValidElement;
@@ -578,7 +540,7 @@ export function imOn<K extends keyof HTMLElementEventMap>(
             eventValue: Event | null;
             eventListener: (e: HTMLElementEventMap[K]) => void;
         } = {
-            el: elGet(c),
+            el: getElement(c),
             eventType: null,
             eventValue: null,
             eventListener: (e: HTMLElementEventMap[K]) => {
@@ -588,10 +550,10 @@ export function imOn<K extends keyof HTMLElementEventMap>(
                 // Buffering the events means that we will miss the opportunity to prevent the default event.
 
                 val.eventValue = e;
-                rerenderImCache(c);
+                im.rerenderCache(c);
             },
         };
-        state = imSet(c, val);
+        state = im.Set(c, val);
     }
 
     let result: HTMLElementEventMap[K] | null = null;
@@ -602,7 +564,7 @@ export function imOn<K extends keyof HTMLElementEventMap>(
     }
 
     if (state.eventType !== type) {
-        const el = elGet(c);
+        const el = getElement(c);
         if (state.eventType !== null) {
             el.removeEventListener(state.eventType.val, state.eventListener as EventListener);
         }
@@ -617,28 +579,36 @@ export function imOn<K extends keyof HTMLElementEventMap>(
 ///////////////////////////
 // Global event system
 
-export function getGlobalEventSystem() {
-    return globalStateStackGet(gssEventSystems);
+function getMouse(): MouseState {
+    // You need to initialize a global event system before you go getting it
+    assert(globalEventSystem !== undefined);
+    return globalEventSystem.mouse;
 }
 
-export function elHasMousePress(c: ImCache, el = elGet(c)): boolean {
-    const ev = getGlobalEventSystem();
-    return elIsInSetThisFrame(el, ev.mouse.mouseDownElements)
+function getKeyboard(): KeyboardState {
+    // You need to initialize a global event system before you go getting it
+    assert(globalEventSystem !== undefined);
+    return globalEventSystem.keyboard;
 }
 
-export function elHasMouseUp(c: ImCache, el = elGet(c)): boolean {
-    const ev = getGlobalEventSystem();
-    return elIsInSetThisFrame(el, ev.mouse.mouseUpElements)
+function hasMousePress(c: ImCache, el = getElement(c)): boolean {
+    const mouse = getMouse();
+    return elIsInSetThisFrame(el, mouse.mouseDownElements)
 }
 
-export function elHasMouseClick(c: ImCache, el = elGet(c)): boolean {
-    const ev = getGlobalEventSystem();
-    return elIsInSetThisFrame(el, ev.mouse.mouseClickElements)
+function hasMouseUp(c: ImCache, el = getElement(c)): boolean {
+    const mouse = getMouse();
+    return elIsInSetThisFrame(el, mouse.mouseUpElements)
 }
 
-export function elHasMouseOver(c: ImCache, el = elGet(c)): boolean {
-    const ev = getGlobalEventSystem();
-    return ev.mouse.mouseOverElements.has(el);
+function hasMouseClick(c: ImCache, el = getElement(c)): boolean {
+    const mouse = getMouse();
+    return elIsInSetThisFrame(el, mouse.mouseClickElements)
+}
+
+function hasMouseOver(c: ImCache, el = getElement(c)): boolean {
+    const mouse = getMouse();
+    return mouse.mouseOverElements.has(el);
 }
 
 function elIsInSetThisFrame(el: ValidElement, set: Set<ValidElement>) {
@@ -652,7 +622,7 @@ export type SizeState = {
     height: number;
 }
 
-export type ImKeyboardState = {
+export type KeyboardState = {
     // We need to use this approach instead of a buffered approach like `keysPressed: string[]`, so that a user
     // may call `preventDefault` on the html event as needed.
     // NOTE: another idea is to do `keys.keyDown = null` to prevent other handlers in this framework
@@ -664,7 +634,7 @@ export type ImKeyboardState = {
 };
 
 
-export type ImMouseState = {
+export type MouseState = {
     lastX: number;
     lastY: number;
 
@@ -681,7 +651,7 @@ export type ImMouseState = {
 
     /**
      * NOTE: if you want to use this, you'll have to prevent scroll event propagation.
-     * See {@link imPreventScrollEventPropagation}
+     * See {@link PreventScrollEventPropagation}
      */
     scrollWheel: number;
 
@@ -692,10 +662,10 @@ export type ImMouseState = {
     lastMouseOverElement: ValidElement | null;
 };
 
-export type ImGlobalEventSystem = {
+export type GlobalEventSystem = {
     rerender: () => void;
-    keyboard: ImKeyboardState;
-    mouse: ImMouseState;
+    keyboard: KeyboardState;
+    mouse: MouseState;
     blur:  boolean;
     globalEventHandlers: {
         mousedown:  (e: MouseEvent) => void;
@@ -719,14 +689,14 @@ function findParents(el: ValidElement, elements: Set<ValidElement>) {
     }
 }
 
-export function newImGlobalEventSystem(c: ImCache): ImGlobalEventSystem {
-    const keyboard: ImKeyboardState = {
+function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
+    const keyboard: KeyboardState = {
         keyDown: null,
         keyUp: null,
         keys: newKeysState(),
     };
 
-    const mouse: ImMouseState = {
+    const mouse: MouseState = {
         lastX: 0,
         lastY: 0,
 
@@ -774,8 +744,8 @@ export function newImGlobalEventSystem(c: ImCache): ImGlobalEventSystem {
         mouse.middleMouseButton = Boolean(e.buttons & (3 << 0));
     }
 
-    const eventSystem: ImGlobalEventSystem = {
-        rerender: () => rerenderImCache(c),
+    const eventSystem: GlobalEventSystem = {
+        rerender: () => im.rerenderCache(c),
         keyboard,
         mouse,
         blur: false,
@@ -860,7 +830,7 @@ export function newImGlobalEventSystem(c: ImCache): ImGlobalEventSystem {
     return eventSystem;
 }
 
-function resetImKeyboardState(keyboard: ImKeyboardState) {
+function resetImKeyboardState(keyboard: KeyboardState) {
     keyboard.keyDown = null
     keyboard.keyUp = null
 
@@ -871,38 +841,39 @@ function resetImKeyboardState(keyboard: ImKeyboardState) {
 /**
  * See the decision matrix above {@link globalStateStackPush}
  */
-const gssEventSystems: ImGlobalEventSystem[] = [];
+let globalEventSystem: GlobalEventSystem | undefined;
 
-// TODO: is there any point in separating this from imDomRoot ?
-export function imGlobalEventSystemBegin(c: ImCache): ImGlobalEventSystem {
-    let state = imGet(c, newImGlobalEventSystem);
+// TODO: is there any point in separating this from DomRoot ?
+function GlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
+    let state = im.Get(c, newImGlobalEventSystem);
     if (state === undefined) {
+        // Can't make two of these
+        assert(globalEventSystem === undefined);
+
         const eventSystem = newImGlobalEventSystem(c);
         addDocumentAndWindowEventListeners(eventSystem);
-        onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
-        state = imSet(c, eventSystem);
-    }
+        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
+        state = im.Set(c, eventSystem);
 
-    globalStateStackPush(gssEventSystems, state);
+        globalEventSystem = state;
+    }
 
     return state;
 }
 
-export function imGlobalEventSystemEnd(_c: ImCache, eventSystem: ImGlobalEventSystem) {
+function GlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
     updateMouseState(eventSystem.mouse);
     updateKeysState(eventSystem.keyboard.keys, null, null, false);
 
     eventSystem.keyboard.keyDown = null
     eventSystem.keyboard.keyUp = null
     eventSystem.blur = false;
-
-    globalStateStackPop(gssEventSystems, eventSystem);
 }
 
-export function imTrackSize(c: ImCache, rerender = false) {
-    let state; state = imGet(c, inlineTypeId(imTrackSize));
+function TrackSize(c: ImCache, rerender = false) {
+    let state; state = im.GetInline(c, TrackSize);
     if (state === undefined) {
-        const root = elGet(c);
+        const root = getElement(c);
 
         const self = {
             size: { width: 0, height: 0, },
@@ -918,30 +889,29 @@ export function imTrackSize(c: ImCache, rerender = false) {
                 }
 
                 if (self.resized === true) {
-                    if (self.shouldRerender) rerenderImCache(c);
+                    if (self.shouldRerender) im.rerenderCache(c);
                     self.resized = false;
                 }
             })
         };
 
         self.observer.observe(root);
-        onImmediateModeBlockDestroyed(c, () => {
+        im.onImmediateModeBlockDestroyed(c, () => {
             self.observer.disconnect()
         });
 
-        state = imSet(c, self);
+        state = im.Set(c, self);
     }
 
     state.shouldRerender = rerender;
 
     return state;
-
 }
 
-export function imTrackVisibility(c: ImCache, threshold: number) {
-    let state; state = imGetInline(c, imTrackVisibility);
+function TrackVisibility(c: ImCache, threshold: number) {
+    let state; state = im.GetInline(c, TrackVisibility);
     if (state === undefined) {
-        const root = elGet(c);
+        const root = getElement(c);
 
         const self = {
             isVisible: false,
@@ -960,7 +930,7 @@ export function imTrackVisibility(c: ImCache, threshold: number) {
 
                 if (self.isVisible !== isIntersecting) {
                     self.isVisible = isIntersecting;
-                    rerenderImCache(c);
+                    im.rerenderCache(c);
                 }
             }, {
                 threshold: threshold,
@@ -968,11 +938,11 @@ export function imTrackVisibility(c: ImCache, threshold: number) {
         };
 
         self.observer.observe(root);
-        onImmediateModeBlockDestroyed(c, () => {
+        im.onImmediateModeBlockDestroyed(c, () => {
             self.observer.disconnect()
         });
 
-        state = imSet(c, self);
+        state = im.Set(c, self);
     }
 
 
@@ -990,36 +960,24 @@ function newPreventScrollEventPropagationState() {
     };
 }
 
-export function imPreventScrollEventPropagation(c: ImCache) {
-    let state = imGet(c, newPreventScrollEventPropagationState);
-    if (state === undefined) {
-        const val = newPreventScrollEventPropagationState();
-
-        let el = elGet(c);
-        const handler = (e: Event) => {
-            if (val.isBlocking === true) {
-                e.preventDefault();
-            }
-        };
-
-        el.addEventListener("wheel", handler);
-        onImmediateModeBlockDestroyed(c, () => el.removeEventListener("wheel", handler));
-
-        state = imSet(c, val);
+function PreventScrollEventPropagation(c: ImCache, isBlocking: boolean): number {
+    const wheel = On(c, ev.WHEEL);
+    if (wheel && isBlocking) {
+        wheel.preventDefault();
     }
 
-    const { mouse } = getGlobalEventSystem();
-    if (state.isBlocking === true && elHasMouseOver(c) && mouse.scrollWheel !== 0) {
-        state.scrollY += mouse.scrollWheel;
+    let result = 0;
+
+    const mouse = getMouse();
+    if (isBlocking === true && hasMouseOver(c) && mouse.scrollWheel !== 0) {
+        result += mouse.scrollWheel;
         mouse.scrollWheel = 0;
-    } else {
-        state.scrollY = 0;
-    }
+    } 
 
-    return state;
+    return result;
 }
 
-export function updateMouseState(mouse: ImMouseState) {
+function updateMouseState(mouse: MouseState) {
     mouse.dX = 0;
     mouse.dY = 0;
     mouse.lastX = mouse.X;
@@ -1028,7 +986,7 @@ export function updateMouseState(mouse: ImMouseState) {
     mouse.scrollWheel = 0;
 }
 
-export function resetImMouseState(mouse: ImMouseState) {
+function resetImMouseState(mouse: MouseState) {
     mouse.dX = 0;
     mouse.dY = 0;
     mouse.lastX = mouse.X;
@@ -1041,7 +999,7 @@ export function resetImMouseState(mouse: ImMouseState) {
     mouse.rightMouseButton = false;
 }
 
-export function addDocumentAndWindowEventListeners(eventSystem: ImGlobalEventSystem) {
+function addDocumentAndWindowEventListeners(eventSystem: GlobalEventSystem) {
     document.addEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
     document.addEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
     document.addEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
@@ -1053,7 +1011,7 @@ export function addDocumentAndWindowEventListeners(eventSystem: ImGlobalEventSys
     window.addEventListener("blur", eventSystem.globalEventHandlers.blur);
 }
 
-export function removeDocumentAndWindowEventListeners(eventSystem: ImGlobalEventSystem) {
+function removeDocumentAndWindowEventListeners(eventSystem: GlobalEventSystem) {
     document.removeEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
     document.removeEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
     document.removeEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
@@ -1070,311 +1028,13 @@ export function removeDocumentAndWindowEventListeners(eventSystem: ImGlobalEvent
 
 // We can now memoize on an object reference instead of a string. This improves performance.
 // You shouldn't be creating these every frame - just reusing these constants below
-type KeyRef<K> = { val: K };
+export type KeyRef<K> = { val: K };
 
-// HTML elements
-export const EL_A = { val: "a" } as const;
-export const EL_ABBR = { val: "abbr" } as const;
-export const EL_ADDRESS = { val: "address" } as const;
-export const EL_AREA = { val: "area" } as const;
-export const EL_ARTICLE = { val: "article" } as const;
-export const EL_ASIDE = { val: "aside" } as const;
-export const EL_AUDIO = { val: "audio" } as const;
-export const EL_B = { val: "b" } as const;
-export const EL_BASE = { val: "base" } as const;
-export const EL_BDI = { val: "bdi" } as const;
-export const EL_BDO = { val: "bdo" } as const;
-export const EL_BLOCKQUOTE = { val: "blockquote" } as const;
-export const EL_BODY = { val: "body" } as const;
-export const EL_BR = { val: "br" } as const;
-export const EL_BUTTON = { val: "button" } as const;
-export const EL_CANVAS = { val: "canvas" } as const;
-export const EL_CAPTION = { val: "caption" } as const;
-export const EL_CITE = { val: "cite" } as const;
-export const EL_CODE = { val: "code" } as const;
-export const EL_COL = { val: "col" } as const;
-export const EL_COLGROUP = { val: "colgroup" } as const;
-export const EL_DATA = { val: "data" } as const;
-export const EL_DATALIST = { val: "datalist" } as const;
-export const EL_DD = { val: "dd" } as const;
-export const EL_DEL = { val: "del" } as const;
-export const EL_DETAILS = { val: "details" } as const;
-export const EL_DFN = { val: "dfn" } as const;
-export const EL_DIALOG = { val: "dialog" } as const;
-export const EL_DIV = { val: "div" } as const;
-export const EL_DL = { val: "dl" } as const;
-export const EL_DT = { val: "dt" } as const;
-export const EL_EM = { val: "em" } as const;
-export const EL_EMBED = { val: "embed" } as const;
-export const EL_FIELDSET = { val: "fieldset" } as const;
-export const EL_FIGCAPTION = { val: "figcaption" } as const;
-export const EL_FIGURE = { val: "figure" } as const;
-export const EL_FOOTER = { val: "footer" } as const;
-export const EL_FORM = { val: "form" } as const;
-export const EL_H1 = { val: "h1" } as const;
-export const EL_H2 = { val: "h2" } as const;
-export const EL_H3 = { val: "h3" } as const;
-export const EL_H4 = { val: "h4" } as const;
-export const EL_H5 = { val: "h5" } as const;
-export const EL_H6 = { val: "h6" } as const;
-export const EL_HEAD = { val: "head" } as const;
-export const EL_HEADER = { val: "header" } as const;
-export const EL_HGROUP = { val: "hgroup" } as const;
-export const EL_HR = { val: "hr" } as const;
-export const EL_HTML = { val: "html" } as const;
-export const EL_I = { val: "i" } as const;
-export const EL_IFRAME = { val: "iframe" } as const;
-export const EL_IMG = { val: "img" } as const;
-export const EL_INPUT = { val: "input" } as const;
-export const EL_INS = { val: "ins" } as const;
-export const EL_KBD = { val: "kbd" } as const;
-export const EL_LABEL = { val: "label" } as const;
-export const EL_LEGEND = { val: "legend" } as const;
-export const EL_LI = { val: "li" } as const;
-export const EL_LINK = { val: "link" } as const;
-export const EL_MAIN = { val: "main" } as const;
-export const EL_MAP = { val: "map" } as const;
-export const EL_MARK = { val: "mark" } as const;
-export const EL_MENU = { val: "menu" } as const;
-export const EL_META = { val: "meta" } as const;
-export const EL_METER = { val: "meter" } as const;
-export const EL_NAV = { val: "nav" } as const;
-export const EL_NOSCRIPT = { val: "noscript" } as const;
-export const EL_OBJECT = { val: "object" } as const;
-export const EL_OL = { val: "ol" } as const;
-export const EL_OPTGROUP = { val: "optgroup" } as const;
-export const EL_OPTION = { val: "option" } as const;
-export const EL_OUTPUT = { val: "output" } as const;
-export const EL_P = { val: "p" } as const;
-export const EL_PICTURE = { val: "picture" } as const;
-export const EL_PRE = { val: "pre" } as const;
-export const EL_PROGRESS = { val: "progress" } as const;
-export const EL_Q = { val: "q" } as const;
-export const EL_RP = { val: "rp" } as const;
-export const EL_RT = { val: "rt" } as const;
-export const EL_RUBY = { val: "ruby" } as const;
-export const EL_S = { val: "s" } as const;
-export const EL_SAMP = { val: "samp" } as const;
-export const EL_SCRIPT = { val: "script" } as const;
-export const EL_SEARCH = { val: "search" } as const;
-export const EL_SECTION = { val: "section" } as const;
-export const EL_SELECT = { val: "select" } as const;
-export const EL_SLOT = { val: "slot" } as const;
-export const EL_SMALL = { val: "small" } as const;
-export const EL_SOURCE = { val: "source" } as const;
-export const EL_SPAN = { val: "span" } as const;
-export const EL_STRONG = { val: "strong" } as const;
-export const EL_STYLE = { val: "style" } as const;
-export const EL_SUB = { val: "sub" } as const;
-export const EL_SUMMARY = { val: "summary" } as const;
-export const EL_SUP = { val: "sup" } as const;
-export const EL_TABLE = { val: "table" } as const;
-export const EL_TBODY = { val: "tbody" } as const;
-export const EL_TD = { val: "td" } as const;
-export const EL_TEMPLATE = { val: "template" } as const;
-export const EL_TEXTAREA = { val: "textarea" } as const;
-export const EL_TFOOT = { val: "tfoot" } as const;
-export const EL_TH = { val: "th" } as const;
-export const EL_THEAD = { val: "thead" } as const;
-export const EL_TIME = { val: "time" } as const;
-export const EL_TITLE = { val: "title" } as const;
-export const EL_TR = { val: "tr" } as const;
-export const EL_TRACK = { val: "track" } as const;
-export const EL_U = { val: "u" } as const;
-export const EL_UL = { val: "ul" } as const;
-export const EL_VAR = { val: "var" } as const;
-export const EL_VIDEO = { val: "video" } as const;
-export const EL_WBR = { val: "wbr" } as const;
-
-// HTML svg elements
-export const EL_SVG_A = { val: "a" } as const;
-export const EL_SVG_ANIMATE = { val: "animate" } as const;
-export const EL_SVG_ANIMATEMOTION = { val: "animateMotion" } as const;
-export const EL_SVG_ANIMATETRANSFORM = { val: "animateTransform" } as const;
-export const EL_SVG_CIRCLE = { val: "circle" } as const;
-export const EL_SVG_CLIPPATH = { val: "clipPath" } as const;
-export const EL_SVG_DEFS = { val: "defs" } as const;
-export const EL_SVG_DESC = { val: "desc" } as const;
-export const EL_SVG_ELLIPSE = { val: "ellipse" } as const;
-export const EL_SVG_FEBLEND = { val: "feBlend" } as const;
-export const EL_SVG_FECOLORMATRIX = { val: "feColorMatrix" } as const;
-export const EL_SVG_FECOMPONENTTRANSFER = { val: "feComponentTransfer" } as const;
-export const EL_SVG_FECOMPOSITE = { val: "feComposite" } as const;
-export const EL_SVG_FECONVOLVEMATRIX = { val: "feConvolveMatrix" } as const;
-export const EL_SVG_FEDIFFUSELIGHTING = { val: "feDiffuseLighting" } as const;
-export const EL_SVG_FEDISPLACEMENTMAP = { val: "feDisplacementMap" } as const;
-export const EL_SVG_FEDISTANTLIGHT = { val: "feDistantLight" } as const;
-export const EL_SVG_FEDROPSHADOW = { val: "feDropShadow" } as const;
-export const EL_SVG_FEFLOOD = { val: "feFlood" } as const;
-export const EL_SVG_FEFUNCA = { val: "feFuncA" } as const;
-export const EL_SVG_FEFUNCB = { val: "feFuncB" } as const;
-export const EL_SVG_FEFUNCG = { val: "feFuncG" } as const;
-export const EL_SVG_FEFUNCR = { val: "feFuncR" } as const;
-export const EL_SVG_FEGAUSSIANBLUR = { val: "feGaussianBlur" } as const;
-export const EL_SVG_FEIMAGE = { val: "feImage" } as const;
-export const EL_SVG_FEMERGE = { val: "feMerge" } as const;
-export const EL_SVG_FEMERGENODE = { val: "feMergeNode" } as const;
-export const EL_SVG_FEMORPHOLOGY = { val: "feMorphology" } as const;
-export const EL_SVG_FEOFFSET = { val: "feOffset" } as const;
-export const EL_SVG_FEPOINTLIGHT = { val: "fePointLight" } as const;
-export const EL_SVG_FESPECULARLIGHTING = { val: "feSpecularLighting" } as const;
-export const EL_SVG_FESPOTLIGHT = { val: "feSpotLight" } as const;
-export const EL_SVG_FETILE = { val: "feTile" } as const;
-export const EL_SVG_FETURBULENCE = { val: "feTurbulence" } as const;
-export const EL_SVG_FILTER = { val: "filter" } as const;
-export const EL_SVG_FOREIGNOBJECT = { val: "foreignObject" } as const;
-export const EL_SVG_G = { val: "g" } as const;
-export const EL_SVG_IMAGE = { val: "image" } as const;
-export const EL_SVG_LINE = { val: "line" } as const;
-export const EL_SVG_LINEARGRADIENT = { val: "linearGradient" } as const;
-export const EL_SVG_MARKER = { val: "marker" } as const;
-export const EL_SVG_MASK = { val: "mask" } as const;
-export const EL_SVG_METADATA = { val: "metadata" } as const;
-export const EL_SVG_MPATH = { val: "mpath" } as const;
-export const EL_SVG_PATH = { val: "path" } as const;
-export const EL_SVG_PATTERN = { val: "pattern" } as const;
-export const EL_SVG_POLYGON = { val: "polygon" } as const;
-export const EL_SVG_POLYLINE = { val: "polyline" } as const;
-export const EL_SVG_RADIALGRADIENT = { val: "radialGradient" } as const;
-export const EL_SVG_RECT = { val: "rect" } as const;
-export const EL_SVG_SCRIPT = { val: "script" } as const;
-export const EL_SVG_SET = { val: "set" } as const;
-export const EL_SVG_STOP = { val: "stop" } as const;
-export const EL_SVG_STYLE = { val: "style" } as const;
-/**
- * For larger svg-based components with lots of moving parts, 
- * consider {@link imSvgContext}, or creating something on your end that is similar.
- */
-export const EL_SVG = { val: "svg" } as const;;
-export const EL_SVG_SWITCH = { val: "switch" } as const;
-export const EL_SVG_SYMBOL = { val: "symbol" } as const;
-export const EL_SVG_TEXT = { val: "text" } as const;
-export const EL_SVG_TEXTPATH = { val: "textPath" } as const;
-export const EL_SVG_TITLE = { val: "title" } as const;
-export const EL_SVG_TSPAN = { val: "tspan" } as const;
-export const EL_SVG_USE = { val: "use" } as const;
-export const EL_SVG_VIEW = { val: "view" } as const;
-
-
-// KeyRef<keyof GlobalEventHandlersEventMap>
-export const EV_ABORT = { val: "abort" } as const;
-export const EV_ANIMATIONCANCEL = { val: "animationcancel" } as const;
-export const EV_ANIMATIONEND = { val: "animationend" } as const;
-export const EV_ANIMATIONITERATION = { val: "animationiteration" } as const;
-export const EV_ANIMATIONSTART = { val: "animationstart" } as const;
-export const EV_AUXCLICK = { val: "auxclick" } as const;
-export const EV_BEFOREINPUT = { val: "beforeinput" } as const;
-export const EV_BEFORETOGGLE = { val: "beforetoggle" } as const;
-export const EV_BLUR = { val: "blur" } as const;
-export const EV_CANCEL = { val: "cancel" } as const;
-export const EV_CANPLAY = { val: "canplay" } as const;
-export const EV_CANPLAYTHROUGH = { val: "canplaythrough" } as const;
-export const EV_CHANGE = { val: "change" } as const;
-export const EV_CLICK = { val: "click" } as const;
-export const EV_CLOSE = { val: "close" } as const;
-export const EV_COMPOSITIONEND = { val: "compositionend" } as const;
-export const EV_COMPOSITIONSTART = { val: "compositionstart" } as const;
-export const EV_COMPOSITIONUPDATE = { val: "compositionupdate" } as const;
-export const EV_CONTEXTLOST = { val: "contextlost" } as const;
-export const EV_CONTEXTMENU = { val: "contextmenu" } as const;
-export const EV_CONTEXTRESTORED = { val: "contextrestored" } as const;
-export const EV_COPY = { val: "copy" } as const;
-export const EV_CUECHANGE = { val: "cuechange" } as const;
-export const EV_CUT = { val: "cut" } as const;
-export const EV_DBLCLICK = { val: "dblclick" } as const;
-export const EV_DRAG = { val: "drag" } as const;
-export const EV_DRAGEND = { val: "dragend" } as const;
-export const EV_DRAGENTER = { val: "dragenter" } as const;
-export const EV_DRAGLEAVE = { val: "dragleave" } as const;
-export const EV_DRAGOVER = { val: "dragover" } as const;
-export const EV_DRAGSTART = { val: "dragstart" } as const;
-export const EV_DROP = { val: "drop" } as const;
-export const EV_DURATIONCHANGE = { val: "durationchange" } as const;
-export const EV_EMPTIED = { val: "emptied" } as const;
-export const EV_ENDED = { val: "ended" } as const;
-export const EV_ERROR = { val: "error" } as const;
-export const EV_FOCUS = { val: "focus" } as const;
-export const EV_FOCUSIN = { val: "focusin" } as const;
-export const EV_FOCUSOUT = { val: "focusout" } as const;
-export const EV_FORMDATA = { val: "formdata" } as const;
-export const EV_GOTPOINTERCAPTURE = { val: "gotpointercapture" } as const;
-export const EV_INPUT = { val: "input" } as const;
-export const EV_INVALID = { val: "invalid" } as const;
-/** 
- * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
- * TODO: fix
- **/
-export const EV_KEYDOWN = { val: "keydown" } as const;
-export const EV_KEYPRESS = { val: "keypress" } as const;
-/** 
- * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
- * TODO: fix
- **/
-export const EV_KEYUP = { val: "keyup" } as const;
-export const EV_LOAD = { val: "load" } as const;
-export const EV_LOADEDDATA = { val: "loadeddata" } as const;
-export const EV_LOADEDMETADATA = { val: "loadedmetadata" } as const;
-export const EV_LOADSTART = { val: "loadstart" } as const;
-export const EV_LOSTPOINTERCAPTURE = { val: "lostpointercapture" } as const;
-export const EV_MOUSEDOWN = { val: "mousedown" } as const;
-export const EV_MOUSEENTER = { val: "mouseenter" } as const;
-export const EV_MOUSELEAVE = { val: "mouseleave" } as const;
-export const EV_MOUSEMOVE = { val: "mousemove" } as const;
-export const EV_MOUSEOUT = { val: "mouseout" } as const;
-export const EV_MOUSEOVER = { val: "mouseover" } as const;
-export const EV_MOUSEUP = { val: "mouseup" } as const;
-export const EV_PASTE = { val: "paste" } as const;
-export const EV_PAUSE = { val: "pause" } as const;
-export const EV_PLAY = { val: "play" } as const;
-export const EV_PLAYING = { val: "playing" } as const;
-export const EV_POINTERCANCEL = { val: "pointercancel" } as const;
-export const EV_POINTERDOWN = { val: "pointerdown" } as const;
-export const EV_POINTERENTER = { val: "pointerenter" } as const;
-export const EV_POINTERLEAVE = { val: "pointerleave" } as const;
-export const EV_POINTERMOVE = { val: "pointermove" } as const;
-export const EV_POINTEROUT = { val: "pointerout" } as const;
-export const EV_POINTEROVER = { val: "pointerover" } as const;
-export const EV_POINTERUP = { val: "pointerup" } as const;
-export const EV_PROGRESS = { val: "progress" } as const;
-export const EV_RATECHANGE = { val: "ratechange" } as const;
-export const EV_RESET = { val: "reset" } as const;
-export const EV_RESIZE = { val: "resize" } as const;
-export const EV_SCROLL = { val: "scroll" } as const;
-export const EV_SCROLLEND = { val: "scrollend" } as const;
-export const EV_SECURITYPOLICYVIOLATION = { val: "securitypolicyviolation" } as const;
-export const EV_SEEKED = { val: "seeked" } as const;
-export const EV_SEEKING = { val: "seeking" } as const;
-export const EV_SELECT = { val: "select" } as const;
-export const EV_SELECTIONCHANGE = { val: "selectionchange" } as const;
-export const EV_SELECTSTART = { val: "selectstart" } as const;
-export const EV_SLOTCHANGE = { val: "slotchange" } as const;
-export const EV_STALLED = { val: "stalled" } as const;
-export const EV_SUBMIT = { val: "submit" } as const;
-export const EV_SUSPEND = { val: "suspend" } as const;
-export const EV_TIMEUPDATE = { val: "timeupdate" } as const;
-export const EV_TOGGLE = { val: "toggle" } as const;
-export const EV_TOUCHCANCEL = { val: "touchcancel" } as const;
-export const EV_TOUCHEND = { val: "touchend" } as const;
-export const EV_TOUCHMOVE = { val: "touchmove" } as const;
-export const EV_TOUCHSTART = { val: "touchstart" } as const;
-export const EV_TRANSITIONCANCEL = { val: "transitioncancel" } as const;
-export const EV_TRANSITIONEND = { val: "transitionend" } as const;
-export const EV_TRANSITIONRUN = { val: "transitionrun" } as const;
-export const EV_TRANSITIONSTART = { val: "transitionstart" } as const;
-export const EV_VOLUMECHANGE = { val: "volumechange" } as const;
-export const EV_WAITING = { val: "waiting" } as const;
-export const EV_WEBKITANIMATIONEND = { val: "webkitanimationend" } as const;
-export const EV_WEBKITANIMATIONITERATION = { val: "webkitanimationiteration" } as const;
-export const EV_WEBKITANIMATIONSTART = { val: "webkitanimationstart" } as const;
-export const EV_WEBKITTRANSITIONEND = { val: "webkittransitionend" } as const;
-export const EV_WHEEL = { val: "wheel" } as const;
-export const EV_FULLSCREENCHANGE = { val: "fullscreenchange" };
-export const EV_FULLSCREENERROR = { val: "fullscreenerror" };
 
 ///////////////////////////
 // Keyboard input tracking
 
-export function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
+function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
     let i2 = 0;
     for (let i = 0; i < arr.length; i++) {
         if (predicate(arr[i], i)) arr[i2++] = arr[i];
@@ -1396,7 +1056,7 @@ export type KeysState = {
     letters: PressedSymbols<string>;
 };
 
-export function newKeysState(): KeysState {
+function newKeysState(): KeysState {
     return {
         keys: {
             pressed: [],
@@ -1425,7 +1085,7 @@ const KEY_EVENT_BLUR = 4;
 // TODO: try using keyCode if available, then fall back on key
 export type NormalizedKey = string & { __Key: void };
 
-export function getNormalizedKey(key: string): NormalizedKey {
+function getNormalizedKey(key: string): NormalizedKey {
     if (key.length === 1) {
         key = key.toUpperCase();
 
@@ -1513,7 +1173,7 @@ function updateKeysStateInternal(
     updatePressedSymbols(keysState.letters, ev, key);
 }
 
-export function updateKeysState(
+function updateKeysState(
     keysState: KeysState,
     keyDown: KeyboardEvent | null,
     keyUp: KeyboardEvent | null,
@@ -1546,7 +1206,7 @@ export function updateKeysState(
     }
 }
 
-export function isKeyPressed(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyPressed(keysState: KeysState, key: NormalizedKey): boolean {
     const keys = keysState.keys;
     for (let i = 0; i < keys.pressed.length; i++) {
         if (keys.pressed[i] === key) return true;
@@ -1554,7 +1214,7 @@ export function isKeyPressed(keysState: KeysState, key: NormalizedKey): boolean 
     return false;
 }
 
-export function isKeyRepeated(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyRepeated(keysState: KeysState, key: NormalizedKey): boolean {
     const keys = keysState.keys;
     for (let i = 0; i < keys.repeated.length; i++) {
         if (keys.repeated[i] === key) return true;
@@ -1562,13 +1222,13 @@ export function isKeyRepeated(keysState: KeysState, key: NormalizedKey): boolean
     return false;
 }
 
-export function isKeyPressedOrRepeated(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyPressedOrRepeated(keysState: KeysState, key: NormalizedKey): boolean {
     if (isKeyPressed(keysState, key)) return true;
     if (isKeyRepeated(keysState, key)) return true;
     return false;
 }
 
-export function isKeyReleased(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyReleased(keysState: KeysState, key: NormalizedKey): boolean {
     const keys = keysState.keys;
     for (let i = 0; i < keys.released.length; i++) {
         if (keys.released[i] === key) return true;
@@ -1576,7 +1236,7 @@ export function isKeyReleased(keysState: KeysState, key: NormalizedKey): boolean
     return false;
 }
 
-export function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
     const keys = keysState.keys;
     for (let i = 0; i < keys.held.length; i++) {
         if (keys.held[i] === key) return true;
@@ -1585,7 +1245,7 @@ export function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
 }
 
 
-export function isLetterPressed(keysState: KeysState, letter: string): boolean {
+function isLetterPressed(keysState: KeysState, letter: string): boolean {
     const letters = keysState.letters;
     for (let i = 0; i < letters.pressed.length; i++) {
         if (letters.pressed[i] === letter) return true;
@@ -1593,7 +1253,7 @@ export function isLetterPressed(keysState: KeysState, letter: string): boolean {
     return false;
 }
 
-export function isLetterRepeated(keysState: KeysState, letter: string): boolean {
+function isLetterRepeated(keysState: KeysState, letter: string): boolean {
     const letters = keysState.letters;
     for (let i = 0; i < letters.repeated.length; i++) {
         if (letters.repeated[i] === letter) return true;
@@ -1601,13 +1261,13 @@ export function isLetterRepeated(keysState: KeysState, letter: string): boolean 
     return false;
 }
 
-export function isLetterPressedOrRepeated(keysState: KeysState, letter: string): boolean {
+function isLetterPressedOrRepeated(keysState: KeysState, letter: string): boolean {
     if (isLetterPressed(keysState, letter)) return true;
     if (isLetterRepeated(keysState, letter)) return true;
     return false;
 }
 
-export function isLetterReleased(keysState: KeysState, letter: string): boolean {
+function isLetterReleased(keysState: KeysState, letter: string): boolean {
     const letters = keysState.letters;
     for (let i = 0; i < letters.released.length; i++) {
         if (letters.released[i] === letter) return true;
@@ -1615,7 +1275,7 @@ export function isLetterReleased(keysState: KeysState, letter: string): boolean 
     return false;
 }
 
-export function isLetterHeld(keysState: KeysState, letter: string): boolean {
+function isLetterHeld(keysState: KeysState, letter: string): boolean {
     const letters = keysState.letters;
     for (let i = 0; i < letters.held.length; i++) {
         if (letters.held[i] === letter) return true;
@@ -1623,63 +1283,445 @@ export function isLetterHeld(keysState: KeysState, letter: string): boolean {
     return false;
 }
 
-export const KEY_1 = getNormalizedKey("1");
-export const KEY_2 = getNormalizedKey("2");
-export const KEY_3 = getNormalizedKey("3");
-export const KEY_4 = getNormalizedKey("4");
-export const KEY_5 = getNormalizedKey("5");
-export const KEY_6 = getNormalizedKey("6");
-export const KEY_7 = getNormalizedKey("7");
-export const KEY_8 = getNormalizedKey("8");
-export const KEY_9 = getNormalizedKey("9");
-export const KEY_0 = getNormalizedKey("0");
-export const KEY_MINUS = getNormalizedKey("-");
-export const KEY_EQUALS = getNormalizedKey("=");
-export const KEY_Q = getNormalizedKey("Q");
-export const KEY_W = getNormalizedKey("W");
-export const KEY_E = getNormalizedKey("E");
-export const KEY_R = getNormalizedKey("R");
-export const KEY_T = getNormalizedKey("T");
-export const KEY_Y = getNormalizedKey("Y");
-export const KEY_U = getNormalizedKey("U");
-export const KEY_I = getNormalizedKey("I");
-export const KEY_O = getNormalizedKey("O");
-export const KEY_P = getNormalizedKey("P");
-export const KEY_OPEN_BRACKET = getNormalizedKey("[");
-export const KEY_CLOSE_BRACKET = getNormalizedKey("]");
-export const KEY_BACKSLASH = getNormalizedKey("\\");
-export const KEY_A = getNormalizedKey("A");
-export const KEY_S = getNormalizedKey("S");
-export const KEY_D = getNormalizedKey("D");
-export const KEY_F = getNormalizedKey("F");
-export const KEY_G = getNormalizedKey("G");
-export const KEY_H = getNormalizedKey("H");
-export const KEY_J = getNormalizedKey("J");
-export const KEY_K = getNormalizedKey("K");
-export const KEY_L = getNormalizedKey("L");
-export const KEY_SEMICOLON = getNormalizedKey(";");
-export const KEY_QUOTE = getNormalizedKey("'");
-export const KEY_Z = getNormalizedKey("Z");
-export const KEY_X = getNormalizedKey("X");
-export const KEY_C = getNormalizedKey("C");
-export const KEY_V = getNormalizedKey("V");
-export const KEY_B = getNormalizedKey("B");
-export const KEY_N = getNormalizedKey("N");
-export const KEY_M = getNormalizedKey("M");
-export const KEY_COMMA = getNormalizedKey(",");
-export const KEY_PERIOD = getNormalizedKey(".");
-export const KEY_FORWAR_SLASH = getNormalizedKey("/");
 
-export const KEY_SHIFT = getNormalizedKey("Shift");
-export const KEY_CTRL = getNormalizedKey("Control");
-export const KEY_META = getNormalizedKey("Meta");
-export const KEY_ALT = getNormalizedKey("Alt");
-export const KEY_MOD = getNormalizedKey("Modifier"); // Either CTRL or META
 
-export const KEY_SPACE = getNormalizedKey(" ");
-export const KEY_ENTER = getNormalizedKey("Enter");
-export const KEY_BACKSPACE = getNormalizedKey("Backspace");
-export const KEY_ARROW_UP = getNormalizedKey("ArrowUp");
-export const KEY_ARROW_DOWN = getNormalizedKey("ArrowDown");
-export const KEY_ARROW_LEFT = getNormalizedKey("ArrowLeft");
-export const KEY_ARROW_RIGHT = getNormalizedKey("ArrowRight");
+/** HTML elements */
+export const el = {
+    A: { val: "a" },
+    ABBR: { val: "abbr" },
+    ADDRESS: { val: "address" },
+    AREA: { val: "area" },
+    ARTICLE: { val: "article" },
+    ASIDE: { val: "aside" },
+    AUDIO: { val: "audio" },
+    B: { val: "b" },
+    BASE: { val: "base" },
+    BDI: { val: "bdi" },
+    BDO: { val: "bdo" },
+    BLOCKQUOTE: { val: "blockquote" },
+    BODY: { val: "body" },
+    BR: { val: "br" },
+    BUTTON: { val: "button" },
+    CANVAS: { val: "canvas" },
+    CAPTION: { val: "caption" },
+    CITE: { val: "cite" },
+    CODE: { val: "code" },
+    COL: { val: "col" },
+    COLGROUP: { val: "colgroup" },
+    DATA: { val: "data" },
+    DATALIST: { val: "datalist" },
+    DD: { val: "dd" },
+    DEL: { val: "del" },
+    DETAILS: { val: "details" },
+    DFN: { val: "dfn" },
+    DIALOG: { val: "dialog" },
+    DIV: { val: "div" },
+    DL: { val: "dl" },
+    DT: { val: "dt" },
+    EM: { val: "em" },
+    EMBED: { val: "embed" },
+    FIELDSET: { val: "fieldset" },
+    FIGCAPTION: { val: "figcaption" },
+    FIGURE: { val: "figure" },
+    FOOTER: { val: "footer" },
+    FORM: { val: "form" },
+    H1: { val: "h1" },
+    H2: { val: "h2" },
+    H3: { val: "h3" },
+    H4: { val: "h4" },
+    H5: { val: "h5" },
+    H6: { val: "h6" },
+    HEAD: { val: "head" },
+    HEADER: { val: "header" },
+    HGROUP: { val: "hgroup" },
+    HR: { val: "hr" },
+    HTML: { val: "html" },
+    I: { val: "i" },
+    IFRAME: { val: "iframe" },
+    IMG: { val: "img" },
+    INPUT: { val: "input" },
+    INS: { val: "ins" },
+    KBD: { val: "kbd" },
+    LABEL: { val: "label" },
+    LEGEND: { val: "legend" },
+    LI: { val: "li" },
+    LINK: { val: "link" },
+    MAIN: { val: "main" },
+    MAP: { val: "map" },
+    MARK: { val: "mark" },
+    MENU: { val: "menu" },
+    META: { val: "meta" },
+    METER: { val: "meter" },
+    NAV: { val: "nav" },
+    NOSCRIPT: { val: "noscript" },
+    OBJECT: { val: "object" },
+    OL: { val: "ol" },
+    OPTGROUP: { val: "optgroup" },
+    OPTION: { val: "option" },
+    OUTPUT: { val: "output" },
+    P: { val: "p" },
+    PICTURE: { val: "picture" },
+    PRE: { val: "pre" },
+    PROGRESS: { val: "progress" },
+    Q: { val: "q" },
+    RP: { val: "rp" },
+    RT: { val: "rt" },
+    RUBY: { val: "ruby" },
+    S: { val: "s" },
+    SAMP: { val: "samp" },
+    SCRIPT: { val: "script" },
+    SEARCH: { val: "search" },
+    SECTION: { val: "section" },
+    SELECT: { val: "select" },
+    SLOT: { val: "slot" },
+    SMALL: { val: "small" },
+    SOURCE: { val: "source" },
+    SPAN: { val: "span" },
+    STRONG: { val: "strong" },
+    STYLE: { val: "style" },
+    SUB: { val: "sub" },
+    SUMMARY: { val: "summary" },
+    SUP: { val: "sup" },
+    TABLE: { val: "table" },
+    TBODY: { val: "tbody" },
+    TD: { val: "td" },
+    TEMPLATE: { val: "template" },
+    TEXTAREA: { val: "textarea" },
+    TFOOT: { val: "tfoot" },
+    TH: { val: "th" },
+    THEAD: { val: "thead" },
+    TIME: { val: "time" },
+    TITLE: { val: "title" },
+    TR: { val: "tr" },
+    TRACK: { val: "track" },
+    U: { val: "u" },
+    UL: { val: "ul" },
+    VAR: { val: "var" },
+    VIDEO: { val: "video" },
+    WBR: { val: "wbr" },
+} as const;
+
+/** Keyboard keys */
+export const key = {
+    // 1 to 9,0 - main numbers
+    A1: getNormalizedKey("1"),
+    A2: getNormalizedKey("2"),
+    A3: getNormalizedKey("3"),
+    A4: getNormalizedKey("4"),
+    A5: getNormalizedKey("5"),
+    A6: getNormalizedKey("6"),
+    A7: getNormalizedKey("7"),
+    A8: getNormalizedKey("8"),
+    A9: getNormalizedKey("9"),
+    A0: getNormalizedKey("0"),
+    MINUS: getNormalizedKey("-"),
+    EQUALS: getNormalizedKey("="),
+
+    Q: getNormalizedKey("Q"),
+    W: getNormalizedKey("W"),
+    E: getNormalizedKey("E"),
+    R: getNormalizedKey("R"),
+    T: getNormalizedKey("T"),
+    Y: getNormalizedKey("Y"),
+    U: getNormalizedKey("U"),
+    I: getNormalizedKey("I"),
+    O: getNormalizedKey("O"),
+    P: getNormalizedKey("P"),
+    OPEN_BRACKET: getNormalizedKey("["),
+    CLOSE_BRACKET: getNormalizedKey("]"),
+    BACKSLASH: getNormalizedKey("\\"),
+
+    A: getNormalizedKey("A"),
+    S: getNormalizedKey("S"),
+    D: getNormalizedKey("D"),
+    F: getNormalizedKey("F"),
+    G: getNormalizedKey("G"),
+    H: getNormalizedKey("H"),
+    J: getNormalizedKey("J"),
+    K: getNormalizedKey("K"),
+    L: getNormalizedKey("L"),
+    SEMICOLON: getNormalizedKey(","),
+    QUOTE: getNormalizedKey("'"),
+    ENTER: getNormalizedKey("Enter"),
+
+    Z: getNormalizedKey("Z"),
+    X: getNormalizedKey("X"),
+    C: getNormalizedKey("C"),
+    V: getNormalizedKey("V"),
+    B: getNormalizedKey("B"),
+    N: getNormalizedKey("N"),
+    M: getNormalizedKey("M"),
+    COMMA: getNormalizedKey(","),
+    PERIOD: getNormalizedKey("."),
+    FORWAR_SLASH: getNormalizedKey("/"),
+
+    SHIFT: getNormalizedKey("Shift"),
+    CTRL: getNormalizedKey("Control"),
+    META: getNormalizedKey("Meta"),
+    ALT: getNormalizedKey("Alt"),
+    MOD: getNormalizedKey("Modifier"), // Either CTRL or META
+
+    SPACE: getNormalizedKey(" "),
+    BACKSPACE: getNormalizedKey("Backspace"),
+    ARROW_UP: getNormalizedKey("ArrowUp"),
+    ARROW_DOWN: getNormalizedKey("ArrowDown"),
+    ARROW_LEFT: getNormalizedKey("ArrowLeft"),
+    ARROW_RIGHT: getNormalizedKey("ArrowRight"),
+} as const;
+
+/** Events (the most common ones, at least) */
+export const ev = {
+    ABORT: { val: "abort" },
+    ANIMATIONCANCEL: { val: "animationcancel" },
+    ANIMATIONEND: { val: "animationend" },
+    ANIMATIONITERATION: { val: "animationiteration" },
+    ANIMATIONSTART: { val: "animationstart" },
+    AUXCLICK: { val: "auxclick" },
+    BEFOREINPUT: { val: "beforeinput" },
+    BEFORETOGGLE: { val: "beforetoggle" },
+    BLUR: { val: "blur" },
+    CANCEL: { val: "cancel" },
+    CANPLAY: { val: "canplay" },
+    CANPLAYTHROUGH: { val: "canplaythrough" },
+    CHANGE: { val: "change" },
+    CLICK: { val: "click" },
+    CLOSE: { val: "close" },
+    COMPOSITIONEND: { val: "compositionend" },
+    COMPOSITIONSTART: { val: "compositionstart" },
+    COMPOSITIONUPDATE: { val: "compositionupdate" },
+    CONTEXTLOST: { val: "contextlost" },
+    CONTEXTMENU: { val: "contextmenu" },
+    CONTEXTRESTORED: { val: "contextrestored" },
+    COPY: { val: "copy" },
+    CUECHANGE: { val: "cuechange" },
+    CUT: { val: "cut" },
+    DBLCLICK: { val: "dblclick" },
+    DRAG: { val: "drag" },
+    DRAGEND: { val: "dragend" },
+    DRAGENTER: { val: "dragenter" },
+    DRAGLEAVE: { val: "dragleave" },
+    DRAGOVER: { val: "dragover" },
+    DRAGSTART: { val: "dragstart" },
+    DROP: { val: "drop" },
+    DURATIONCHANGE: { val: "durationchange" },
+    EMPTIED: { val: "emptied" },
+    ENDED: { val: "ended" },
+    ERROR: { val: "error" },
+    FOCUS: { val: "focus" },
+    FOCUSIN: { val: "focusin" },
+    FOCUSOUT: { val: "focusout" },
+    FORMDATA: { val: "formdata" },
+    GOTPOINTERCAPTURE: { val: "gotpointercapture" },
+    INPUT: { val: "input" },
+    INVALID: { val: "invalid" },
+    /** 
+     * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
+     * TODO: fix
+     **/
+    KEYDOWN: { val: "keydown" },
+    KEYPRESS: { val: "keypress" },
+    /** 
+     * NOTE: You may want to use {@link getGlobalEventSystem}.keyboard instead of this 
+     * TODO: fix
+     **/
+    KEYUP: { val: "keyup" },
+    LOAD: { val: "load" },
+    LOADEDDATA: { val: "loadeddata" },
+    LOADEDMETADATA: { val: "loadedmetadata" },
+    LOADSTART: { val: "loadstart" },
+    LOSTPOINTERCAPTURE: { val: "lostpointercapture" },
+    MOUSEDOWN: { val: "mousedown" },
+    MOUSEENTER: { val: "mouseenter" },
+    MOUSELEAVE: { val: "mouseleave" },
+    MOUSEMOVE: { val: "mousemove" },
+    MOUSEOUT: { val: "mouseout" },
+    MOUSEOVER: { val: "mouseover" },
+    MOUSEUP: { val: "mouseup" },
+    PASTE: { val: "paste" },
+    PAUSE: { val: "pause" },
+    PLAY: { val: "play" },
+    PLAYING: { val: "playing" },
+    POINTERCANCEL: { val: "pointercancel" },
+    POINTERDOWN: { val: "pointerdown" },
+    POINTERENTER: { val: "pointerenter" },
+    POINTERLEAVE: { val: "pointerleave" },
+    POINTERMOVE: { val: "pointermove" },
+    POINTEROUT: { val: "pointerout" },
+    POINTEROVER: { val: "pointerover" },
+    POINTERUP: { val: "pointerup" },
+    PROGRESS: { val: "progress" },
+    RATECHANGE: { val: "ratechange" },
+    RESET: { val: "reset" },
+    RESIZE: { val: "resize" },
+    SCROLL: { val: "scroll" },
+    SCROLLEND: { val: "scrollend" },
+    SECURITYPOLICYVIOLATION: { val: "securitypolicyviolation" },
+    SEEKED: { val: "seeked" },
+    SEEKING: { val: "seeking" },
+    SELECT: { val: "select" },
+    SELECTIONCHANGE: { val: "selectionchange" },
+    SELECTSTART: { val: "selectstart" },
+    SLOTCHANGE: { val: "slotchange" },
+    STALLED: { val: "stalled" },
+    SUBMIT: { val: "submit" },
+    SUSPEND: { val: "suspend" },
+    TIMEUPDATE: { val: "timeupdate" },
+    TOGGLE: { val: "toggle" },
+    TOUCHCANCEL: { val: "touchcancel" },
+    TOUCHEND: { val: "touchend" },
+    TOUCHMOVE: { val: "touchmove" },
+    TOUCHSTART: { val: "touchstart" },
+    TRANSITIONCANCEL: { val: "transitioncancel" },
+    TRANSITIONEND: { val: "transitionend" },
+    TRANSITIONRUN: { val: "transitionrun" },
+    TRANSITIONSTART: { val: "transitionstart" },
+    VOLUMECHANGE: { val: "volumechange" },
+    WAITING: { val: "waiting" },
+    WEBKITANIMATIONEND: { val: "webkitanimationend" },
+    WEBKITANIMATIONITERATION: { val: "webkitanimationiteration" },
+    WEBKITANIMATIONSTART: { val: "webkitanimationstart" },
+    WEBKITTRANSITIONEND: { val: "webkittransitionend" },
+    WHEEL: { val: "wheel" },
+    FULLSCREENCHANGE: { val: "fullscreenchange" },
+    FULLSCREENERROR: { val: "fullscreenerror" },
+} as const;
+
+
+/** HTML svg elements */
+export const elsvg = {
+    A: { val: "a" }, // Yep, its actually an SVG
+    ANIMATE: { val: "animate" },
+    ANIMATEMOTION: { val: "animateMotion" },
+    ANIMATETRANSFORM: { val: "animateTransform" },
+    CIRCLE: { val: "circle" },
+    CLIPPATH: { val: "clipPath" },
+    DEFS: { val: "defs" },
+    DESC: { val: "desc" },
+    ELLIPSE: { val: "ellipse" },
+    FEBLEND: { val: "feBlend" },
+    FECOLORMATRIX: { val: "feColorMatrix" },
+    FECOMPONENTTRANSFER: { val: "feComponentTransfer" },
+    FECOMPOSITE: { val: "feComposite" },
+    FECONVOLVEMATRIX: { val: "feConvolveMatrix" },
+    FEDIFFUSELIGHTING: { val: "feDiffuseLighting" },
+    FEDISPLACEMENTMAP: { val: "feDisplacementMap" },
+    FEDISTANTLIGHT: { val: "feDistantLight" },
+    FEDROPSHADOW: { val: "feDropShadow" },
+    FEFLOOD: { val: "feFlood" },
+    FEFUNCA: { val: "feFuncA" },
+    FEFUNCB: { val: "feFuncB" },
+    FEFUNCG: { val: "feFuncG" },
+    FEFUNCR: { val: "feFuncR" },
+    FEGAUSSIANBLUR: { val: "feGaussianBlur" },
+    FEIMAGE: { val: "feImage" },
+    FEMERGE: { val: "feMerge" },
+    FEMERGENODE: { val: "feMergeNode" },
+    FEMORPHOLOGY: { val: "feMorphology" },
+    FEOFFSET: { val: "feOffset" },
+    FEPOINTLIGHT: { val: "fePointLight" },
+    FESPECULARLIGHTING: { val: "feSpecularLighting" },
+    FESPOTLIGHT: { val: "feSpotLight" },
+    FETILE: { val: "feTile" },
+    FETURBULENCE: { val: "feTurbulence" },
+    FILTER: { val: "filter" },
+    FOREIGNOBJECT: { val: "foreignObject" },
+    G: { val: "g" },
+    IMAGE: { val: "image" },
+    LINE: { val: "line" },
+    LINEARGRADIENT: { val: "linearGradient" },
+    MARKER: { val: "marker" },
+    MASK: { val: "mask" },
+    METADATA: { val: "metadata" },
+    MPATH: { val: "mpath" },
+    PATH: { val: "path" },
+    PATTERN: { val: "pattern" },
+    POLYGON: { val: "polygon" },
+    POLYLINE: { val: "polyline" },
+    RADIALGRADIENT: { val: "radialGradient" },
+    RECT: { val: "rect" },
+    SCRIPT: { val: "script" },
+    SET: { val: "set" },
+    STOP: { val: "stop" },
+    STYLE: { val: "style" },
+    /**
+     * For larger svg-based components with lots of moving parts, 
+     * consider {@link SvgContext}, or creating something on your end that is similar.
+     */
+    SVG: { val: "svg" },
+    SWITCH: { val: "switch" },
+    SYMBOL: { val: "symbol" },
+    TEXT: { val: "text" },
+    TEXTPATH: { val: "textPath" },
+    TITLE: { val: "title" },
+    TSPAN: { val: "tspan" },
+    USE: { val: "use" },
+    VIEW: { val: "view" },
+} as const;
+
+export const imdom = {
+    /** Internal methods */
+    newDomAppender,  // This is the typeId of a Dom Appender.
+    getAppender,     // Gets the current DOM appender. Very useful for utils
+    getElement,      // Short for getAppender().root
+
+    /** Begin DOM root. Required before any calls to {@link imdom.ElBegin} */
+    RootBegin, RootEnd,
+
+    /** DOM-node creation */
+
+    ElBegin, ElEnd,          // DOM nodes
+    ElSvgBegin, ElSvgEnd,    // SVG Dom nodes (technically different :nerd-emoji:)
+    Str,       // Text node
+    StrFmt,    // Text node, custom formatter for arbitrary object. Try to make formatter a constant! Otherwise, expect terrible performance
+
+    /** 
+     * These methods allow re-pushing a node we created somewhere else in the DOM to the immediate-mode stack.
+     * You can now append more things under that node from here. Useful in certain specific situations. 
+     * Not useful without FinalizeDeferred. Although maybe there should be the option to explicitly finalize the node yourself, instead of having
+     * deferred finalization at all...
+     **/
+    RootExistingBegin,
+    RootExistingEnd,
+    FinalizeDeferred,
+    FINALIZE_IMMEDIATELY,
+    FINALIZE_DEFERRED,
+
+    /** Setting properties on DOM node */
+    setStyle,
+    setClass,
+    setAttr,
+    setTextUnsafe, // Don't call this on an element that has non-text children! You'll delete them.
+
+    /** Utility hooks */
+    On, // Wrapper for .addEventListener. No, there is no corresponding Off - it doesn't make sense here
+    TrackSize,          // Wrapper for ResizeObserver. Not comprehensive
+    TrackVisibility,    // Wrapper for IntersectionObserver. Not comprehensive
+    PreventScrollEventPropagation, // Allows you to block the default scrolling action, and use the scroll delta for yourself. Probably didn't need to write this method actually
+
+    /** Global event system */
+
+    // These must be called at the root of the program for the global event system to work
+    GlobalEventSystemBegin, GlobalEventSystemEnd, 
+
+    getMouse,
+    getKeyboard,
+    hasMousePress,
+    hasMouseUp,
+    hasMouseClick,
+    hasMouseOver,
+    isKeyPressed,
+    isKeyRepeated,
+    isKeyPressedOrRepeated,
+    isKeyReleased,
+    isKeyHeld,
+    isLetterPressed,
+    isLetterRepeated,
+    isLetterPressedOrRepeated,
+    isLetterReleased,
+    isLetterHeld,
+
+    /** Global event system - internal methods */
+    newImGlobalEventSystem,
+    newKeysState,
+    getNormalizedKey,
+} as const;

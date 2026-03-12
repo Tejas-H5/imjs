@@ -1,13 +1,5 @@
-import {
-    getItemsIterated,
-    getTotalDestructors,
-    getTotalMapEntries,
-    ImCache,
-    imGet,
-    imSet,
-    inlineTypeId
-} from "../im-core";
-import { imStr } from "../im-dom";
+import { im, ImCache } from "../im-core";
+import { imdom } from "../im-dom";
 import { BLOCK, imLayoutBegin, imLayoutEnd } from "./ui-core";
 
 export type FpsCounterState = {
@@ -42,8 +34,8 @@ export function fpsMarkRenderingEnd(fps: FpsCounterState) {
 
 export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
     const RINGBUFFER_SIZE = 20;
-    let arr; arr = imGet(c, inlineTypeId(Array));
-    if (!arr) arr = imSet(c, {
+    let arr; arr = im.GetInline(c, imFpsCounterSimple);
+    if (!arr) arr = im.Set(c, {
         frameMsRingbuffer: new Array(RINGBUFFER_SIZE).fill(0),
         idx1: 0,
         renderMsRingbuffer: new Array(RINGBUFFER_SIZE).fill(0),
@@ -65,22 +57,22 @@ export function imFpsCounterSimple(c: ImCache, fpsCounter: FpsCounterState) {
     renderMs /= arr.frameMsRingbuffer.length;
     frameMs /= arr.frameMsRingbuffer.length;
 
-    imLayoutBegin(c, BLOCK); imStr(c, Math.round(renderMs) + "ms/" + Math.round(frameMs) + "ms"); imLayoutEnd(c);
+    imLayoutBegin(c, BLOCK); imdom.Str(c, Math.round(renderMs) + "ms/" + Math.round(frameMs) + "ms"); imLayoutEnd(c);
 }
 
 export function imExtraDiagnosticInfo(c: ImCache, verbose = false) {
-    const itemsIterated  = getItemsIterated(c);
-    const numDestructors = getTotalDestructors(c);
-    const numMapEntries  = getTotalMapEntries(c);
+    const itemsIterated  = im.getItemsIterated(c);
+    const numDestructors = im.getTotalDestructors(c);
+    const numMapEntries  = im.getTotalMapEntries(c);
 
     imLayoutBegin(c, BLOCK); {
-        imStr(c, itemsIterated);
-        imStr(c, verbose ? " immediate mode state entries, " : "i ");
+        imdom.Str(c, itemsIterated);
+        imdom.Str(c, verbose ? " immediate mode state entries, " : "i ");
 
         // If either of these just keep increasing forever, you have a memory leak.
-        imStr(c, numDestructors);
-        imStr(c, verbose ? " destructors, " : "d ");
-        imStr(c, numMapEntries);
-        imStr(c, verbose ? " map entries" : "m");
+        imdom.Str(c, numDestructors);
+        imdom.Str(c, verbose ? " destructors, " : "d ");
+        imdom.Str(c, numMapEntries);
+        imdom.Str(c, verbose ? " map entries" : "m");
     } imLayoutEnd(c);
 }

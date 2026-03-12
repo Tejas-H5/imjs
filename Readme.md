@@ -5,30 +5,41 @@ This repository is a central place where I aim to put all the related code, test
 It's a bit annoying to spread this out in various util folders in different projects.
 
 ```ts
+import { im, imdom, el, ImCache } from "/somewhere/im-js";
+
 function newAppState() {
     return { count: 0 };
 }
 
 function imApp(c: ImCache) {
-    const s = imState(c, newAppState);
+    const s = im.State(c, newAppState);
 
-    imElBegin(c, EL_DIV); {
-        imElBegin(c, EL_DIV); {
-            imStr(c, "The count is "); imStr(c, s.count);
-        } imElEnd(c, EL_DIV);
+    imdom.ElBegin(c, el.DIV); {
+        imdom.ElBegin(c, el.DIV); {
+            imdom.Str(c, "The count is "); imdom.Str(c, s.count);
+        } imdom.ElEnd(c, el.DIV);
 
-        if (imButtonIsClicked("increment")) {
-            s.count++;
-        }
-
-        if (imIf(c) && s.count > 10) {
-            imStr(c, "That is a very high count ... you sure you want to order this many ?");
-            
-            if (imButtonIsClicked("Submit")) {
+        imdom.ElBegin(c, el.BUTTON); {
+            imdom.Str(c, "Increment");
+            const click = imdom.On("click");
+            if (click) {
+                click.preventDefault();
                 s.count++;
             }
-        } imIfEnd(c):
-    } imElEnd(c, EL_DIV);
+        } imdom.ElEnd(c, el.BUTTON);
+
+        if (im.If(c) && s.count > 10) {
+            imdom.Str(c, "That is a very high count ... you sure you want to order this many ?");
+            
+            imdom.ElBegin(c, el.BUTTON); {
+                imdom.Str(c, "Submit");
+                const click = imdom.On("click");
+                if (click) {
+                    s.count++;
+                }
+            } imdom.ElEnd(c, el.BUTTON);
+        } im.IfEnd(c):
+    } imdom.ElEnd(c, el.DIV);
 }
 
 ```

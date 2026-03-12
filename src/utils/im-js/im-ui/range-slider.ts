@@ -1,5 +1,5 @@
-import { ImCache, imGet, imMemo, imSet, isFirstishRender } from "../im-core.ts";
-import { elHasMousePress, elSetStyle, getGlobalEventSystem, imTrackSize } from "../im-dom.ts";
+import { im, ImCache } from "../im-core.ts";
+import { imdom } from "../im-dom.ts";
 import { BLOCK, imLayoutBegin, imLayoutEnd, cssVars } from "./ui-core.ts";
 import { clamp } from "./math-utils.ts";
 
@@ -44,9 +44,9 @@ export function imRangeSlider(
     let min = Math.min(lowerBound, upperBound);
     let max = Math.max(lowerBound, upperBound);
 
-    let s = imGet(c, imRangeSlider);
+    let s = im.Get(c, imRangeSlider);
     if (!s) {
-        s = imSet(c, {
+        s = im.Set(c, {
             start: newRangeSliderHandle(0),
             end:   newRangeSliderHandle(1),
 
@@ -60,43 +60,43 @@ export function imRangeSlider(
     }
 
     const body = imLayoutBegin(c, BLOCK); 
-    const bodySize = imTrackSize(c);
+    const bodySize = imdom.TrackSize(c);
         const sliderMiddle = imLayoutBegin(c, BLOCK); imLayoutEnd(c);
         const startHandle = imLayoutBegin(c, BLOCK); imLayoutEnd(c);
         const endHandle = imLayoutBegin(c, BLOCK); imLayoutEnd(c);
     imLayoutEnd(c);
 
-    if (isFirstishRender(c)) {
+    if (im.isFirstishRender(c)) {
         const handleBodyColor = cssVars.mg;
         const handeColor = cssVars.fg;
         const bgColor = cssVars.bg2;
 
-        elSetStyle(c, "height", "1em", body);
-        elSetStyle(c, "backgroundColor", bgColor, body);
-        elSetStyle(c, "position", "relative", body);
-        elSetStyle(c, "borderRadius", "1000px", body);
+        imdom.setStyle(c, "height", "1em", body);
+        imdom.setStyle(c, "backgroundColor", bgColor, body);
+        imdom.setStyle(c, "position", "relative", body);
+        imdom.setStyle(c, "borderRadius", "1000px", body);
 
-        elSetStyle(c, "position", "absolute", startHandle);
-        elSetStyle(c, "top", "0", startHandle);
-        elSetStyle(c, "height", "100%", startHandle);
-        elSetStyle(c, "aspectRatio", "1 / 1", startHandle);
-        elSetStyle(c, "backgroundColor", handeColor, startHandle);
-        elSetStyle(c, "borderRadius", "1000px", startHandle);
-        elSetStyle(c, "cursor", "ew-resize", startHandle);
+        imdom.setStyle(c, "position", "absolute", startHandle);
+        imdom.setStyle(c, "top", "0", startHandle);
+        imdom.setStyle(c, "height", "100%", startHandle);
+        imdom.setStyle(c, "aspectRatio", "1 / 1", startHandle);
+        imdom.setStyle(c, "backgroundColor", handeColor, startHandle);
+        imdom.setStyle(c, "borderRadius", "1000px", startHandle);
+        imdom.setStyle(c, "cursor", "ew-resize", startHandle);
 
-        elSetStyle(c, "position", "absolute", sliderMiddle);
-        elSetStyle(c, "top", "0", sliderMiddle);
-        elSetStyle(c, "height", "100%", sliderMiddle);
-        elSetStyle(c, "backgroundColor", handleBodyColor, sliderMiddle);
-        elSetStyle(c, "cursor", "ew-resize", sliderMiddle);
+        imdom.setStyle(c, "position", "absolute", sliderMiddle);
+        imdom.setStyle(c, "top", "0", sliderMiddle);
+        imdom.setStyle(c, "height", "100%", sliderMiddle);
+        imdom.setStyle(c, "backgroundColor", handleBodyColor, sliderMiddle);
+        imdom.setStyle(c, "cursor", "ew-resize", sliderMiddle);
 
-        elSetStyle(c, "position", "absolute", endHandle);
-        elSetStyle(c, "top", "0", endHandle);
-        elSetStyle(c, "height", "100%", endHandle);
-        elSetStyle(c, "aspectRatio", "1 / 1", endHandle);
-        elSetStyle(c, "backgroundColor", handeColor, endHandle);
-        elSetStyle(c, "borderRadius", "1000px", endHandle);
-        elSetStyle(c, "cursor", "ew-resize", endHandle);
+        imdom.setStyle(c, "position", "absolute", endHandle);
+        imdom.setStyle(c, "top", "0", endHandle);
+        imdom.setStyle(c, "height", "100%", endHandle);
+        imdom.setStyle(c, "aspectRatio", "1 / 1", endHandle);
+        imdom.setStyle(c, "backgroundColor", handeColor, endHandle);
+        imdom.setStyle(c, "borderRadius", "1000px", endHandle);
+        imdom.setStyle(c, "cursor", "ew-resize", endHandle);
     }
 
     // Respond to pos change _after_ user has handled and set new drag values
@@ -105,9 +105,9 @@ export function imRangeSlider(
     s.start.pos = domain < VERY_SMALL_NUMBER ? 0 : clamp((start - min) / domain, 0, 1);
     s.end.pos   = domain < VERY_SMALL_NUMBER ? 1 : clamp((end - min) / domain, 0, 1);
 
-    const startPosChanged    = imMemo(c, s.start.pos);
-    const endPosChanged      = imMemo(c, s.end.pos);
-    const sliderWidthChanged = imMemo(c, bodySize.size.width);
+    const startPosChanged    = im.Memo(c, s.start.pos);
+    const endPosChanged      = im.Memo(c, s.end.pos);
+    const sliderWidthChanged = im.Memo(c, bodySize.size.width);
     if (startPosChanged || endPosChanged || sliderWidthChanged) {
         const bodyRect = body.getBoundingClientRect(); 
         const startRect = startHandle.getBoundingClientRect();
@@ -118,23 +118,23 @@ export function imRangeSlider(
 
         const startPosPx = sliderScreenLength * s.start.pos;
         const endPosPx   = sliderScreenLength * s.end.pos;
-        elSetStyle(c, "left",  startPosPx + "px",                     startHandle);
-        elSetStyle(c, "left",  (startRect.width + endPosPx) + "px",   endHandle);
-        elSetStyle(c, "left",  (startPosPx + startRect.width / 2) + "px", sliderMiddle);
-        elSetStyle(c, "width", (endPosPx - startPosPx + startRect.width / 2 + endRect.width / 2) + "px",        sliderMiddle);
+        imdom.setStyle(c, "left",  startPosPx + "px",                     startHandle);
+        imdom.setStyle(c, "left",  (startRect.width + endPosPx) + "px",   endHandle);
+        imdom.setStyle(c, "left",  (startPosPx + startRect.width / 2) + "px", sliderMiddle);
+        imdom.setStyle(c, "width", (endPosPx - startPosPx + startRect.width / 2 + endRect.width / 2) + "px",        sliderMiddle);
     }
 
-    const mouse = getGlobalEventSystem().mouse;
+    const mouse = imdom.getMouse();
     if (s.dragStarted && !mouse.leftMouseButton) {
         s.dragStarted = false;
         s.start.dragging = false;
         s.end.dragging = false;
     } 
 
-    let middleDragStarted = mouse.leftMouseButton && elHasMousePress(c, sliderMiddle);
-    let startDragStarted  = mouse.leftMouseButton && elHasMousePress(c, startHandle);
-    let endDragStarted    = mouse.leftMouseButton && elHasMousePress(c, endHandle);
-    let bodyDragStarted   = mouse.leftMouseButton && elHasMousePress(c, body);
+    let middleDragStarted = mouse.leftMouseButton && imdom.hasMousePress(c, sliderMiddle);
+    let startDragStarted  = mouse.leftMouseButton && imdom.hasMousePress(c, startHandle);
+    let endDragStarted    = mouse.leftMouseButton && imdom.hasMousePress(c, endHandle);
+    let bodyDragStarted   = mouse.leftMouseButton && imdom.hasMousePress(c, body);
     const dragStarted = middleDragStarted || startDragStarted || endDragStarted || bodyDragStarted;
     if (s.dragStarted || dragStarted) {
         s.dragStarted = true;
