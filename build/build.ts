@@ -28,12 +28,15 @@ const IMPORT_META_ENV = {
 };
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-const BASE_DIR   = path.join(__dirname, "../");
+const __dirname = path.dirname(__filename);
+const BASE_DIR = path.join(__dirname, "../");
 
 const TEMPLATE_PATH = path.join(BASE_DIR, "/template.html");
-const OUTPUT_FILE   = path.join(BASE_DIR, "/dist/index.html");
-const ENTRYPOINT    = path.join(BASE_DIR, "/src/main.ts");
+const OUTPUT_FILE = path.join(BASE_DIR, "/dist/index.html");
+const ENTRYPOINT = path.join(BASE_DIR, "/src/main.ts");
+
+const WORKING_SOURCEMAPS_OR_FASTER_RELOAD = "working-sourcemaps"
+// const WORKING_SOURCEMAPS_OR_FASTER_RELOAD = "faster-reload"
 
 // It isn't faster for some reason??
 const USE_TSGO = true;
@@ -70,13 +73,13 @@ const commonBuildOptions: esbuild.BuildOptions = {
 	entryPoints: [ENTRYPOINT],
 	bundle: true,
 	treeShaking: true,
-	sourceRoot: path.join(__dirname, '/../src'),
 	define: Object.fromEntries(
 		Object
 			.entries(IMPORT_META_ENV)
 			.map(([k, v]) => [k, JSON.stringify(v)])
 	),
 	write: false,
+	sourcemap: config === "devserver" ? "inline" : undefined,
 }
 
 let tscProcessLast: ChildProcess | undefined;
@@ -132,22 +135,46 @@ async function runTscAndGetErrors() {
 	};
 }
 
-function getOutputHtml(
-	result: esbuild.BuildResult,
-	headerJs?: string,
-) {
+function getBundledJs(result: esbuild.BuildResult): string {
 	const singlarFile = result.outputFiles?.[0];
 	if (!singlarFile) {
 		throw new Error("Build not working as expected");
 	}
 
-	let text = singlarFile.text;
-	if (headerJs) {
-		text = headerJs + "\n\n" + text;
-	}
+	return singlarFile.text;
+}
 
-	// TODO: handle the </script> edgecase - if this text appears anywhere in our code, right now, we're toast
-	return templateStart + text + templateEnd;
+function getSingleFileScript(bundledJs: string) {
+	return `
+<script>${bundledJs}</script>
+`;
+}
+
+function getProdHtml(bundledJs: string) {
+	return templateStart + getSingleFileScript(bundledJs) + templateEnd;
+}
+
+function getSSEAutoReloadScript() {
+		return `
+<script>
+new EventSource('/events').addEventListener('change', (e) => location.reload())
+</script>
+`;
+}
+
+function getDevHtmlFastReload(bundledJs: string) {
+	return templateStart + 
+		getSingleFileScript(bundledJs) + 
+		getSSEAutoReloadScript() +
+		templateEnd;
+}
+
+function getDevHtmlWorkingSourcemaps() {
+	// The sourcemaps won't work in the normal thing for some reason.
+	return templateStart + `
+<script src="/index.js"></script>
+` + getSSEAutoReloadScript() +
+		templateEnd;
 }
 
 if (config === "build") {
@@ -166,23 +193,25 @@ if (config === "build") {
 			name: "Custom dev server plugin",
 			setup(build) {
 				build.onEnd((result) => {
-					const outputText = getOutputHtml(result);
+					const bundedJs = getBundledJs(result);
+					const output = getProdHtml(bundedJs);
 					fs.mkdir(path.dirname(OUTPUT_FILE), { recursive: true });
-					fs.writeFile(OUTPUT_FILE, outputText);
+					fs.writeFile(OUTPUT_FILE, output);
 				});
 			},
 		}],
 	});
 	log("Built");
-} else {
+} else if (config === "devserver") {
 	function newServer() {
 		let currentFile = `console.log("Hello there")`;
+		let currentScript = `console.log("Hello there 2")`
 
 		const clients = new Set<http.ServerResponse>();
 
 		const server = http.createServer((req, res) => {
 			if (req.url === "/events") {
-				res.writeHead(200, { 
+				res.writeHead(200, {
 					'Content-Type': 'text/event-stream',
 					'Cache-Control': 'no-cache',
 					'Connection': 'keep-alive',
@@ -198,6 +227,13 @@ if (config === "build") {
 					logTrace("clients: ", clients.size);
 					res.end();
 				});
+				return;
+			}
+
+			if (req.url === "/index.js") {
+				res.writeHead(200, { 'Content-Type': 'text/javascript', });
+				res.write(currentScript);
+				res.end();
 				return;
 			}
 
@@ -223,6 +259,10 @@ if (config === "build") {
 			currentFile = newFile;
 		}
 
+		function setCurrentScript(newScript: string) {
+			currentScript = newScript;
+		}
+
 		function broadcastRefreshMessage() {
 			for (const client of clients) {
 				client.write(`event: change\n`);
@@ -234,11 +274,12 @@ if (config === "build") {
 		return {
 			server,
 			setCurrentFile,
+			setCurrentScript,
 			broadcastRefreshMessage,
 		};
 	}
 
-	const { setCurrentFile, broadcastRefreshMessage } = newServer();
+	const { setCurrentScript, setCurrentFile, broadcastRefreshMessage } = newServer();
 
 	const ctx = await esbuild.context({
 		...commonBuildOptions,
@@ -246,10 +287,16 @@ if (config === "build") {
 			name: "Custom dev server plugin",
 			setup(build) {
 				build.onEnd((result) => {
-					// TODO: fix bug where we put the PC to sleep, reopen and it's broken
-					const header = "new EventSource('/events').addEventListener('change', (e) => location.reload())";
-					const outputText = getOutputHtml(result, header);
-					setCurrentFile(outputText);
+					// TODO: fix bug where we put the PC to sleep, reopen and auto-reload is broken
+
+					const bundledJs = getBundledJs(result);
+					if (WORKING_SOURCEMAPS_OR_FASTER_RELOAD === "working-sourcemaps") {
+						setCurrentFile(getDevHtmlWorkingSourcemaps());
+						setCurrentScript(bundledJs);
+					} else {
+						setCurrentFile(getDevHtmlFastReload(bundledJs));
+						setCurrentScript("");
+					}
 
 					broadcastRefreshMessage();
 					runTscAndGetErrors()
@@ -271,5 +318,7 @@ if (config === "build") {
 	});
 
 	await ctx.watch();
+} else {
+	throw new Error("Invalid config");
 }
 

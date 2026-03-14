@@ -546,8 +546,6 @@ function imisFirstishRenderExample(c: ImCache) {
         if (im.isFirstishRender(c)) {
             imdom.setStyle(c, "display", "flex");
             imdom.setStyle(c, "gap", "10px");
-            imdom.setStyle(c, "gap", "10px");
-            imdom.setStyle(c, "gap", "10px");
         }
 
         im.For(c); for (let i = 0; i < 5; i++) {
