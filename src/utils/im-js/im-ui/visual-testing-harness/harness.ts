@@ -1,4 +1,4 @@
-import { im, ImCache } from '../../im-core';
+import { im, ImCache, TryState } from '../../im-core';
 import { imdom, el } from '../../im-dom';
 import { imButtonIsClicked } from "../button";
 import { lerp01 } from "../math-utils";
@@ -67,9 +67,7 @@ export function imHeading(c: ImCache, text: string, id: string) {
 }
 
 function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
-    if (s.currentTest === test) {
-        return;
-    }
+    if (s.currentTest === test) return;
 
     s.currentTest = test;
     const params = new URLSearchParams(window.location.search);
@@ -252,7 +250,6 @@ export function imVisualTestHarness(
     }
 }
 
-
 export function imRenderWithErrorBoundary(
     c: ImCache,
     harness: VisualTestHarnessState,
@@ -281,7 +278,6 @@ export function imRenderWithErrorBoundary(
         } im.TryEnd(c, tryState);
     } im.SwitchEnd(c);
 }
-
 
 export function scrollToInstalllation(harness: VisualTestHarnessState, installation: VisualTestHarnessInstallationState | undefined) {
     // Yooo. The # is the id selector. Its also the hash in the URL.

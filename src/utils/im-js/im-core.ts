@@ -864,16 +864,6 @@ function __BlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
     return imImmediateModeBlockBegin(c, parentType, parent, internalType);
 }
 
-// Not quite the first render - 
-// if the function errors out before the entries finish one render, 
-// this method will rerender. Use this when you want to do something maybe once or twice or several times but hopefully just once,
-// as it doesn't require an additional im-state entry. 
-// For example, if you have an API like this:
-// ```ts
-// Div(c); imRow(c); imCode(c); imJustifyCenter(c); imBg(c, cssVars.bg); {
-// } DivEnd(c);
-// ```
-// Each of those methods that 'augment' the call to `Div` may have their own initialization logic.
 function isFirstishRender(c: ImCache): boolean {
     const entries = c[CACHE_CURRENT_ENTRIES];
     return entries[ENTRIES_COMPLETED_ONE_RENDER] === false;
@@ -1179,15 +1169,15 @@ export type TryState = {
 
 /**
  * ```ts
- * const tryState = Try(c); try {
+ * const tryState = im.Try(c); try {
  *      const { err, recover }  tryState;
- *      if (If(c) && !err) {
+ *      if (im.If(c) && !err) {
  *          MainApp(c);
  *      } else {
- *          IfElse(c):
+ *          im.Else(c):
  *
  *          ErrorViewer(c, err, recover);
- *      } IfEnd(c);
+ *      } im.IfEnd(c);
  *      // render your component here
  * } catch(err) {
  *      TryCatch(c, tryState, err);
@@ -1295,11 +1285,12 @@ export const im = {
 
     /** Performance optimization */
 
-    // Is this more-or-less the first render? If the component encountered an error before ending 
-    // the entry list, then this method will continue to be true till we can call CacheEntriesEnd on it.
+    // Is this more-or-less the first render? If the current scope encountered an error before being
+    // ended, then this will remian true on the rerender. Hence, 'firstish' render and not 'first'.
     // You'll want to use this for quite a lot of idempotent things that you dont want running too often, 
     // as it doesn't create any cache entries by itself.
     isFirstishRender, 
+
     // Is this rerender caused by an event (as opposed to an animation frame)? 
     // Useful to avoid expensive canvas rendering when true.
     isEventRerender,

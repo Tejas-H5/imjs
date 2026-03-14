@@ -94,3 +94,13 @@ Unlike what the name suggests, this project is actually TypeScript-first.
     -  tests for `file`
 - `/build`
     - Contains a custom build script. You don't need to adopt it to use this framework
+
+## Why the namespace?
+
+Its a bit of a strange decision, and worth documenting.
+
+- Trying out something. If I were to write something similar in Odin for example, I would need to do a similar thing.
+- I want the javascript code to look somewhat similar to the typescript code.
+- The ability to list out the entire API in one place and document the groups of functions is nice.
+- Need to import far fewer things whenever I want to do something
+- Doesn't appear to have regressed performance

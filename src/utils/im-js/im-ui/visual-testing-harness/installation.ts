@@ -3,6 +3,7 @@ import { imdom, el } from '../../im-dom';
 import { inverseLerp } from "../math-utils";
 import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "../im-ui";
 import { imRenderWithErrorBoundary, VisualTestHarnessState } from "./harness";
+import { imButtonIsClicked } from '../button';
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -55,8 +56,10 @@ export function imVisualTestInstallation(
             imdom.ElBegin(c, el.I); imdom.Str(c, title); imdom.ElEnd(c, el.I);
         } imui.End(c);
 
-        if (visibility.isVisible && !harness.currentVisibleInstallation) {
-            harness.currentVisibleInstallation = s;
+        if (im.Memo(c, visibility.isVisible) === im.MEMO_CHANGED && visibility.isVisible) {
+            if (!harness.currentVisibleInstallation) {
+                harness.currentVisibleInstallation = s;
+            }
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
@@ -72,7 +75,7 @@ export function imVisualTestInstallation(
                 imui.Align(c, center ? CENTER : NONE);
                 imui.Justify(c, center ? CENTER : NONE);
 
-                imRenderWithErrorBoundary(c, harness, test);
+                imRenderWithErrorBoundary2(c, test);
             } imui.End(c);
 
             // Middle draggable splitter thing
@@ -177,3 +180,30 @@ function formatCode(fnSource: string, srcTabSize: number): string[] {
     })
 }
 
+function imRenderWithErrorBoundary2(
+    c: ImCache,
+    test: (c: ImCache) => void
+) {
+    im.Switch(c, test); {
+        const tryState = im.Try(c); try {
+            const { err, recover } = tryState;
+            if (im.If(c) && !err) {
+                test(c);
+            } else {
+                im.IfElse(c);
+
+                imui.Begin(c, BLOCK); {
+                    imdom.Str(c, "An error occured while rendering your component: ");
+                    if (imButtonIsClicked(c, "Try again")) {
+                        recover();
+                    }
+                } imui.End(c);
+                imui.Begin(c, BLOCK); {
+                    imdom.Str(c, err);
+                } imui.End(c);
+            } im.IfEnd(c);
+        } catch (err) {
+            im.Catch(c, tryState, err);
+        } im.TryEnd(c, tryState);
+    } im.SwitchEnd(c);
+}

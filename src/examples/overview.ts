@@ -1,6 +1,6 @@
 import { im, ImCache, ImCacheEntries, imdom, el, DomAppender, ev } from "src/utils/im-js";
-import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
-import { BLOCK, imui, NA, PX } from "src/utils/im-js/im-ui";
+import { imVisualTestInstallation, TEST_CENTERED, TEST_SCROLLABLE, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
+import { BLOCK, cssVars, imui, NA, PX } from "src/utils/im-js/im-ui";
 import { imBaseContainerBegin, imBaseContainerEnd, imParaBegin, imParaEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
 import { imLink, Url } from "src/utils/im-js/im-ui/link";
 
@@ -206,7 +206,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         imSubheadingBegin(c); imdom.Str(c, "Reacting to changes"); imSubheadingEnd(c);
 
         imParaBegin(c); {
-            imdom.Str(c, `This overview would be incomplete without mentioning im.Memo. This method is used everywhere to execute code but only if some value was different than it was in the previous frame. If you can replace imMemo with an event, you probably should. However, it is extremely convenient to use, so maybe you shouldn't. It is entirely up to you. Something to note - it also returns non-zero if the particular scope it was called in has re-entered the 'conditional rendering pathway'. If you think about it, this is essential for components to behave as the caller intended. But if you literally only want to execute code when a value has actually changed, you can check im.Memo(c, val) === MEMO_CHANGED instead. Useful if you need to persist some state but only when it was actually mutated, and not just when you open it up in the editor`);
+            imdom.Str(c, `This overview would be incomplete without mentioning im.Memo. This method is used everywhere to execute code but only if some value was different than it was in the previous frame. If you can replace imMemo with an event, you probably should. However, it is extremely convenient to use, so maybe you shouldn't. It is entirely up to you. `);
             imdom.Str(c, `A common pattern in the ThreeJS codebase for example, is to increment a version number to indicate that a piece of state has changed, so that other systems can respond to this. im.Memo works well with this pattern.`);
         } imParaEnd(c);
 
@@ -228,6 +228,25 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
                 imdom.Str(c, `The Regular logical-or || operator will short-circuit, but the bitwise-or | operator will not. Coincidentally, im.Memo returns a number, and not a boolean. If you want to query the same number of slots as you read the previous frame, you need to chain imMemo using | instead of ||.`);
             } imdom.ElEnd(c, el.LI);
         } imdom.ElEnd(c, el.UL);
+
+        imParaBegin(c); {
+            imdom.Str(c, `Something to note - it also returns non-zero if the particular scope it was called in has re-entered the 'conditional rendering pathway'. The reason for this is not obvious at all, so I'll elaborate a bit. Let's say we make a component that should do something when it recieves custom UI focus:`);
+        } imParaEnd(c);
+
+        imVisualTestInstallation(c, "im.Memo - conditional pathway example", harness, imMemoConditionalPathwayExample, TEST_CENTERED);
+
+        imParaBegin(c); {
+            imdom.Str(c, `The view code uses im.Memo to run some code, and then log something when it's become focused. However, if we decide we want a sightly different UI - maybe we only want one view appearing at a time - the naive implementation if im.Memo which only returns true when it's input changes will no-longer work:`);
+        } imParaEnd(c);
+
+        imVisualTestInstallation(c, "im.Memo - conditional pathway example - updated", harness, imMemoConditionalPathwayExampleUpdatedReqs, TEST_CENTERED);
+
+        imParaBegin(c); {
+            imdom.Str(c, `As far as each view was concerned, the focus state has never changed. `);
+            imdom.Str(c, `I think it is very important that this continues to work regardless. And in this framework, it will by default (and can be opted out of, as I've done in the previous examples): `);
+        } imParaEnd(c);
+
+        imVisualTestInstallation(c, "im.Memo - conditional pathway example - updated (working)", harness, imMemoConditionalPathwayExampleUpdatedReqsWorking, TEST_CENTERED);
 
         imSubheadingBegin(c); imdom.Str(c, "Well done!"); imSubheadingEnd(c);
 
@@ -266,7 +285,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
                 imdom.Str(c, `There will never be an imJS dev-tools. Most things can just be done using the existing browser devtools, and this is especially the case with this framework.`);
             } imdom.ElEnd(c, el.LI);
             imdom.ElBegin(c, el.LI); {
-                imdom.Str(c, `HMR (Hot-module-reloading support) - the implementation details of the framework make adding it too complicated and not really super worth it. I did not build this framework with HMR in mind at all - I would rather have a small app that can be rebuild instantly than an app that takes ages to rebuild, but supports HMR, but the HMR still takes a few seconds, and every now and then it causes bugs, etc. etc. It is too difficult to evolve my apps alongside it. Just persist the current state of your program to localStorage/indexedDB as needed. The dev-server I use can also reload my program so quickly that there is no real benefit to having HMR (NOTE that it is a custom esbuild context with next to no dependencies - the framework is written in such a way that you can do a LOT yourself without having to reach for an npm package). If I do ever add it, it will be a very limited version that will wipe all UI state, but allow you to persist global state.`);
+                imdom.Str(c, `HMR (Hot-module-reloading support) - the implementation details of the framework make adding it too complicated and not really super worth it. I did not build this framework with HMR in mind at all - I would rather have a small app that can be rebuild instantly than an app that takes ages to rebuild, but supports HMR, but the HMR still takes a few seconds, and every now and then it causes bugs, etc. etc. It is too difficult to evolve my apps alongside it. Just persist the current state of your program to localStorage/indexedDB as needed. The dev-server I use can also reload my program so quickly that there is no real benefit to having HMR. I've had set up a custom esbuild context, but with a custom server that has an extra long KeepAlive setting on the connection (surprisingly effective).`);
             } imdom.ElEnd(c, el.LI);
             imdom.ElBegin(c, el.LI); {
                 imdom.Str(c, `I also plan to never introduce a mechanism by which you can manually render just a subset of the UI tree, or keep some subset of your website 'static', with dynamic islands. The complexity is not worth it - just animate the entire page.`);
@@ -274,7 +293,9 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         } imdom.ElEnd(c, el.UL);
 
         // End of the line
-        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 100, PX); imui.End(c);
+        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 600, PX); imui.End(c);
+
+        imVisualTestInstallation(c, "Dev tools? Aint no way?!", harness, imJsDevToolsFinalRelease, TEST_SCROLLABLE);
     } imBaseContainerEnd(c);
 }
 
@@ -306,7 +327,7 @@ function imSimpleComponentCounter(c: ImCache) {
 
 
 function imDivBegin(c: ImCache) {
-    imdom.ElBegin(c, el.DIV);
+    return imdom.ElBegin(c, el.DIV);
 }
 function imDivEnd(c: ImCache) {
     imdom.ElEnd(c, el.DIV);
@@ -688,51 +709,227 @@ function imMemoExamples(c: ImCache) {
     } imDivEnd(c);
 }
 
+type MemoConditionalPathwayExampleAppState = {
+    currentView: number;
+    logs: string[];
+};
 
+function imMemoConditionalPathwayExample(c: ImCache) {
+    const appState = im.GetInline(c, im.GetInline) ??
+        im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
+
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+
+        imMemoConditionalPathwayExampleView(c, appState, 0);
+        imMemoConditionalPathwayExampleView(c, appState, 1);
+        imMemoConditionalPathwayExampleView(c, appState, 2);
+    } imDivEnd(c);
+    im.For(c); for (const log of appState.logs) {
+        imDivBegin(c); {
+            imdom.Str(c, log);
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function imMemoConditionalPathwayExampleView(
+    c: ImCache,
+    appState: MemoConditionalPathwayExampleAppState,
+    viewId: number,
+) {
+    const hasFocus = appState.currentView === viewId;
+
+    if ((im.Memo(c, hasFocus) === im.MEMO_CHANGED) && hasFocus) {
+        appState.logs.push("Now focused: " + viewId);
+        if (appState.logs.length > 3) appState.logs.shift();
+    }
+
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) {
+            imdom.setStyle(c, "flex", "1");
+            // o7 sir. Div has been centered. sir o7
+            imdom.setStyle(c, "display", "flex");
+            imdom.setStyle(c, "alignItems", "center");
+            imdom.setStyle(c, "justifyContent", "center");
+        }
+
+        if ((im.Memo(c, hasFocus)) === im.MEMO_CHANGED) imdom.setStyle(c, "border", hasFocus ? "1px solid black" : "");
+
+        if (imdom.hasMouseOver(c)) {
+            appState.currentView = viewId;
+        }
+
+        imdom.Str(c, "View ");
+        imdom.Str(c, viewId);
+    } imDivEnd(c);
+}
+
+function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
+    const appState = im.GetInline(c, im.GetInline) ??
+        im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
+
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+
+        im.Switch(c, appState.currentView); switch(appState.currentView) {
+            case 0: imMemoConditionalPathwayExampleView(c, appState, 0); break;
+            case 1: imMemoConditionalPathwayExampleView(c, appState, 1); break;
+            case 2: imMemoConditionalPathwayExampleView(c, appState, 2); break;
+        } im.SwitchEnd(c);
+
+    } imDivEnd(c);
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
+        if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
+        if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
+    } imDivEnd(c);
+    im.For(c); for (const log of appState.logs) {
+        imDivBegin(c); {
+            imdom.Str(c, log);
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
+    const appState = im.GetInline(c, im.GetInline) ??
+        im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
+
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+
+        im.Switch(c, appState.currentView); switch(appState.currentView) {
+            case 0: imMemoConditionalPathwayExampleViewWorking(c, appState, 0); break;
+            case 1: imMemoConditionalPathwayExampleViewWorking(c, appState, 1); break;
+            case 2: imMemoConditionalPathwayExampleViewWorking(c, appState, 2); break;
+        } im.SwitchEnd(c);
+
+    } imDivEnd(c);
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
+        if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
+        if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
+    } imDivEnd(c);
+    im.For(c); for (const log of appState.logs) {
+        imDivBegin(c); {
+            imdom.Str(c, log);
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function imMemoConditionalPathwayExampleViewWorking(
+    c: ImCache,
+    appState: MemoConditionalPathwayExampleAppState,
+    viewId: number,
+) {
+    const hasFocus = appState.currentView === viewId;
+
+    if (im.Memo(c, hasFocus) && hasFocus) {
+        appState.logs.push("Now focused: " + viewId);
+        if (appState.logs.length > 3) appState.logs.shift();
+    }
+
+    imDivBegin(c); {
+        if (im.isFirstishRender(c)) {
+            imdom.setStyle(c, "flex", "1");
+            // o7 sir. Div has been centered. sir o7
+            imdom.setStyle(c, "display", "flex");
+            imdom.setStyle(c, "alignItems", "center");
+            imdom.setStyle(c, "justifyContent", "center");
+        }
+
+        if (im.Memo(c, hasFocus)) imdom.setStyle(c, "border", hasFocus ? "1px solid black" : "");
+
+        if (imdom.hasMouseOver(c)) {
+            appState.currentView = viewId;
+        }
+
+        imdom.Str(c, "View ");
+        imdom.Str(c, viewId);
+    } imDivEnd(c);
+}
 
 // TODO: Put somewhere
 const cnHighlight = imui.newCssBuilder().cn("highlight", [` { outline: 10px solid #FF00FF }`]);
+let lastDomNode: DomAppender<HTMLElement> | undefined;
+let nextDomNode: DomAppender<HTMLElement> | undefined;
 
-let lastDomNode: DomAppender | undefined;
-let nextDomNode: DomAppender | undefined;
-
-function imCacheIntrospector(c: ImCache, entries = im.getRootEntries(c), introspectorRoot: any = null) {
+function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), introspectorRoot: any = null) {
     const isRoot = !introspectorRoot;
     if (!introspectorRoot) introspectorRoot = im.getCurrentCacheEntries(c);
     if (entries === introspectorRoot) return; // Dont recurse into dev tools
 
+    let visible = true;
+
     if (isRoot) {
-        lastDomNode = nextDomNode;
+        if (lastDomNode !== nextDomNode) {
+            if (lastDomNode) imdom.setClass(c, cnHighlight, false, lastDomNode.root);
+            if (nextDomNode) imdom.setClass(c, cnHighlight, true, nextDomNode.root);
+
+            lastDomNode = nextDomNode;
+        }
+
+        const visibility = imdom.TrackVisibility(c, 0);
+        visible = visibility.isVisible;
         nextDomNode = undefined;
     }
 
-    imdom.ElBegin(c, el.DIV); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
+    if (im.If(c) && !visible) {
+        imdom.Str(c, "Nah");
+    } else {
+        im.Else(c);
 
-        im.For(c); im.ForEachCacheEntryItem(entries, (t, childEntries) => {
-            if (t !== im.ImmediateModeBlockBegin) return;
+        if (isRoot) {
+            imDivBegin(c); {
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "fixed");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "bottom", "10px");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "left", "10px");
+                if (im.isFirstishRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
 
-            const value = im.getEntriesParentFromEntries(childEntries as ImCacheEntries, imdom.newDomAppender);
-            if (!value) return;
+                imdom.Str(c, "Devtool enabled. 😭😭🥀");
 
-            imdom.ElBegin(c, el.DIV); {
-                const root = imdom.ElBegin(c, el.DIV); {
-                    imdom.Str(c, value.root);
+                imdom.Str(c, lastDomNode?.root ?? "[Object object]");
+            } imDivEnd(c);
+        }
+
+        imDivBegin(c); {
+            if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
+            if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
+
+            im.For(c); im.ForEachCacheEntryItem(entries, (t, childEntries) => {
+                if (t !== im.ImmediateModeBlockBegin) return;
+                const value = im.getEntriesParentFromEntries(childEntries as ImCacheEntries, imdom.newDomAppender);
+                if (!value) return;
+
+                imdom.ElBegin(c, el.DIV); {
+                    const root = imDivBegin(c); {
+                        imdom.Str(c, value.root);
+                    } imDivEnd(c);
+
+                    const hasMouseOverActualElement = imdom.hasMouseOver(c, (value as DomAppender<HTMLElement>).root);
+
+                    if (imdom.hasMouseOver(c) || hasMouseOverActualElement) {
+                        nextDomNode = value;
+                    }
+
+                    imJsDevToolsFinalRelease(c, childEntries as ImCacheEntries, introspectorRoot);
+
+                    imdom.setClass(c, cnHighlight, lastDomNode === value, root.root);
                 } imdom.ElEnd(c, el.DIV);
+            }); im.ForEnd(c);
+        } imDivEnd(c);
+    } im.IfEnd(c);
 
-                if (
-                    imdom.hasMouseOver(c) 
-                    // || imDom.elHasMouseOver(c, (value as DomAppender<HTMLElement>).root)
-                ) {
-                    nextDomNode = value;
-                }
-
-                imCacheIntrospector(c, childEntries as ImCacheEntries, introspectorRoot);
-
-                imdom.setClass(c, cnHighlight, lastDomNode === value, root.root);
-                imdom.setClass(c, cnHighlight, lastDomNode === value, (value as DomAppender<HTMLElement>).root);
-            } imdom.ElEnd(c, el.DIV);
-        }); im.ForEnd(c);
-    } imdom.ElEnd(c, el.DIV);
 }
-

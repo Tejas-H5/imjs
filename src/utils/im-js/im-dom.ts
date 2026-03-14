@@ -1,4 +1,4 @@
-// IM-DOM 1.70
+// IM-DOM 1.73
 
 import { assert } from "./assert";
 import { im, ImCache, ImCacheEntries } from "./im-core";
@@ -591,6 +591,12 @@ function getKeyboard(): KeyboardState {
     return globalEventSystem.keyboard;
 }
 
+function getBlur(): boolean {
+    // You need to initialize a global event system before you go getting it
+    assert(globalEventSystem !== undefined);
+    return globalEventSystem.blur;
+}
+
 function hasMousePress(c: ImCache, el = getElement(c)): boolean {
     const mouse = getMouse();
     return elIsInSetThisFrame(el, mouse.mouseDownElements)
@@ -960,7 +966,7 @@ function newPreventScrollEventPropagationState() {
     };
 }
 
-function imPreventScrollEventPropagation(c: ImCache, isBlocking: boolean): number {
+function imPreventScrollEventPropagation(c: ImCache, isBlocking = true): number {
     const wheel = imOn(c, ev.WHEEL);
     if (wheel && isBlocking) {
         wheel.preventDefault();
@@ -1206,38 +1212,38 @@ function updateKeysState(
     }
 }
 
-function isKeyPressed(keysState: KeysState, key: NormalizedKey): boolean {
-    const keys = keysState.keys;
+function isKeyPressed(keysState: KeyboardState, key: NormalizedKey): boolean {
+    const keys = keysState.keys.keys;
     for (let i = 0; i < keys.pressed.length; i++) {
         if (keys.pressed[i] === key) return true;
     }
     return false;
 }
 
-function isKeyRepeated(keysState: KeysState, key: NormalizedKey): boolean {
-    const keys = keysState.keys;
+function isKeyRepeated(keysState: KeyboardState, key: NormalizedKey): boolean {
+    const keys = keysState.keys.keys;
     for (let i = 0; i < keys.repeated.length; i++) {
         if (keys.repeated[i] === key) return true;
     }
     return false;
 }
 
-function isKeyPressedOrRepeated(keysState: KeysState, key: NormalizedKey): boolean {
+function isKeyPressedOrRepeated(keysState: KeyboardState, key: NormalizedKey): boolean {
     if (isKeyPressed(keysState, key)) return true;
     if (isKeyRepeated(keysState, key)) return true;
     return false;
 }
 
-function isKeyReleased(keysState: KeysState, key: NormalizedKey): boolean {
-    const keys = keysState.keys;
+function isKeyReleased(keysState: KeyboardState, key: NormalizedKey): boolean {
+    const keys = keysState.keys.keys;
     for (let i = 0; i < keys.released.length; i++) {
         if (keys.released[i] === key) return true;
     }
     return false;
 }
 
-function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
-    const keys = keysState.keys;
+function isKeyHeld(keysState: KeyboardState, key: NormalizedKey): boolean {
+    const keys = keysState.keys.keys;
     for (let i = 0; i < keys.held.length; i++) {
         if (keys.held[i] === key) return true;
     }
@@ -1245,38 +1251,38 @@ function isKeyHeld(keysState: KeysState, key: NormalizedKey): boolean {
 }
 
 
-function isLetterPressed(keysState: KeysState, letter: string): boolean {
-    const letters = keysState.letters;
+function isLetterPressed(keysState: KeyboardState, letter: string): boolean {
+    const letters = keysState.keys.letters;
     for (let i = 0; i < letters.pressed.length; i++) {
         if (letters.pressed[i] === letter) return true;
     }
     return false;
 }
 
-function isLetterRepeated(keysState: KeysState, letter: string): boolean {
-    const letters = keysState.letters;
+function isLetterRepeated(keysState: KeyboardState, letter: string): boolean {
+    const letters = keysState.keys.letters;
     for (let i = 0; i < letters.repeated.length; i++) {
         if (letters.repeated[i] === letter) return true;
     }
     return false;
 }
 
-function isLetterPressedOrRepeated(keysState: KeysState, letter: string): boolean {
+function isLetterPressedOrRepeated(keysState: KeyboardState, letter: string): boolean {
     if (isLetterPressed(keysState, letter)) return true;
     if (isLetterRepeated(keysState, letter)) return true;
     return false;
 }
 
-function isLetterReleased(keysState: KeysState, letter: string): boolean {
-    const letters = keysState.letters;
+function isLetterReleased(keysState: KeyboardState, letter: string): boolean {
+    const letters = keysState.keys.letters;
     for (let i = 0; i < letters.released.length; i++) {
         if (letters.released[i] === letter) return true;
     }
     return false;
 }
 
-function isLetterHeld(keysState: KeysState, letter: string): boolean {
-    const letters = keysState.letters;
+function isLetterHeld(keysState: KeyboardState, letter: string): boolean {
+    const letters = keysState.keys.letters;
     for (let i = 0; i < letters.held.length; i++) {
         if (letters.held[i] === letter) return true;
     }
@@ -1468,6 +1474,7 @@ export const key = {
     ARROW_LEFT: getNormalizedKey("ArrowLeft"),
     ARROW_RIGHT: getNormalizedKey("ArrowRight"),
 } as const;
+export const KEY = key;
 
 /** Events (the most common ones, at least) */
 export const ev = {
@@ -1585,6 +1592,7 @@ export const ev = {
     FULLSCREENCHANGE: { val: "fullscreenchange" },
     FULLSCREENERROR: { val: "fullscreenerror" },
 } as const;
+export const EV = ev;
 
 
 /** HTML svg elements */
@@ -1657,6 +1665,7 @@ export const elsvg = {
     USE: { val: "use" },
     VIEW: { val: "view" },
 } as const;
+export const ELSVG = elsvg;
 
 export const imdom = {
     /** Internal methods */
@@ -1707,6 +1716,7 @@ export const imdom = {
 
     getMouse,
     getKeyboard,
+    getBlur,
     hasMousePress,
     hasMouseUp,
     hasMouseClick,
