@@ -41,13 +41,14 @@ const cssb = imui.newCssBuilder();
 const cnTextAreaRoot = cssb.newClassName("customTextArea");
 cssb.s(`
 .${cnTextAreaRoot} textarea { 
+    all: unset;
     white-space: pre-wrap; 
     padding: 5px; 
     caret-color: ${cssVars.fg};
     color: transparent;
 }
 .${cnTextAreaRoot}:has(textarea:focus), .${cnTextAreaRoot}:has(textarea:hover) { 
-    background-color: ${cssVars.bg2};
+    background-color: var(--focusColor);
 }
 `);
 
@@ -56,6 +57,7 @@ export type TextAreaArgs = {
     value: string;
     isOneLine?: boolean;
     placeholder?: string;
+    version?: number; // use this to manually trigger a re-sync
 };
 
 // My best attempt at making a text input with the layout semantics of a div.
@@ -65,6 +67,7 @@ export function imTextAreaBegin(c: ImCache, {
     value,
     isOneLine,
     placeholder = "",
+    version,
 }: TextAreaArgs) {
     let textArea: HTMLTextAreaElement;
 
@@ -75,14 +78,11 @@ export function imTextAreaBegin(c: ImCache, {
             imdom.setStyle(c, "height",    "100%");
             imdom.setStyle(c, "overflowY", "auto");
             imdom.setClass(c, cnTextAreaRoot);
+            imdom.setStyleProperty(c, "--focusColor", cssVars.mg);
         }
 
         // This is now always present.
-        imui.Begin(c, BLOCK); imui.HandleLongWords(c); imui.Relative(c); imui.Size(c, 100, PERCENT, 0, NA); {
-            if (im.isFirstishRender(c)) {
-                imdom.setStyle(c, "height", "fit-content");
-            }
-
+        imui.Begin(c, BLOCK); imui.HandleLongWords(c); imui.Relative(c); imui.Size(c, 100, PERCENT, 0, FIT_CONTENT); {
             if (im.Memo(c, isOneLine)) {
                 imdom.setStyle(c, "whiteSpace", isOneLine ? "nowrap" : "pre-wrap");
                 imdom.setStyle(c, "overflow", isOneLine ? "hidden" : "");
@@ -115,7 +115,6 @@ export function imTextAreaBegin(c: ImCache, {
 
             textArea = imdom.ElBegin(c, el.TEXTAREA).root; {
                 if (im.isFirstishRender(c)) {
-                    imdom.setStyle(c, "all", "unset");
                     imdom.setStyle(c, "position", "absolute");
                     imdom.setStyle(c, "top", "0");
                     imdom.setStyle(c, "left", "0");
@@ -130,11 +129,20 @@ export function imTextAreaBegin(c: ImCache, {
                     imdom.setStyle(c, "padding", "0");
                 }
 
-                if (im.Memo(c, value)) {
+                if (im.Memo(c, value) | im.Memo(c, version)) {
                     // don't update the value out from under the user implicitly
                     setInputValue(textArea, value);
                 }
 
+                // HACK: total hack. Making a text area that sizes to it's content is unsolved HTML problem
+                // (Actually contenteditable became generally available recently, but I refuse to use it. It is deeply disgusting that the entire DOM is just a word doc that can just be edited. Wysiwig editors just got alot easier to make tho).
+                const scrollTop = textArea.scrollTop;
+                // if (im.Memo(c, scrollTop)) {
+                    // Oh yeah its working.. :( stupid text area bruh. shiiii
+                    // console.log("working: ", scrollTop);
+                    root.scrollTop += scrollTop;
+                    textArea.scrollTop = 0;
+                // }
             } // imdom.ElEnd(c, el.TEXTAREA);
         } // imui.End(c);
 

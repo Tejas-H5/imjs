@@ -1,4 +1,4 @@
-// imui v0.00.3
+// imui v0.00.4
 
 import { im, ImCache } from '../im-core';
 import { imdom, el } from '../im-dom';
@@ -193,6 +193,7 @@ export const PERCENT = 30001 as SizeUnitInstance;
 export const REM = 40001 as SizeUnitInstance;
 export const CH = 50001 as SizeUnitInstance;
 export const NA = 60001 as SizeUnitInstance; // Not applicable. Nahh. 
+export const FIT_CONTENT = 60002 as SizeUnitInstance; 
 
 export type SizeUnits = typeof PX |
     typeof EM |
@@ -213,6 +214,7 @@ function getUnits(num: SizeUnits) {
 }
 
 function getSize(num: number, units: SizeUnits) {
+    if (units === FIT_CONTENT) return "fit-content";
     return units === NA ? ("") : (num + getUnits(units));
 }
 
@@ -235,6 +237,22 @@ function imSize(
         imdom.setStyle(c, "height",    sizeCss); 
         imdom.setStyle(c, "minHeight", sizeCss);
         imdom.setStyle(c, "maxHeight", sizeCss);
+    }
+}
+
+function imMinSize(
+    c: ImCache,
+    width: number, wType: SizeUnits,
+    height: number, hType: SizeUnits, 
+) {
+    if (im.Memo(c, width) | im.Memo(c, wType)) {
+        const sizeCss = getSize(width, wType);
+        imdom.setStyle(c, "minWidth", sizeCss);
+    }
+
+    if (im.Memo(c, height) | im.Memo(c, hType)) {
+        const sizeCss = getSize(height, hType);
+        imdom.setStyle(c, "minHeight", sizeCss);
     }
 }
 
@@ -282,9 +300,7 @@ export const ROW = 4 as DisplayTypeInstance;
 export const ROW_REVERSE = 5 as DisplayTypeInstance;
 export const COL = 6 as DisplayTypeInstance;
 export const COL_REVERSE = 7 as DisplayTypeInstance;
-export const TABLE = 8 as DisplayTypeInstance;
-export const TABLE_ROW = 9 as DisplayTypeInstance;
-export const TABLE_CELL = 10 as DisplayTypeInstance;
+// No more TABLE, TABLE_ROW, TABLE_CELL. Use display: grid + grid-template-columns
 export const INLINE_ROW = 11 as DisplayTypeInstance;
 export const INLINE_COL = 12 as DisplayTypeInstance;
 
@@ -295,9 +311,6 @@ export type DisplayType
     | typeof ROW_REVERSE 
     | typeof COL 
     | typeof COL_REVERSE 
-    | typeof TABLE 
-    | typeof TABLE_ROW  
-    | typeof TABLE_CELL
     | typeof INLINE_ROW
     | typeof INLINE_COL;
 
@@ -699,7 +712,7 @@ export const imui = {
     // Common layout logic
     // NOTE: enum values are used so frequently, that they are exported on their own instead of via this namespace object
     LayoutBeginInternal: imLayoutBeginInternal, Layout: imLayout, Begin: imLayoutBegin, End: imLayoutEnd, LayoutBegin: imLayoutBegin, LayoutEnd: imLayoutEnd,
-    Size: imSize, Padding: imPadding, PaddingRL: imPaddingRL, PaddingTB: imPaddingTB,
+    Size: imSize, MinSize: imMinSize, Padding: imPadding, PaddingRL: imPaddingRL, PaddingTB: imPaddingTB,
     Gap: imGap, AspectRatio: imAspectRatio,
     Flex: imFlex, FlexWrap: imFlexWrap, 
     Pre: imPre, PreWrap: imPreWrap, NoWrap: imNoWrap, HandleLongWords: imHandleLongWords,
