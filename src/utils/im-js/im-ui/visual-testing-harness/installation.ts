@@ -145,11 +145,12 @@ function formatCode(fnSource: string, srcTabSize: number): string[] {
     // It's fine to reformat the example snippets to be more like the idiomatic format.
     // TODO: Typescript version? more curated examples?
     const lines = fnSource
-        .replace(/imSwitch\(c\);\s+for/g, "imSwitch(c); switch")
-        .replace(/imFor\(c\);\s+for/g, "imFor(c); for")
-        .replace(/imTry\(c\);\s+try/g, "imTry(c); try")
+        .replace(/im\.Switch\(c\);\s+for/g, "im.Switch(c); switch")
+        .replace(/im\.For\(c\);\s+for/g, "im.For(c); for")
+        .replace(/im\.Try\(c\);\s+try/g, "im.Try(c); try")
         .replace(/;\s+\{/g, "; {")
         .replace(/\}\s+im([0-9a-zA-Z]+)End/g, "} im$1End")
+        .replace(/\}\s+im\.([0-9a-zA-Z]+)End/g, "} im.$1End")
         // .replace(/( )?\/\* @__PURE__ \*\/( )?/g, "") // Whitespace is always off by one. I will just keep this in
         .split("\n")
 

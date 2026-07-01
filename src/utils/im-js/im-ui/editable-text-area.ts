@@ -1,7 +1,7 @@
 import { im, ImCache } from "../im-core";
 import { imdom, el } from "../im-dom";
 import { setInputValue } from "./dom-utils";
-import { BLOCK, cssVars, imui, INLINE, NA, PERCENT } from "./im-ui";
+import { BLOCK, cssVars, FIT_CONTENT, imui, INLINE, NA, PERCENT } from "./im-ui";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);

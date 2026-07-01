@@ -1,5 +1,4 @@
-// IM-CORE 1.090
-
+// IM-CORE 1.100
 import { assert } from "./assert";
 
 // Conventions
@@ -56,13 +55,15 @@ const ENTRIES_STARTED_CONDITIONALLY_RENDERING = 4;
 const ENTRIES_DESTRUCTORS                     = 5;
 const ENTRIES_KEYED_MAP_REMOVE_LEVEL          = 6;
 const ENTRIES_KEYED_MAP                       = 7;
-const ENTRIES_PARENT_TYPE                     = 8;
-const ENTRIES_PARENT_VALUE                    = 9;
-const ENTRIES_INTERNAL_TYPE                   = 10;
-const ENTRIES_COMPLETED_ONE_RENDER            = 11;
-const ENTRIES_LAST_IDX                        = 12;
-const ENTRIES_IDX                             = 13;
-const ENTRIES_ITEMS_START              = 14; // Not in the struct implementation, but we'll need it for the array implementation
+// NOTE: ENTRIES_PARENT_TYPE and ENTRIES_PARENT_VALUE have now been completely removed.
+// Tree structures should be modelled on the adapter side using a stack.
+// This way, a static tree structure that takes a fixed number of elements can still
+// just be backed by a singuler contiguous array in memory!
+const ENTRIES_INTERNAL_TYPE                   = 8;
+const ENTRIES_COMPLETED_ONE_RENDER            = 9;
+const ENTRIES_LAST_IDX                        = 10;
+const ENTRIES_IDX                             = 11;
+const ENTRIES_ITEMS_START                     = 12; // Not in the struct implementation, but we'll need it for the array implementation
 
 function newCache(): ImCache {
     return [];
@@ -303,7 +304,7 @@ function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
     c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
 
-    CacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], imCacheBegin, c, INTERNAL_TYPE_CACHE);
+    CacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], INTERNAL_TYPE_CACHE);
 
     return c;
 }
@@ -377,8 +378,6 @@ function internalTypeToString(internalType: number): string {
 function CacheEntriesBegin<T>(
     c: ImCache,
     entries: ImCacheEntries,
-    parentTypeId: TypeId<T>,
-    parent: T,
     internalType: number,
 ) {
     __Push(c, entries);
@@ -394,17 +393,10 @@ function CacheEntriesBegin<T>(
         entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
         entries[ENTRIES_IS_DERIVED] = false;
         entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
-        entries[ENTRIES_PARENT_TYPE] = parentTypeId;
         entries[ENTRIES_INTERNAL_TYPE] = internalType;
         entries[ENTRIES_COMPLETED_ONE_RENDER] = false;
-        entries[ENTRIES_PARENT_VALUE] = parent;
         entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
-    } else {
-        // The parent should never change
-        assert(entries[ENTRIES_PARENT_TYPE] === parentTypeId);
-        assert(entries[ENTRIES_PARENT_VALUE] === parent);
     }
-
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
 
     const map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
@@ -593,22 +585,6 @@ function getEntryAt<T>(c: ImCache, typeId: TypeId<T>, idx: number): T {
     return val as T;
 }
 
-
-function getEntriesParent<T>(c: ImCache, typeId: TypeId<T>): T {
-    // If this assertion fails, then you may have forgotten to pop some things you've pushed onto the stack
-    const entries = c[CACHE_CURRENT_ENTRIES];
-    assert(entries[ENTRIES_PARENT_TYPE] === typeId);
-    return entries[ENTRIES_PARENT_VALUE] as T;
-}
-
-function getEntriesParentFromEntries<T>(entries: ImCacheEntries, typeId: TypeId<T>): T | undefined {
-    if (entries[ENTRIES_PARENT_TYPE] === typeId) {
-        return entries[ENTRIES_PARENT_VALUE] as T;
-    }
-    return undefined;
-}
-
-
 function imSet<T>(c: ImCache, val: T): T {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const idx = entries[ENTRIES_IDX];
@@ -663,10 +639,7 @@ function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel)
 
     block.rendered = true;
 
-    const parentType = entries[ENTRIES_PARENT_TYPE];
-    const parent = entries[ENTRIES_PARENT_VALUE];
-
-    CacheEntriesBegin(c, block.entries, parentType, parent, INTERNAL_TYPE_KEYED_BLOCK);
+    CacheEntriesBegin(c, block.entries, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
 /**
@@ -686,7 +659,7 @@ function imKeyedBegin(c: ImCache, key: ValidKey) {
 }
 
 function imKeyedEnd(c: ImCache) {
-    __BlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
+    imImmediateModeBlockEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
 // You probably don't need a destructor unless you're being forced to add/remove callbacks or 'clean up' something
@@ -795,18 +768,13 @@ function cacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
 }
 
 // This is the typeId for a list of cache entries.
-function imImmediateModeBlockBegin<T>(
-    c: ImCache,
-    parentTypeId: TypeId<T>,
-    parent: T,
-    internalType: number = INTERNAL_TYPE_NORMAL_BLOCK
-): ImCacheEntries {
+function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK): ImCacheEntries {
     let entries; entries = imGet(c, imImmediateModeBlockBegin);
     if (entries === undefined) {
         entries = imSet(c, [] as unknown as ImCacheEntries);
     }
 
-    CacheEntriesBegin(c, entries, parentTypeId, parent, internalType);
+    CacheEntriesBegin(c, entries, internalType);
 
     return entries;
 }
@@ -867,14 +835,6 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
     CacheEntriesEnd(c);
 }
 
-function __BlockDerivedBegin(c: ImCache, internalType: number): ImCacheEntries {
-    const entries = c[CACHE_CURRENT_ENTRIES];
-    const parentType = entries[ENTRIES_PARENT_TYPE];
-    const parent = entries[ENTRIES_PARENT_VALUE];
-
-    return imImmediateModeBlockBegin(c, parentType, parent, internalType);
-}
-
 // Not quite the first render - 
 // if the function errors out before the entries finish one render, 
 // this method will rerender. Use this when you want to do something maybe once or twice or several times but hopefully just once,
@@ -894,33 +854,6 @@ function isEventRerender(c: ImCache) {
     return c[CACHE_IS_EVENT_RERENDER];
 }
 
-
-function __BlockDerivedEnd(c: ImCache, internalType: number) {
-    // The DOM appender will automatically update and diff the children if they've changed.
-    // However we can't just do
-    // ```
-    // if (blah) {
-    //      new component here
-    // }
-    // ```
-    //
-    // Because this would de-sync the immediate mode call-sites from their positions in the cache entries.
-    // But simply putting them in another entry list:
-    //
-    // ConditionalBlock();
-    // if (blah) {
-    // }
-    // ConditionalBlockEnd();
-    //
-    // Will automatically isolate the next immediate mode call-sites with zero further effort required,
-    // because all the entries will go into a single array which always takes up just 1 slot in the entries list.
-    // It's a bit confusing why there isn't more logic here though, I guess.
-    //
-    // NOTE: I've now moved this functionality into core. Your immediate mode tree builder will need
-    // to resolve diffs in basically the same way.
-
-    imImmediateModeBlockEnd(c, internalType);
-}
 
 /**
  * Usage:
@@ -1018,7 +951,7 @@ const EndFor = imForEnd;
  * 
  */
 function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
-    __BlockDerivedBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
+    imImmediateModeBlockBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
     // I expect the keys to a switch statement to be constants that are known at 'compile time', 
     // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
     // NOTE: However, switches can have massive components behind them.
@@ -1027,16 +960,16 @@ function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
 }
 
 function imSwitchEnd(c: ImCache) {
-    __BlockDerivedEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
-    __BlockDerivedEnd(c, INTERNAL_TYPE_SWITCH_BLOCK);
+    imImmediateModeBlockEnd(c, INTERNAL_TYPE_KEYED_BLOCK);
+    imImmediateModeBlockEnd(c, INTERNAL_TYPE_SWITCH_BLOCK);
 }
 
 function __BlockArrayBegin(c: ImCache) {
-    __BlockDerivedBegin(c, INTERNAL_TYPE_ARRAY_BLOCK);
+    imImmediateModeBlockBegin(c, INTERNAL_TYPE_ARRAY_BLOCK);
 }
 
 function __BlockConditionalBegin(c: ImCache) {
-    __BlockDerivedBegin(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
+    imImmediateModeBlockBegin(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
 }
 
 function __BlockConditionalEnd(c: ImCache) {
@@ -1047,7 +980,7 @@ function __BlockConditionalEnd(c: ImCache) {
         cacheEntriesOnRemove(entries);
     }
 
-    __BlockDerivedEnd(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
+    imImmediateModeBlockEnd(c, INTERNAL_TYPE_CONDITIONAL_BLOCK);
 }
 
 function imFor(c: ImCache) {
@@ -1077,7 +1010,7 @@ function __BlockArrayEnd(c: ImCache) {
     // we allow growing or shrinking this kind of block in particular
     entries[ENTRIES_LAST_IDX] = idx;
 
-    __BlockDerivedEnd(c, INTERNAL_TYPE_ARRAY_BLOCK);
+    imImmediateModeBlockEnd(c, INTERNAL_TYPE_ARRAY_BLOCK);
 }
 
 // This is the initial value, so that anything, even `undefined`, can trigger Memo
@@ -1208,7 +1141,7 @@ export type TryState = {
  * ```
  */
 function imTry(c: ImCache): TryState {
-    const entries = __BlockDerivedBegin(c, INTERNAL_TYPE_TRY_BLOCK);
+    const entries = imImmediateModeBlockBegin(c, INTERNAL_TYPE_TRY_BLOCK);
 
     let tryState = imGet(c, imTry);
     if (tryState === undefined) {
@@ -1254,7 +1187,7 @@ function imTryEnd(c: ImCache, tryState: TryState) {
     } else {
         const entries = c[CACHE_CURRENT_ENTRIES];
         assert(entries === tryState.entries);
-        __BlockDerivedEnd(c, INTERNAL_TYPE_TRY_BLOCK);
+        imImmediateModeBlockEnd(c, INTERNAL_TYPE_TRY_BLOCK);
     }
 }
 
@@ -1327,7 +1260,6 @@ export const im = {
     getEntriesIsInConditionalPathway,   // Is this entry list currently in the conditional pathway?
     rerenderCache,      // Use this to rerender the cache. Either immediately afther the current render, or a new render. Happens outside the animation frame.
     recursivelyEnumerateEntries, // Recursively enumerate your entries
-    getEntriesParent, getEntriesParentFromEntries, // Get the 'parent item' associated with an entry list
 
     ImmediateModeBlockBegin: imImmediateModeBlockBegin, // This is the typeId of an ImCacheEntries object
     ImmediateModeBlockEnd: imImmediateModeBlockEnd,

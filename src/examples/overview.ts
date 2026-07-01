@@ -67,7 +67,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
                     imdom.Str(c, `im.Get, im.GetInline, im.Set are the state-management primitives that all methods use to save immediate-mode state entries. imGet(c, typeId) requests state of type 'typeId', and either returns what we set in the previous frame, or undefined. It will panic if the typeId passed in does not line up with the typeId at the 'current' slot - this flags conditional and out-of-order rendering bugs. A typeId is simply a function (any) => T that we use for type-inference, and also a way to assume what the type of some state is. im.GetInline is like im.Get, except we can specify any typeId at all, and it will not use type-inference to link the typeId to a return type, so it is good to use _inline_ instead of in some other component. As long as the typeIds in a row are all unique, it will (mostly) prevent out-of-order rendering bugs.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
-                    imdom.Str(c, `im.Set will write to the current immediate-mode slot. It MUST be called after the first call to im.Get. All other calls to im.Get will throw if im.Set was not called for the previous call to im.Get.`);
+                    imdom.Str(c, `im.Set will write to the current immediate-mode slot. It MUST be called after the first call to im.Get for that slot. All other calls to im.Get will throw if im.Set was not called for the previous call to im.Get.`);
                 } imdom.ElEnd(c, el.LI);
                 imdom.ElBegin(c, el.LI); {
                     imdom.Str(c, `imdom.On is an immediate-mode helper that wraps the 'addeventListener' callback. Whenever that callback fires, your entire app will be synchronously rerendered, so thatyou can call ev.preventDefault() on it if you needed to, and it will work. When the particular subtree is 'destroyed', the event listener will automatically be removed.`);
@@ -98,7 +98,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
 
         imParaBegin(c); {
             imdom.Str(c, `"Error: Expected to populate this cache entry with type=imdom.Str, but got newDomAppender . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state". `);
-            imdom.Str(c, `This is because in one render, the code on line 13 requests the state for imdom.Str. But in the next render, the code accessing that immediate-mode slot would be line 15, which requests the state for a DOM element instead. `);
+            imdom.Str(c, `This is because in one render, the code on line 10 requests the state for imdom.Str. But in the next render, the code accessing that immediate-mode slot would be line 13, which requests the state for a DOM element instead. `);
             imdom.Str(c, `This framework's solution is for you to annotate if-blocks with calls to im.If, im.IfElse, im.Else and im.IfEnd:`);
         } imParaEnd(c);
 
@@ -121,7 +121,7 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         imVisualTestInstallation(c, "List rendering", harness, imListRenderingExampleFixed, TEST_CENTERED);
 
         imParaBegin(c); {
-            imdom.Str(c, `The list rendering doesn't need to be done with a for-loop - any kind of iteration is fine. You could have just as easily written it with .forEach or for-of, a while loop, a custom iteration function, etc. etc.`);
+            imdom.Str(c, `The list rendering doesn't need to be done with a for-loop - any kind of iteration is fine. You could have just as easily written it with .forEach or for-of, a while loop, a custom iteration function, etc. as long as it isn't asyncronous.`);
         } imParaEnd(c);
 
         imParaBegin(c); {
@@ -412,10 +412,8 @@ function imListRenderingExampleBad(c: ImCache) {
         }
 
         for (let i = 0 ; i < s.count; i++) {
+            if (i > 0) imdom.Str(c, ", ");
             imdom.Str(c, i);
-            if (i < s.count - 1) {
-                imdom.Str(c, ", ");
-            }
         }
 
         imdom.Str(c, "The count is ");
@@ -430,10 +428,8 @@ function imListRenderingExampleFixed(c: ImCache) {
             s.count++;
         }
         im.For(c); for (let i = 0 ; i < s.count; i++) {
+            if (i > 0) imdom.Str(c, ", ");
             imdom.Str(c, i);
-            if (i < s.count - 1) {
-                imdom.Str(c, ", ");
-            }
         } im.ForEnd(c);
         imdom.Str(c, "The count is ");
         imdom.Str(c, s.count);
@@ -906,10 +902,13 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
             if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
             if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
 
+            // TODO: fix this up
+            /**
+
             im.For(c); im.ForEachCacheEntryItem(entries, (t, childEntries) => {
                 if (t !== im.ImmediateModeBlockBegin) return;
-                const value = im.getEntriesParentFromEntries(childEntries as ImCacheEntries, imdom.newDomAppender);
-                if (!value) return;
+                // const value = imdom. .getEntriesParentFromEntries(childEntries as ImCacheEntries, imdom.newDomAppender);
+                // if (!value) return;
 
                 imdom.ElBegin(c, el.DIV); {
                     const root = imDivBegin(c); {
@@ -927,6 +926,8 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
                     imdom.setClass(c, cnHighlight, lastDomNode === value, root.root);
                 } imdom.ElEnd(c, el.DIV);
             }); im.ForEnd(c);
+
+            */
         } imDivEnd(c);
     } im.IfEnd(c);
 

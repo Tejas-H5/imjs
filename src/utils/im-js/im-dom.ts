@@ -1,7 +1,7 @@
 // IM-DOM 1.73
 
 import { assert } from "./assert";
-import { im, ImCache, ImCacheEntries } from "./im-core";
+import { im, ImCache } from "./im-core";
 
 ///////////////////////////
 // DOM-node management
@@ -246,7 +246,7 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
 ): DomAppender<HTMLElementTagNameMap[K]> {
     // TODO: support changing tne type
     // Make this entry in the current entry list, so we can delete it easily
-    const appender = im.getEntriesParent(c, newDomAppender);
+    const appender = getCurrentAppender();
 
     let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
@@ -260,10 +260,11 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     return childAppender;
 }
 
-function BeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>) {
+function BeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>, s = globalImDomState) {
     appendToDomRoot(appender, childAppender);
 
-    im.ImmediateModeBlockBegin(c, newDomAppender, childAppender);
+    im.ImmediateModeBlockBegin(c);
+    s.parents.push(childAppender);
 
     childAppender.idx = -1;
 }
@@ -276,7 +277,7 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
     r: KeyRef<K>
 ): DomAppender<SVGElementTagNameMap[K]> {
     // Make this entry in the current entry list, so we can delete it easily
-    const appender = im.getEntriesParent(c, newDomAppender);
+    const appender = getCurrentAppender();
 
     let childAppender: DomAppender<SVGElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
@@ -293,8 +294,8 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
 }
 
 
-function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>) {
-    const appender = im.getEntriesParent(c, newDomAppender);
+function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGElementTagNameMap>, s = globalImDomState) {
+    const appender = getCurrentAppender();
     assert(appender.keyRef === r) // make sure we're popping the right thing
 
     if (appender.finalizeType === FINALIZE_IMMEDIATELY) {
@@ -306,6 +307,7 @@ function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGEl
     }
 
     im.ImmediateModeBlockEnd(c);
+    s.parents.pop();
 }
 
 const imElSvgEnd = imElEnd;
@@ -324,7 +326,7 @@ const imElSvgEnd = imElEnd;
  *      } CacheEnd(c);
  * }
  */
-function imRootBegin(c: ImCache, root: ValidElement) {
+function imRootBegin(c: ImCache, root: ValidElement, s = globalImDomState) {
     let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
         appender = im.Set(c, newDomAppender(root, null, []));
@@ -332,7 +334,8 @@ function imRootBegin(c: ImCache, root: ValidElement) {
         appender.keyRef = root;
     }
 
-    im.ImmediateModeBlockBegin(c, newDomAppender, appender);
+    im.ImmediateModeBlockBegin(c);
+    s.parents.push(appender);
 
     // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
     imFinalizeDeferred(c);
@@ -346,13 +349,13 @@ function imRootBegin(c: ImCache, root: ValidElement) {
 }
 
 function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
-    const appender = getAppender(c);
+    const appender = getCurrentAppender();
     appender.label = str;
 }
 
 // Use this whenever you expect to render to a particular dom node from a place in the code that
 // would otherwise not have access to this dom node.
-function imRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
+function imRootExistingBegin(c: ImCache, existing: DomAppender<any>, s = globalImDomState) {
     // If you want to re-push this DOM node to the immediate mode stack, use imdom.FinalizeDeferred(c).
     // I.e ElBegin(c, EL_BLAH); imFinalizeDeferred(c); {
     // This allows the 'diff' to happen at the _end_ of the render pass instead of immediately after we close the element.
@@ -360,23 +363,25 @@ function imRootExistingBegin(c: ImCache, existing: DomAppender<any>) {
     // calls to textInput.focus() for example, won't work till the next frame, for example.
     assert(existing.finalizeType === FINALIZE_DEFERRED);
 
-    im.ImmediateModeBlockBegin(c, newDomAppender, existing);
+    im.ImmediateModeBlockBegin(c);
+    s.parents.push(existing);
 }
 
-function imRootExistingEnd(c: ImCache, existing: DomAppender<any>) {
-    let appender = im.getEntriesParent(c, newDomAppender);
+function imRootExistingEnd(c: ImCache, existing: DomAppender<any>, s = globalImDomState) {
+    const appender = getCurrentAppender();
     assert(appender === existing);
     im.ImmediateModeBlockEnd(c);
+    s.parents.pop();
 }
 
 /** @deprecated TODO: remove this method in favour of explicitly finalizing */
 function imFinalizeDeferred(c: ImCache) {
-    getAppender(c).finalizeType = FINALIZE_DEFERRED;
+    getCurrentAppender().finalizeType = FINALIZE_DEFERRED;
 }
 
 
-function imRootEnd(c: ImCache, root: ValidElement) {
-    let appender = im.getEntriesParent(c, newDomAppender);
+function imRootEnd(c: ImCache, root: ValidElement, s = globalImDomState) {
+    const appender = getCurrentAppender();
     assert(appender.keyRef === root);
 
     // By finalizing at the very end, we get two things:
@@ -400,21 +405,7 @@ function imRootEnd(c: ImCache, root: ValidElement) {
     finalizeDomAppender(appender);
 
     im.ImmediateModeBlockEnd(c);
-}
-
-function domFinalizeEnumerator(entries: ImCacheEntries): boolean {
-    // TODO: only if any mutations
-    // TODO: handle global keyed elements
-
-    const domAppender = im.getEntriesParentFromEntries(entries, newDomAppender);
-    if (domAppender !== undefined) {
-        if (domAppender.finalizeType === FINALIZE_DEFERRED) {
-            finalizeDomAppender(domAppender);
-        }
-        return true;
-    }
-
-    return false;
+    s.parents.pop();
 }
 
 export interface Stringifyable {
@@ -428,12 +419,12 @@ export interface Stringifyable {
  * `Str`. 
  */
 function imStr(c: ImCache, value: Stringifyable): Text {
-    const domAppender = im.getEntriesParent(c, newDomAppender);
+    const appender = getCurrentAppender();
 
     let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
-        domAppender,
+        appender,
         null
     ));
 
@@ -444,19 +435,19 @@ function imStr(c: ImCache, value: Stringifyable): Text {
         textNodeLeafAppender.root.nodeValue = (value != null && value.toString) ? value.toString() : "<couldn't stringify>";
     }
 
-    appendToDomRoot(domAppender, textNodeLeafAppender);
+    appendToDomRoot(appender, textNodeLeafAppender);
 
     return textNodeLeafAppender.root;
 }
 
 // TODO: not scaleable for the same reason State isn't scaleable. we gotta think of something better that lets us have more dependencies/arguments to the formatter
 function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text {
-    const domAppender = im.getEntriesParent(c, newDomAppender);
+    const appender = getCurrentAppender();
 
     let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
-        domAppender.domRoot,
+        appender.domRoot,
         null
     ));
 
@@ -469,7 +460,7 @@ function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text 
         textNodeLeafAppender.root.nodeValue = formatter(value);
     }
 
-    appendToDomRoot(domAppender, textNodeLeafAppender);
+    appendToDomRoot(appender, textNodeLeafAppender);
 
     return textNodeLeafAppender.root;
 }
@@ -478,15 +469,28 @@ function setStyle<K extends (keyof ValidElement["style"])>(
     c: ImCache,
     key: K,
     value: string,
-    root = getElement(c),
+    root = getCurrentElement(c),
 ) {
     // @ts-expect-error its fine tho
     root.style[key] = value;
 }
 
 function setTextUnsafe(c: ImCache, val: string) {
-    let el = getElement(c);
+    let el = getCurrentElement(c);
     el.textContent = val;
+}
+
+function setStyleProperty(
+    c: ImCache,
+    key: string,
+    value: string,
+    root = getCurrentElement(c),
+) {
+    if (!value) {
+        root.style.removeProperty(key);
+    } else {
+        root.style.setProperty(key, value);
+    }
 }
 
 
@@ -494,7 +498,7 @@ function setClass(
     c: ImCache,
     className: string,
     enabled: boolean | number = true,
-    el = getElement(c)
+    el = getCurrentElement(c)
 ): boolean {
     if (enabled !== false && enabled !== 0) {
         el.classList.add(className);
@@ -509,7 +513,7 @@ function setAttr(
     c: ImCache,
     attr: string,
     val: string | null,
-    root = getElement(c),
+    root = getCurrentElement(c),
 ) {
     if (val !== null) {
         root.setAttribute(attr, val);
@@ -518,12 +522,25 @@ function setAttr(
     }
 }
 
-function getAppender(c: ImCache): DomAppender<ValidElement> {
-    return im.getEntriesParent(c, newDomAppender);
+type ImDomState = {
+    parents: DomAppender<ValidElement>[];
 }
 
-function getElement(c: ImCache) {
-    return getAppender(c).root;
+function newImDomState(): ImDomState {
+    return {
+        parents: [],
+    };
+}
+
+const globalImDomState = newImDomState();
+
+function getCurrentAppender(s = globalImDomState): DomAppender<ValidElement> {
+    assert(s.parents.length > 0);
+    return s.parents[s.parents.length - 1];
+}
+
+function getCurrentElement(c: ImCache) {
+    return getCurrentAppender().root;
 }
 
 // NOTE: you should only use this if you don't already have some form of global event handling set up,
@@ -540,7 +557,7 @@ function imOn<K extends keyof HTMLElementEventMap>(
             eventValue: Event | null;
             eventListener: (e: HTMLElementEventMap[K]) => void;
         } = {
-            el: getElement(c),
+            el: getCurrentElement(c),
             eventType: null,
             eventValue: null,
             eventListener: (e: HTMLElementEventMap[K]) => {
@@ -564,7 +581,7 @@ function imOn<K extends keyof HTMLElementEventMap>(
     }
 
     if (state.eventType !== type) {
-        const el = getElement(c);
+        const el = getCurrentElement(c);
         if (state.eventType !== null) {
             el.removeEventListener(state.eventType.val, state.eventListener as EventListener);
         }
@@ -597,22 +614,22 @@ function getBlur(): boolean {
     return globalEventSystem.blur;
 }
 
-function hasMousePress(c: ImCache, el = getElement(c)): boolean {
+function hasMousePress(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return elIsInSetThisFrame(el, mouse.mouseDownElements)
 }
 
-function hasMouseUp(c: ImCache, el = getElement(c)): boolean {
+function hasMouseUp(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return elIsInSetThisFrame(el, mouse.mouseUpElements)
 }
 
-function hasMouseClick(c: ImCache, el = getElement(c)): boolean {
+function hasMouseClick(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return elIsInSetThisFrame(el, mouse.mouseClickElements)
 }
 
-function hasMouseOver(c: ImCache, el = getElement(c)): boolean {
+function hasMouseOver(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return mouse.mouseOverElements.has(el);
 }
@@ -879,7 +896,7 @@ function imGlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
 function imTrackSize(c: ImCache, rerender = false) {
     let state; state = im.GetInline(c, imTrackSize);
     if (state === undefined) {
-        const root = getElement(c);
+        const root = getCurrentElement(c);
 
         const self = {
             size: { width: 0, height: 0, },
@@ -917,7 +934,7 @@ function imTrackSize(c: ImCache, rerender = false) {
 function imTrackVisibility(c: ImCache, threshold: number) {
     let state; state = im.GetInline(c, imTrackVisibility);
     if (state === undefined) {
-        const root = getElement(c);
+        const root = getCurrentElement(c);
 
         const self = {
             isVisible: false,
@@ -1670,8 +1687,8 @@ export const ELSVG = elsvg;
 export const imdom = {
     /** Internal methods */
     newDomAppender,  // This is the typeId of a Dom Appender.
-    getAppender,     // Gets the current DOM appender. Very useful for utils
-    getElement,      // Short for getAppender().root
+    getAppender: getCurrentAppender,  // Gets the current DOM appender. Very useful for utils
+    getElement: getCurrentElement,    // Short for getAppender().root
 
     /** Begin DOM root. Required before any calls to {@link imdom.ElBegin} */
     RootBegin: imRootBegin, RootEnd: imRootEnd,
@@ -1699,6 +1716,7 @@ export const imdom = {
 
     /** Setting properties on DOM node */
     setStyle,
+    setStyleProperty,
     setClass,
     setAttr,
     setTextUnsafe, // Don't call this on an element that has non-text children! You'll delete them.
