@@ -28,7 +28,7 @@ export type VisualTestHarnessState = {
         scaleFactor: number;
         t: number;
         topBarOpen: number;
-        sideBarOpenEm: number;
+        sideBarOpen01: number;
         sideBarOpen: boolean;
     },
     installations: VisualTestHarnessInstallationState[];
@@ -47,7 +47,7 @@ function newState(): VisualTestHarnessState {
             scaleFactor: 0,
             t: 0,
             topBarOpen: 0,
-            sideBarOpenEm: 0,
+            sideBarOpen01: 0,
             sideBarOpen: false,
         },
         installations: [],
@@ -182,7 +182,10 @@ export function imVisualTestHarness(
 
                 // Sidebar
                 imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imui.Justify(c); imui.ScrollOverflow(c); {
-                    if (im.Memo(c, s.animations.sideBarOpenEm)) imdom.setStyle(c, "fontSize", s.animations.sideBarOpenEm + "em");
+                    if (im.Memo(c, s.animations.sideBarOpen01)) {
+                        imdom.setStyle(c, "fontSize", (1 * s.animations.sideBarOpen01) + "em");
+                        imdom.setStyle(c, "maxWidth", (500 * s.animations.sideBarOpen01) + "px");
+                    }
 
                     let isHoveringSidebar = false;
 
@@ -225,7 +228,7 @@ export function imVisualTestHarness(
                         }
 
                         const target = s.animations.sideBarOpen ? 1 : 0;
-                        s.animations.sideBarOpenEm = lerp01(s.animations.sideBarOpenEm, target, 30 * im.getDeltaTimeSeconds(c));
+                        s.animations.sideBarOpen01 = lerp01(s.animations.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
                     }
                 } imui.End(c);
             } im.IfEnd(c);

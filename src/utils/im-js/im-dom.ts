@@ -255,15 +255,14 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
         childAppender.keyRef = r;
     }
 
-    BeginDomAppender(c, appender, childAppender);
+    beginDomAppender(appender, childAppender);
 
     return childAppender;
 }
 
-function BeginDomAppender(c: ImCache, appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>, s = globalImDomState) {
+function beginDomAppender(appender: DomAppender<ValidElement>, childAppender: DomAppender<ValidElement>, s = globalImDomState) {
     appendToDomRoot(appender, childAppender);
 
-    im.ImmediateModeBlockBegin(c);
     s.parents.push(childAppender);
 
     childAppender.idx = -1;
@@ -288,7 +287,7 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
         childAppender.keyRef = r;
     }
 
-    BeginDomAppender(c, appender, childAppender);
+    beginDomAppender(appender, childAppender);
 
     return childAppender;
 }
@@ -306,7 +305,6 @@ function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGEl
         deferList.push(appender);
     }
 
-    im.ImmediateModeBlockEnd(c);
     s.parents.pop();
 }
 
@@ -334,7 +332,11 @@ function imRootBegin(c: ImCache, root: ValidElement, s = globalImDomState) {
         appender.keyRef = root;
     }
 
-    im.ImmediateModeBlockBegin(c);
+    let depth = im.GetInline(c, imRootBegin) ?? im.Set(c, s.parents.length);
+    if (depth !== s.parents.length) {
+        throw new Error("You may have forgotten to pop an element somewhere")
+    }
+
     s.parents.push(appender);
 
     // well we kinda have to. DomRootEnd will only finalize things with finalizeType === FINALIZE_DEFERRED
@@ -363,14 +365,12 @@ function imRootExistingBegin(c: ImCache, existing: DomAppender<any>, s = globalI
     // calls to textInput.focus() for example, won't work till the next frame, for example.
     assert(existing.finalizeType === FINALIZE_DEFERRED);
 
-    im.ImmediateModeBlockBegin(c);
     s.parents.push(existing);
 }
 
 function imRootExistingEnd(c: ImCache, existing: DomAppender<any>, s = globalImDomState) {
     const appender = getCurrentAppender();
     assert(appender === existing);
-    im.ImmediateModeBlockEnd(c);
     s.parents.pop();
 }
 
@@ -404,7 +404,6 @@ function imRootEnd(c: ImCache, root: ValidElement, s = globalImDomState) {
     // Finally, finalize the root
     finalizeDomAppender(appender);
 
-    im.ImmediateModeBlockEnd(c);
     s.parents.pop();
 }
 

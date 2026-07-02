@@ -366,7 +366,7 @@ function imBenchmarkReportViewer(c: ImCache, results: BenchmarkResult[]) {
 
             imSubheadingBegin(c); imdom.Str(c, "Previous results"); imSubheadingEnd(c);
 
-            imui.Begin(c, ROW); imui.FlexWrap(c); {
+            imui.Begin(c, BLOCK); imui.FlexWrap(c); {
                 im.For(c); for (const userAgent in previousResultsByUserAgent) {
                     if (imButtonIsClicked(c, userAgent, prevResultsState.currentUserAgent === userAgent)) {
                         prevResultsState.currentUserAgent = userAgent;
