@@ -38,7 +38,7 @@ export const BUTTON_TOGGLED = 1 << 0;
 export const BUTTON_HIDDEN = 1 << 1;
 
 export function imButton(c: ImCache, flags = 0) {
-    if (im.isFirstishRender(c)) {
+    if (imdom.isFirstishRender()) {
         imdom.setClass(c, cnButton);
     }
 
@@ -65,7 +65,7 @@ export function imButtonBegin(
         }
 
         imui.Begin(c, INLINE); {
-            if (im.isFirstishRender(c)) {
+            if (imdom.isFirstishRender()) {
                 imdom.setClass(c, "inner");
             }
 

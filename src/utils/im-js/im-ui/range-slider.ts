@@ -66,7 +66,7 @@ export function imRangeSlider(
         const endHandle = imui.Begin(c, BLOCK); imui.End(c);
     imui.End(c);
 
-    if (im.isFirstishRender(c)) {
+    if (imdom.isFirstishRender()) {
         const handleBodyColor = cssVars.mg;
         const handeColor = cssVars.fg;
         const bgColor = cssVars.bg2;

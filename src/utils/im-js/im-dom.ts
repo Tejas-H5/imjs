@@ -1,4 +1,4 @@
-// IM-DOM 1.73
+// IM-DOM 1.80
 
 import { assert } from "./assert";
 import { im, ImCache } from "./im-core";
@@ -45,6 +45,8 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     children: (DomAppender<AppendableElement>[] | null);
     selfIdx: number; // index of this node in it's own array
 
+    isFirstishRender: boolean;
+
     // if true, the final pass can ignore this.
     finalizeType: FinalizationType; 
 
@@ -69,6 +71,8 @@ function newDomAppender<E extends AppendableElement>(
         selfIdx: 0,
         manualDom: false,
         finalizeType: FINALIZE_IMMEDIATELY,
+
+        isFirstishRender: true,
 
         // If null, it will get set to itself later.
         domRoot: domRoot,
@@ -268,6 +272,11 @@ function beginDomAppender(appender: DomAppender<ValidElement>, childAppender: Do
     childAppender.idx = -1;
 }
 
+function endDomAppender(appender: DomAppender<ValidElement>, s = globalImDomState) {
+    s.parents.pop();
+    appender.isFirstishRender = false;
+}
+
 /**
  * Svg nodes are different from normal DOM nodes, so you'll need to use this function to create them instead.
  */
@@ -305,7 +314,7 @@ function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGEl
         deferList.push(appender);
     }
 
-    s.parents.pop();
+    endDomAppender(appender, s);
 }
 
 const imElSvgEnd = imElEnd;
@@ -371,7 +380,8 @@ function imRootExistingBegin(c: ImCache, existing: DomAppender<any>, s = globalI
 function imRootExistingEnd(c: ImCache, existing: DomAppender<any>, s = globalImDomState) {
     const appender = getCurrentAppender();
     assert(appender === existing);
-    s.parents.pop();
+
+    endDomAppender(appender, s);
 }
 
 /** @deprecated TODO: remove this method in favour of explicitly finalizing */
@@ -404,7 +414,7 @@ function imRootEnd(c: ImCache, root: ValidElement, s = globalImDomState) {
     // Finally, finalize the root
     finalizeDomAppender(appender);
 
-    s.parents.pop();
+    endDomAppender(appender, s);
 }
 
 export interface Stringifyable {
@@ -631,6 +641,10 @@ function hasMouseClick(c: ImCache, el = getCurrentElement(c)): boolean {
 function hasMouseOver(c: ImCache, el = getCurrentElement(c)): boolean {
     const mouse = getMouse();
     return mouse.mouseOverElements.has(el);
+}
+
+function isFirstisRender(el = getCurrentAppender()): boolean {
+    return el.isFirstishRender;
 }
 
 function elIsInSetThisFrame(el: ValidElement, set: Set<ValidElement>) {
@@ -1700,6 +1714,12 @@ export const imdom = {
     StrFmt: imStrFmt,    // Text node, custom formatter for arbitrary object. Try to make formatter a constant! Otherwise, expect terrible performance
     Text:   imStr,
     TextFmt: imStrFmt,
+
+    // You'll want to use this to initialize a lot of the static styles and classes on a DOM node -
+    // setting styles every frame is extremely expensive.
+    // NOTE: if the component errors and re-renders without reaching imEnd the first time, it remains true in the next render, 
+    // so you shouldn't use this for anything where real idempotency matters, like event handlers.
+    isFirstishRender: isFirstisRender,
 
     /** 
      * These methods allow re-pushing a node we created somewhere else in the DOM to the immediate-mode stack.

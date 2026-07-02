@@ -43,7 +43,7 @@ function newState(): VisualTestHarnessState {
         currentVisibleInstallation: undefined,
         seenIntro: false,
         animations: {
-            introToUse: Math.floor(Math.random() * numIntros),
+            introToUse: 1, //Math.floor(Math.random() * numIntros),
             scaleFactor: 0,
             t: 0,
             topBarOpen: 0,
@@ -138,7 +138,7 @@ export function imVisualTestHarness(
 
                 // Top bar
                 imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
-                    if (im.isFirstishRender(c)) imdom.setStyle(c, "overflow", "clip");
+                    if (imdom.isFirstishRender()) imdom.setStyle(c, "overflow", "clip");
                     if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
                     imui.Begin(c, ROW); imui.FlexWrap(c); {
@@ -152,7 +152,7 @@ export function imVisualTestHarness(
 
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
-                    if (im.isFirstishRender(c)) {
+                    if (imdom.isFirstishRender()) {
                         // makes way for the sidebar. Not ideal code but eh
                         imdom.setStyle(c, "paddingRight", "2em");
                     }
@@ -184,7 +184,7 @@ export function imVisualTestHarness(
                 imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imui.Justify(c); imui.ScrollOverflow(c); {
                     if (im.Memo(c, s.animations.sideBarOpen01)) {
                         imdom.setStyle(c, "fontSize", (1 * s.animations.sideBarOpen01) + "em");
-                        imdom.setStyle(c, "maxWidth", (500 * s.animations.sideBarOpen01) + "px");
+                        imdom.setStyle(c, "maxWidth", (500 * s.animations.sideBarOpen01 + 10) + "px");
                     }
 
                     let isHoveringSidebar = false;

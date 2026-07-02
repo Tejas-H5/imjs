@@ -17,7 +17,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             animationComplete = Math.abs(a.scaleFactor - target) < 0.0001;
 
             imui.Begin(c, BLOCK); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "overflow", "hidden");
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "overflow", "hidden");
 
                 imui.Begin(c, BLOCK); {
                     imui.AbsoluteXY(c, width * a.scaleFactor, PX, height * a.scaleFactor, PX);
@@ -37,7 +37,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                     imui.AbsoluteXY(c, width * (1 - a.scaleFactor), PX, height * (1 - a.scaleFactor), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
-                    if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
+                    if (imdom.isFirstishRender()) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
 
                     imdom.Str(c, "JS");
                 } imui.End(c);
@@ -45,7 +45,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                 imui.Begin(c, BLOCK); {
                     imui.AbsoluteXY(c, width * 0.5, PX, height * (1 - a.scaleFactor * 0.5), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                    if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
+                    if (imdom.isFirstishRender()) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                     imdom.Str(c, "Visual testing harness");
                 } imui.End(c);
@@ -92,7 +92,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                             const text = rendered ? "Rendered" : "Rendering";
 
                             imui.Begin(c, ROW); imui.Bg(c, bg); imui.Fg(c, fg); imui.Align(c); imui.Justify(c); {
-                                if (im.isFirstishRender(c)) {
+                                if (imdom.isFirstishRender()) {
                                     imdom.setStyle(c, "transform", `rotateZ(${isOddColumn ? "" : "-"}45deg)`);
                                 }
 
@@ -125,9 +125,10 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
 
                 imui.Begin(c, ROW); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); imui.Align(c); imui.Justify(c); {
                     imui.Begin(c, COL); imui.Align(c); {
-                        imui.Bg(c, bg); imui.Fg(c, fg);
+                        imui.Bg(c, bg); 
+                        imui.Fg(c, fg);
 
-                        if (im.Memo(c, fg)) imdom.setStyle(c, "border", `${height * 0.05}px solid ${fg}`);
+                        if (im.Memo(c, fg))     imdom.setStyle(c, "border", `${height * 0.05}px solid ${fg}`);
                         if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (height / 6) + "px");
                         if (im.Memo(c, height)) imdom.setStyle(c, "fontWeight", "bold");
                         imdom.Str(c, "imJS");
@@ -164,7 +165,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             imui.Begin(c, BLOCK); {
                 imui.AbsoluteXY(c, width * 0.5, PX, height * 0.8, PX);
                 if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                 imdom.Str(c, "Visual testing harness");
             } imui.End(c);

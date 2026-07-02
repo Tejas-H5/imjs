@@ -120,7 +120,7 @@ const CELL_BOLD = (1 << 0);
 function imTableCellBegin(c: ImCache, alignment = LEFT, flags = 0) {
     const bold = !!(CELL_BOLD & flags);
     imui.Begin(c, ROW); imui.Justify(c, alignment); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "backgroundColor", cssVars.bg);
         if (im.Memo(c, bold)) imdom.setStyle(c, "fontWeight", bold ? "bold" : "");
     } // imui.End(c);
 }
@@ -158,7 +158,7 @@ function imLotsOfBoxesWithUI(c: ImCache) {
     imui.Begin(c, COL); imui.Gap(c, 10, PX); imui.Flex(c); {
         imui.Begin(c, ROW); {
             imui.Begin(c, BLOCK); {
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "minWidth", "200px");
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "minWidth", "200px");
                 imdom.Str(c, "Render ms budget: "); imdom.Str(c, s.renderBudgetMs);
             } imui.End(c);
 
@@ -392,7 +392,7 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
     let regressions = 0;
 
     imui.Begin(c, BLOCK); {
-        if (im.isFirstishRender(c)) {
+        if (imdom.isFirstishRender()) {
             imdom.setStyle(c, "display", "grid");
             imdom.setStyle(c, "gap", "1px");
             imdom.setStyle(c, "padding", "1px");

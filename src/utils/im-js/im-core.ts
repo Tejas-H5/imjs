@@ -60,10 +60,9 @@ const ENTRIES_KEYED_MAP                       = 7;
 // This way, a static tree structure that takes a fixed number of elements can still
 // just be backed by a singuler contiguous array in memory!
 const ENTRIES_INTERNAL_TYPE                   = 8;
-const ENTRIES_COMPLETED_ONE_RENDER            = 9;
-const ENTRIES_LAST_IDX                        = 10;
-const ENTRIES_IDX                             = 11;
-const ENTRIES_ITEMS_START                     = 12; // Not in the struct implementation, but we'll need it for the array implementation
+const ENTRIES_LAST_IDX                        = 9;
+const ENTRIES_IDX                             = 10;
+const ENTRIES_ITEMS_START                     = 11; // Not in the struct implementation, but we'll need it for the array implementation
 
 function newCache(): ImCache {
     return [];
@@ -394,7 +393,6 @@ function CacheEntriesBegin<T>(
         entries[ENTRIES_IS_DERIVED] = false;
         entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
         entries[ENTRIES_INTERNAL_TYPE] = internalType;
-        entries[ENTRIES_COMPLETED_ONE_RENDER] = false;
         entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
     }
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
@@ -818,8 +816,6 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
         }
     }
 
-    entries[ENTRIES_COMPLETED_ONE_RENDER] = true;
-
     const idx = entries[ENTRIES_IDX];
     const lastIdx = entries[ENTRIES_LAST_IDX];
     if (idx !== lastIdx) {
@@ -833,21 +829,6 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
     }
 
     CacheEntriesEnd(c);
-}
-
-// Not quite the first render - 
-// if the function errors out before the entries finish one render, 
-// this method will rerender. Use this when you want to do something maybe once or twice or several times but hopefully just once,
-// as it doesn't require an additional im-state entry. 
-// For example, if you have an API like this:
-// ```ts
-// Div(c); imRow(c); imCode(c); imJustifyCenter(c); imui.Bg(c, cssVars.bg); {
-// } DivEnd(c);
-// ```
-// Each of those methods that 'augment' the call to `Div` may have their own initialization logic.
-function isFirstishRender(c: ImCache): boolean {
-    const entries = c[CACHE_CURRENT_ENTRIES];
-    return entries[ENTRIES_COMPLETED_ONE_RENDER] === false;
 }
 
 function isEventRerender(c: ImCache) {
@@ -1080,7 +1061,7 @@ export type MemoResult
  * }
  * ```
  */
-function imMemo(c: ImCache, val: unknown): MemoResult {
+function imMemo(c: ImCache, val: unknown = true): MemoResult {
     /**
      * NOTE: I had previously implemented Memo() and imMemoEnd():
      *
@@ -1239,11 +1220,6 @@ export const im = {
 
     /** Performance optimization */
 
-    // Is this more-or-less the first render? If the current scope encountered an error before being
-    // ended, then this will remian true on the rerender. Hence, 'firstish' render and not 'first'.
-    // You'll want to use this for quite a lot of idempotent things that you dont want running too often, 
-    // as it doesn't create any cache entries by itself.
-    isFirstishRender, 
     // Is this rerender caused by an event (as opposed to an animation frame)? 
     // Useful to avoid expensive canvas rendering when true.
     isEventRerender,

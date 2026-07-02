@@ -539,7 +539,7 @@ function imSwitchExampleWithUsageCode(c: ImCache) {
 
 function imisFirstishRenderExample(c: ImCache) {
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) {
+        if (imdom.isFirstishRender()) {
             imdom.setStyle(c, "display", "flex");
             imdom.setStyle(c, "gap", "10px");
         }
@@ -713,10 +713,10 @@ function imMemoConditionalPathwayExample(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
 
         imMemoConditionalPathwayExampleView(c, appState, 0);
         imMemoConditionalPathwayExampleView(c, appState, 1);
@@ -742,7 +742,7 @@ function imMemoConditionalPathwayExampleView(
     }
 
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) {
+        if (imdom.isFirstishRender()) {
             imdom.setStyle(c, "flex", "1");
             // o7 sir. Div has been centered. sir o7
             imdom.setStyle(c, "display", "flex");
@@ -766,10 +766,10 @@ function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
 
         im.Switch(c, appState.currentView); switch(appState.currentView) {
             case 0: imMemoConditionalPathwayExampleView(c, appState, 0); break;
@@ -779,8 +779,8 @@ function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
 
     } imDivEnd(c);
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
         if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
         if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
         if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
@@ -797,10 +797,10 @@ function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
 
         im.Switch(c, appState.currentView); switch(appState.currentView) {
             case 0: imMemoConditionalPathwayExampleViewWorking(c, appState, 0); break;
@@ -810,8 +810,8 @@ function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
 
     } imDivEnd(c);
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "display", "flex");
-        if (im.isFirstishRender(c)) imdom.setStyle(c, "gap", "10px");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
+        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
         if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
         if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
         if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
@@ -836,7 +836,7 @@ function imMemoConditionalPathwayExampleViewWorking(
     }
 
     imDivBegin(c); {
-        if (im.isFirstishRender(c)) {
+        if (imdom.isFirstishRender()) {
             imdom.setStyle(c, "flex", "1");
             // o7 sir. Div has been centered. sir o7
             imdom.setStyle(c, "display", "flex");
@@ -887,10 +887,10 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
 
         if (isRoot) {
             imDivBegin(c); {
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "position", "fixed");
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "bottom", "10px");
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "left", "10px");
-                if (im.isFirstishRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "position", "fixed");
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "bottom", "10px");
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "left", "10px");
+                if (imdom.isFirstishRender()) imdom.setStyle(c, "backgroundColor", cssVars.bg);
 
                 imdom.Str(c, "Devtool enabled. 😭😭🥀");
 
@@ -899,8 +899,8 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
         }
 
         imDivBegin(c); {
-            if (im.isFirstishRender(c)) imdom.setStyle(c, "flex", "1");
-            if (im.isFirstishRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
+            if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
+            if (imdom.isFirstishRender()) imdom.setStyle(c, "paddingLeft", "20px");
 
             // TODO: fix this up
             /**

@@ -19,7 +19,7 @@ function resizeObjectPool<T>(arr: T[], factory: () => T, wantedLength: number,) 
 
 
 function imCode(c: ImCache) {
-    if (im.isFirstishRender(c)) {
+    if (imdom.isFirstishRender()) {
         imdom.setStyle(c, "fontFamily", "monospace");
         imdom.setStyle(c, "backgroundColor", cssVars.bg2);
     }

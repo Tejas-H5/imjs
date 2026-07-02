@@ -26,7 +26,7 @@ export function imLine(
         !isH ? height : 100, !isH ? heightUnit : PERCENT,
          isH ? height : 100,  isH ? heightUnit : PERCENT,
     ); {
-        if (im.isFirstishRender(c)) {
+        if (imdom.isFirstishRender()) {
             imdom.setStyle(c, "backgroundColor", cssVars.fg);
             imdom.setClass(c, cnHLine);
         }
