@@ -1,9 +1,8 @@
-import { ImCacheRerenderFn, im, ImCache } from '../../im-core';
-import { imdom, el } from '../../im-dom';
-import { inverseLerp } from "../math-utils";
-import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "../im-ui";
+import { ImCacheRerenderFn, im, ImCache, imdom, el } from "im-js";
+import { inverseLerp } from "im-ui/math-utils";
+import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "im-ui";
 import { VisualTestHarnessState } from "./harness";
-import { imButtonIsClicked } from '../button';
+import { imButtonIsClicked } from "im-ui/button";
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);

@@ -1,7 +1,6 @@
-import { im, ImCache, TryState } from '../../im-core';
-import { imdom, el } from '../../im-dom';
-import { imButtonIsClicked } from "../button";
-import { lerp01 } from "../math-utils";
+import { im, ImCache, imdom, el } from "im-js";
+import { imButtonIsClicked } from "im-ui/button";
+import { lerp01 } from "im-ui/math-utils";
 import { BLOCK, COL, END, imui, NA, PX, ROW } from "../im-ui";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";

@@ -702,7 +702,7 @@ function recursivelyEnumerateEntries(entries: ImCacheEntries, fn: (entries: ImCa
 
 /**
  * Iterates every item in an entries list. You only need this if you're working on 
- * dev-tools for this framework.
+ * dev-tools for this framework. Doesn't iterate into child entries.
  */
 function imForEachCacheEntryItem(entries: ImCacheEntries, fn: (t: TypeId<unknown>, value: unknown) => void) {
     for (let i = ENTRIES_ITEMS_START; i < entries.length; i += 2) {

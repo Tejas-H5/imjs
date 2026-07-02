@@ -1,5 +1,4 @@
-import { im, ImCache }from "../im-core.ts";
-import { imdom } from "../im-dom.ts";
+import { im, imdom, ImCache } from "im-js";
 import { clamp, inverseLerp, lerp } from "./math-utils.ts";
 import { BLOCK, cssVars, imui } from "./im-ui.ts";
 

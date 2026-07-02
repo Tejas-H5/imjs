@@ -1,5 +1,4 @@
-import { im, ImCache } from "../im-core.ts";
-import { imdom } from "../im-dom.ts";
+import { imdom, ImCache } from "im-js";
 import { BLOCK, EM, INLINE_BLOCK, PERCENT , imui, cssVars } from "./im-ui.ts";
 
 const cssb = imui.newCssBuilder();

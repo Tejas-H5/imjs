@@ -1,5 +1,4 @@
-import { im, ImCache } from "../im-core";
-import { imdom, el } from "../im-dom";
+import { imdom, im, ImCache, el } from "im-js";
 
 export type Url = string & { readonly __Url: unique symbol; };
 

@@ -1,18 +1,16 @@
-import { im, ImCache, ImCacheEntries, imdom, el, DomAppender, ev } from "src/utils/im-js";
-import { imVisualTestInstallation, TEST_CENTERED, TEST_SCROLLABLE, VisualTestHarnessState } from "src/utils/im-js/im-ui/visual-testing-harness";
-import { BLOCK, cssVars, imui, NA, PX } from "src/utils/im-js/im-ui";
+import { im, ImCache, imdom, el, DomAppender, ev, ImCacheEntries } from "im-js";
+import { imVisualTestInstallation, TEST_CENTERED, TEST_SCROLLABLE, VisualTestHarnessState } from "visual-testing-harness";
+import { BLOCK, cssVars, imui, NA, PX } from "im-ui";
 import { imBaseContainerBegin, imBaseContainerEnd, imParaBegin, imParaEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
-import { imLink, Url } from "src/utils/im-js/im-ui/link";
+import { imLink, Url } from "im-ui/link";
 
 export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
         imParaBegin(c); {
-            imdom.Str(c, `imJS is an immediate-mode UI framework I created after encountering various issues while using React. It didn't start off as an immediate-mode framework, but I have since found immediate-mode to be a very useful and convenient way to structure my programs. I've done a detailed writeup that elaborates more on the pain-points and the thought process to get to this solution `); 
-            imLink(c, "https://github.com/Tejas-H5/imjs/blob/main/Why.md" as Url, "here"); 
-            imdom.Str(c, `. `);
-
-            imdom.Str(c, `In this overview, I'll try to get you up to speed with this framework, what it does, and how you can use it. `);
-            imdom.Str(c, `NOTE: If you're not on Keyboard+Mouse, then this page won't be very nice to use right now`);
+            imdom.Str(c, `imJS is an immediate-mode web-UI framework I created due to my frustration with existing solutions. `); 
+            imdom.Str(c, `I discuss every design choice in detail `); imLink(c, "https://github.com/Tejas-H5/imjs/blob/main/Why.md" as Url, "on this other page"); imdom.Str(c, ` - `);
+            imdom.Str(c, ` this overview will just bring you up to speed with how imJS works, and how you can use it. `);
+            imdom.Str(c, `I hope you're on Keyboard+Mouse - if not, this page won't be very nice to use right now. I intend to fix this when I get around to making touch UIs.`);
         } imParaEnd(c);
 
         imSubheadingBegin(c); imdom.Str(c, "How to put it into it to your project"); imSubheadingEnd(c);
@@ -902,33 +900,27 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
             if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
             if (imdom.isFirstishRender()) imdom.setStyle(c, "paddingLeft", "20px");
 
-            // TODO: fix this up
-            /**
+            im.For(c); im.ForEachCacheEntryItem(entries, (t, v) => {
+                if (t === imdom.newDomAppender) {
+                    const value = v as DomAppender<HTMLElement>;
+                    imdom.ElBegin(c, el.DIV); {
+                        const root = imDivBegin(c); {
+                            imdom.Str(c, value.root);
+                        } imDivEnd(c);
 
-            im.For(c); im.ForEachCacheEntryItem(entries, (t, childEntries) => {
-                if (t !== im.ImmediateModeBlockBegin) return;
-                // const value = imdom. .getEntriesParentFromEntries(childEntries as ImCacheEntries, imdom.newDomAppender);
-                // if (!value) return;
+                        const hasMouseOverActualElement = imdom.hasMouseOver(c, (value as DomAppender<HTMLElement>).root);
 
-                imdom.ElBegin(c, el.DIV); {
-                    const root = imDivBegin(c); {
-                        imdom.Str(c, value.root);
-                    } imDivEnd(c);
+                        if (imdom.hasMouseOver(c) || hasMouseOverActualElement) {
+                            nextDomNode = value;
+                        }
 
-                    const hasMouseOverActualElement = imdom.hasMouseOver(c, (value as DomAppender<HTMLElement>).root);
-
-                    if (imdom.hasMouseOver(c) || hasMouseOverActualElement) {
-                        nextDomNode = value;
-                    }
-
-                    imJsDevToolsFinalRelease(c, childEntries as ImCacheEntries, introspectorRoot);
-
-                    imdom.setClass(c, cnHighlight, lastDomNode === value, root.root);
-                } imdom.ElEnd(c, el.DIV);
+                        imdom.setClass(c, cnHighlight, lastDomNode === value, root.root);
+                    } imdom.ElEnd(c, el.DIV);
+                } else if (t === im.ImmediateModeBlockBegin) {
+                    const value = v as ImCacheEntries;
+                    imJsDevToolsFinalRelease(c, value, introspectorRoot);
+                }
             }); im.ForEnd(c);
-
-            */
         } imDivEnd(c);
     } im.IfEnd(c);
-
 }

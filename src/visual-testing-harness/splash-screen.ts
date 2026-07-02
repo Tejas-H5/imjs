@@ -1,7 +1,6 @@
-import { im, ImCache } from "../../im-core";
-import { imdom } from "../../im-dom";
-import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "../im-ui";
-import { lerp01 } from "../math-utils";
+import { im, imdom, ImCache } from "im-js";
+import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-ui";
+import { lerp01 } from "im-ui/math-utils";
 import { VisualTestHarnessState } from "./harness";
 
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {

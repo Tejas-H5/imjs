@@ -1,8 +1,8 @@
-import { im, ImCache, imdom } from "src/utils/im-js";
-import { COL, imui, PX } from "src/utils/im-js/im-ui";
+import { im, ImCache, imdom } from "im-js";
+import { COL, imui, PX } from "im-ui";
+import { imVisualTestHarness, newVisualTest, VisualTest } from "visual-testing-harness";
 import { imJsCompleteOverview } from "./overview";
 import { imJsPerformanceBenchmarks } from "./performance-benchmarking";
-import { imVisualTestHarness, newVisualTest, VisualTest } from "src/utils/im-js/im-ui/visual-testing-harness";
 
 const tests: VisualTest[] = [
     newVisualTest("imJS - A complete overview", imJsCompleteOverview),

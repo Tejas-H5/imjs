@@ -1,5 +1,4 @@
-import { im, ImCache } from "../im-core";
-import { imdom, el, ev } from "../im-dom";
+import { imdom, im, ImCache, el, ev } from "im-js";
 import { cssVars, imui } from "./im-ui";
 import { imTextAreaBegin, imTextAreaEnd } from "./editable-text-area";
 

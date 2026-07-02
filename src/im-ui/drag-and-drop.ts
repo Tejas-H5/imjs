@@ -1,5 +1,4 @@
-import { im, ImCache } from "../im-core.ts";
-import { imdom } from "../im-dom.ts";
+import { imdom, im, ImCache } from "im-js";
 import { COL, imui, cssVars } from "./im-ui.ts";
 
 export type DragAndDropState =  {

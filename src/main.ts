@@ -1,6 +1,6 @@
-import { im } from "src/utils/im-js";
+import { im } from "im-js";
 import { imMain } from "./examples/examples";
-import { cssVars, imui, } from "./utils/im-js/im-ui";
+import { cssVars, imui, } from "./im-ui";
 
 const SPACING_1 = "10px";
 

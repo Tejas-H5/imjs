@@ -1,8 +1,6 @@
 // imui v0.00.4
 
-import { im, ImCache } from '../im-core';
-import { imdom, el } from '../im-dom';
-
+import { imdom, im, ImCache, el } from "im-js";
 
 ///////////////////////////
 // CSS Builder
@@ -265,11 +263,11 @@ function imRelative(c: ImCache) {
 }
 
 function imBg(c: ImCache, colour: string) {
-    if (im.Memo(c, colour)) imdom.setStyle(c, "backgroundColor", colour);
+    if (im.Memo(c, colour) !== 0) imdom.setStyle(c, "backgroundColor", colour);
 }
 
 function imFg(c: ImCache, colour: string) {
-    if (im.Memo(c, colour)) imdom.setStyle(c, "color", colour);
+    if (im.Memo(c, colour) !== 0) imdom.setStyle(c, "color", colour);
 }
 
 function imFontSize(c: ImCache, size: number, units: SizeUnits) {
@@ -395,7 +393,7 @@ function imNoSelect(c: ImCache) {
 }
 
 function imFlex(c: ImCache, ratio = 1) {
-    if (im.Memo(c, ratio)) {
+    if (im.Memo(c, ratio) !== 0) {
         imdom.setStyle(c, "flex", "" + ratio);
         // required to make flex work the way I had thought it already worked
         imdom.setStyle(c, "minWidth", "0");
@@ -446,13 +444,13 @@ function getAlignment(alignment: Alignment) {
 }
 
 function imAlign(c: ImCache, alignment = CENTER) {
-    if (im.Memo(c, alignment)) {
+    if (im.Memo(c, alignment) !== 0) {
         imdom.setStyle(c, "alignItems", getAlignment(alignment));
     }
 }
 
 function imJustify(c: ImCache, alignment = CENTER) {
-    if (im.Memo(c, alignment)) {
+    if (im.Memo(c, alignment) !== 0) {
         imdom.setStyle(c, "justifyContent", getAlignment(alignment));
     }
 }
@@ -544,7 +542,7 @@ function imAspectRatio(c: ImCache, w: number, h: number) {
     }
 
     const ar = w / h;
-    if (im.Memo(c, ar)) {
+    if (im.Memo(c, ar) !== 0) {
         imdom.setStyle(c, "aspectRatio", w + " / " + h);
     }
 }

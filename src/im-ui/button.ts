@@ -1,6 +1,5 @@
-import { DisplayType, imui, INLINE, ROW, cssVars } from "./im-ui.ts";
-import { im, ImCache } from "../im-core.ts";
-import { imdom } from "../im-dom.ts";
+import { DisplayType, imui, INLINE, ROW, cssVars } from "im-ui";
+import { imdom, im, ImCache } from "im-js";
 
 const cssb = imui.newCssBuilder();
 
