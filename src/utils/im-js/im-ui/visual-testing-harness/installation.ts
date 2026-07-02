@@ -149,8 +149,7 @@ function formatCode(fnSource: string, srcTabSize: number): string[] {
         .replace(/im\.For\(c\);\s+for/g, "im.For(c); for")
         .replace(/im\.Try\(c\);\s+try/g, "im.Try(c); try")
         .replace(/;\s+\{/g, "; {")
-        .replace(/\}\s+im([0-9a-zA-Z]+)End/g, "} im$1End")
-        .replace(/\}\s+im\.([0-9a-zA-Z]+)End/g, "} im.$1End")
+        .replace(/\}\s+im([0-9a-zA-Z\.]+)End/g, "} im$1End")
         // .replace(/( )?\/\* @__PURE__ \*\/( )?/g, "") // Whitespace is always off by one. I will just keep this in
         .split("\n")
 
