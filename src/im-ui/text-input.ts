@@ -28,7 +28,7 @@ export function imTextInputBegin(c: ImCache, {
     placeholder?: string;
 }) {
     const input = imdom.ElBegin(c, el.INPUT); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setClass(c, cnInput);
             imdom.setAttr(c, "type", "text");
         }

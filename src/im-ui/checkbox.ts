@@ -1,4 +1,4 @@
-import { imdom, ImCache } from "im-js";
+import { imdom, ImCache, im } from "im-js";
 import { BLOCK, EM, INLINE_BLOCK, PERCENT , imui, cssVars } from "./im-ui.ts";
 
 const cssb = imui.newCssBuilder();
@@ -40,7 +40,7 @@ export function imCheckbox(c: ImCache, checked: boolean): { checked: boolean } |
 
 export function imCheckboxBegin(c: ImCache) {
     imui.Begin(c, INLINE_BLOCK); imui.Align(c); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setClass(c, root);
             imdom.setStyle(c, "cursor", "pointer");
         }
@@ -55,14 +55,14 @@ export function imCheckboxEnd(c: ImCache) {
 
 export function imCheckboxCheckBegin(c: ImCache, checked: boolean) {
     imui.Begin(c, BLOCK); imui.Size(c, 0.65, EM, 0.65, EM); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setClass(c, cnL.solidBorderSmRounded);
             imdom.setStyle(c, "padding", "4px");
         }
 
         imui.Begin(c, BLOCK); imui.Size(c, 100, PERCENT, 100, PERCENT);
         imui.Bg(c, checked ? cssVars.fg : ""); {
-            if (imdom.isFirstishRender()) {
+            if (im.IsFirstRender(c)) {
                 imdom.setClass(c, cnL.checkboxButton);
             }
         } // imui.End(c);

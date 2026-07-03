@@ -96,14 +96,14 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
 
         imParaBegin(c); {
             imdom.Str(c, `"Error: Expected to populate this cache entry with type=imdom.Str, but got newDomAppender . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state". `);
-            imdom.Str(c, `This is because in one render, the code on line 10 requests the state for imdom.Str. But in the next render, the code accessing that immediate-mode slot would be line 13, which requests the state for a DOM element instead. `);
+            imdom.Str(c, `This is because in one render, the code on line 10 requests the state for imdom.Str. But in the next render, the code accessing that immediate-mode slot would be line 12, which requests the state for a DOM element instead. `);
             imdom.Str(c, `This framework's solution is for you to annotate if-blocks with calls to im.If, im.IfElse, im.Else and im.IfEnd:`);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "Conditional rendering", harness, imConditionalRenderingExampleIfStatementNotBad, TEST_CENTERED);
 
         imParaBegin(c); {
-            imdom.Str(c, `Now, in one render, the  method calls look like 'im.If', 'im.IfEnd', and in a subsequent render, the method calls look like 'im.If', 'im.Else', 'im.IfEnd'. If im.IfElse was called, the framework can infer that the first if-branch wasn't taken, and can prepare a separate entries list for the next branch. `);
+            imdom.Str(c, `Now, in one render, the  method calls look like 'im.If', <some stuff>, 'im.IfEnd', and in a subsequent render, the method calls look like 'im.If', 'im.Else', <some stuff>, 'im.IfEnd'. If im.IfElse was called, the framework can infer that the first if-branch wasn't taken, and can prepare a separate entries list for the next branch. `);
         } imParaEnd(c);
 
         imParaBegin(c); {
@@ -176,17 +176,13 @@ export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState
         imSubheadingBegin(c); imdom.Str(c, "State management - initialisation, destruction"); imSubheadingEnd(c);
 
         imParaBegin(c); {
-            imdom.Str(c, `There are primarily two ways to initialize state. The first, and most common way, is to call isFirstishRender(c) to check if this is effectively the first time the component is being rendered:`);
+            imdom.Str(c, `There are primarily two ways to initialize state. The first, and most common way, is to call isFirstRender(c) to check if this is the first time the component is being rendered:`);
         } imParaEnd(c);
 
-        imVisualTestInstallation(c, "isFirstishRender", harness, imisFirstishRenderExample);
+        imVisualTestInstallation(c, "isFirstRender", harness, imisFirstRenderExample);
 
         imParaBegin(c); {
-            imdom.Str(c, `If your component encounters an error, and you decide to recover from that error, the component will rerender, with im.isFirstishRender still returning true, despite having already returned true once before, hence the name 'firstish' and not 'first'. Because so many components need some way of initializing some idempotent state on the first render, this eliminates the need for a LOT of immediate-mode state entries to be created.`);
-        } imParaEnd(c);
-
-        imParaBegin(c); {
-            imdom.Str(c, `However, there are other times when you want to initialize state only once, and then clean up after that state once the component is destroyed. For example, adding an event handler to a component twice can result in catastrophic bugs. Use imGet and im.Set for these situations instead of 'isFirstishRender'. `);
+            imdom.Str(c, `However, there are other times when you want to initialize state only once, and then clean up after that state once the component is destroyed. For example, adding an event handler to a component twice can result in catastrophic bugs. Use imGet and im.Set for these situations instead of 'isFirstRender'. `);
         } imParaEnd(c);
 
         imVisualTestInstallation(c, "onImmediateModeBlockDestroyed - but it doesnt get called", harness, imInitializeJustOnceExample);
@@ -535,9 +531,9 @@ function imSwitchExampleWithUsageCode(c: ImCache) {
     imSwitchExample(c);
 }
 
-function imisFirstishRenderExample(c: ImCache) {
+function imisFirstRenderExample(c: ImCache) {
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "display", "flex");
             imdom.setStyle(c, "gap", "10px");
         }
@@ -711,10 +707,10 @@ function imMemoConditionalPathwayExample(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "gap", "10px");
 
         imMemoConditionalPathwayExampleView(c, appState, 0);
         imMemoConditionalPathwayExampleView(c, appState, 1);
@@ -740,7 +736,7 @@ function imMemoConditionalPathwayExampleView(
     }
 
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "flex", "1");
             // o7 sir. Div has been centered. sir o7
             imdom.setStyle(c, "display", "flex");
@@ -764,10 +760,10 @@ function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "gap", "10px");
 
         im.Switch(c, appState.currentView); switch(appState.currentView) {
             case 0: imMemoConditionalPathwayExampleView(c, appState, 0); break;
@@ -777,8 +773,8 @@ function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
 
     } imDivEnd(c);
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "gap", "10px");
         if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
         if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
         if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
@@ -795,10 +791,10 @@ function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "width", "100%");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "gap", "10px");
 
         im.Switch(c, appState.currentView); switch(appState.currentView) {
             case 0: imMemoConditionalPathwayExampleViewWorking(c, appState, 0); break;
@@ -808,8 +804,8 @@ function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
 
     } imDivEnd(c);
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "display", "flex");
-        if (imdom.isFirstishRender()) imdom.setStyle(c, "gap", "10px");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "display", "flex");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "gap", "10px");
         if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
         if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
         if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
@@ -834,7 +830,7 @@ function imMemoConditionalPathwayExampleViewWorking(
     }
 
     imDivBegin(c); {
-        if (imdom.isFirstishRender()) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "flex", "1");
             // o7 sir. Div has been centered. sir o7
             imdom.setStyle(c, "display", "flex");
@@ -885,10 +881,10 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
 
         if (isRoot) {
             imDivBegin(c); {
-                if (imdom.isFirstishRender()) imdom.setStyle(c, "position", "fixed");
-                if (imdom.isFirstishRender()) imdom.setStyle(c, "bottom", "10px");
-                if (imdom.isFirstishRender()) imdom.setStyle(c, "left", "10px");
-                if (imdom.isFirstishRender()) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "fixed");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "bottom", "10px");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "left", "10px");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
 
                 imdom.Str(c, "Devtool enabled. 😭😭🥀");
 
@@ -897,8 +893,8 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
         }
 
         imDivBegin(c); {
-            if (imdom.isFirstishRender()) imdom.setStyle(c, "flex", "1");
-            if (imdom.isFirstishRender()) imdom.setStyle(c, "paddingLeft", "20px");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
 
             im.For(c); im.ForEachCacheEntryItem(entries, (t, v) => {
                 if (t === imdom.newDomAppender) {

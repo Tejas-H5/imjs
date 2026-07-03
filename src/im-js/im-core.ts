@@ -23,29 +23,30 @@ import { assert } from "./assert";
 
 // I no longer export these - It should be easy to toggle between the array implementation and the object
 // implementation, so only getters and setters get exported
-const CACHE_FPS_COUNTER_STATE            = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
-const CACHE_RERENDER_FN                  = 1;
-const CACHE_ANIMATE_FN                   = 2;
-const CACHE_ANIMATE_FN_STILL_ANIMATING   = 3;
-const CACHE_ANIMATION_TIME_LAST          = 4;
-const CACHE_ANIMATION_TIME               = 5;
-const CACHE_ANIMATION_DELTA_TIME_SECONDS = 6;
-const CACHE_TOTAL_DESTRUCTORS            = 7; // Useful memory leak indicator
-const CACHE_RENDER_FN_CHANGES            = 8;
-const CACHE_RERENDER_FN_INNER            = 9;
-const CACHE_IS_EVENT_RERENDER            = 10;
-const CACHE_NEEDS_RERENDER               = 11;
-const CACHE_ITEMS_ITERATED               = 12;
-const CACHE_IS_RENDERING                 = 13;
-const CACHE_TOTAL_MAP_ENTRIES            = 14; // Useful memory leak indicator
-const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME = 15; // Useful memory leak indicator
-const CACHE_ITEMS_ITERATED_LAST_FRAME    = 16; // Useful performance metric
-const CACHE_RENDER_COUNT                 = 17;
-const CACHE_CURRENT_WAITING_FOR_SET      = 18;
-const CACHE_ROOT_ENTRIES                 = 19;
-const CACHE_CURRENT_ENTRIES              = 20;
-const CACHE_IDX                          = 21;
-const CACHE_ENTRIES_START         = 22; // Not in the struct implementation, but we'll need it for the array implementation
+const CACHE_FPS_COUNTER_STATE             = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
+const CACHE_RERENDER_FN                   = 1;
+const CACHE_ANIMATE_FN                    = 2;
+const CACHE_ANIMATE_FN_STILL_ANIMATING    = 3;
+const CACHE_ANIMATION_TIME_LAST           = 4;
+const CACHE_ANIMATION_TIME                = 5;
+const CACHE_ANIMATION_DELTA_TIME_SECONDS  = 6;
+const CACHE_TOTAL_DESTRUCTORS             = 7; // Useful memory leak indicator
+const CACHE_RENDER_FN_CHANGES             = 8;
+const CACHE_RERENDER_FN_INNER             = 9;
+const CACHE_IS_EVENT_RERENDER             = 10;
+const CACHE_NEEDS_RERENDER                = 11;
+const CACHE_ITEMS_ITERATED                = 12;
+const CACHE_IS_RENDERING                  = 13;
+const CACHE_TOTAL_MAP_ENTRIES             = 14; // Useful memory leak indicator
+const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME  = 15; // Useful memory leak indicator
+const CACHE_ITEMS_ITERATED_LAST_FRAME     = 16; // Useful performance metric
+const CACHE_PARENT_STACK                  = 17;
+const CACHE_RENDER_COUNT                  = 18;
+const CACHE_CURRENT_WAITING_FOR_SET       = 19;
+const CACHE_ROOT_ENTRIES                  = 20;
+const CACHE_CURRENT_ENTRIES               = 21;
+const CACHE_IDX                           = 22;
+const CACHE_ENTRIES_START                 = 23; // Not in the struct implementation, but we'll need it for the array implementation
 
 
 const ENTRIES_REMOVE_LEVEL                    = 1;
@@ -62,7 +63,9 @@ const ENTRIES_KEYED_MAP                       = 7;
 const ENTRIES_INTERNAL_TYPE                   = 8;
 const ENTRIES_LAST_IDX                        = 9;
 const ENTRIES_IDX                             = 10;
-const ENTRIES_ITEMS_START                     = 11; // Not in the struct implementation, but we'll need it for the array implementation
+const ENTRIES_FIRST_RENDER_QUERY_COUNT        = 11;
+const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 12;
+const ENTRIES_ITEMS_START                     = 13; // Not in the struct implementation, but we'll need it for the array implementation
 
 function newCache(): ImCache {
     return [];
@@ -221,7 +224,7 @@ function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
         c[CACHE_IS_RENDERING] = true; 
         c[CACHE_RENDER_COUNT] = 0;
         c[CACHE_FPS_COUNTER_STATE] = newFpsCounterState();
-
+        c[CACHE_PARENT_STACK] = [];
         c[CACHE_ANIMATION_TIME] = 0;
         c[CACHE_ANIMATION_TIME_LAST] = 0;
         c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
@@ -351,13 +354,13 @@ function imCacheEnd(c: ImCache) {
     }
 }
 
-const INTERNAL_TYPE_NORMAL_BLOCK = 1;
+const INTERNAL_TYPE_NORMAL_BLOCK      = 1;
 const INTERNAL_TYPE_CONDITIONAL_BLOCK = 2;
-const INTERNAL_TYPE_ARRAY_BLOCK = 3;
-const INTERNAL_TYPE_KEYED_BLOCK = 4;
-const INTERNAL_TYPE_TRY_BLOCK = 5;
-const INTERNAL_TYPE_CACHE = 6;
-const INTERNAL_TYPE_SWITCH_BLOCK = 7;
+const INTERNAL_TYPE_ARRAY_BLOCK       = 3;
+const INTERNAL_TYPE_KEYED_BLOCK       = 4;
+const INTERNAL_TYPE_TRY_BLOCK         = 5;
+const INTERNAL_TYPE_CACHE             = 6;
+const INTERNAL_TYPE_SWITCH_BLOCK      = 7;
 
 // Some common errors will get their own dedicated throw Error insead of a simple assert + comment
 function internalTypeToString(internalType: number): string {
@@ -379,7 +382,15 @@ function CacheEntriesBegin<T>(
     entries: ImCacheEntries,
     internalType: number,
 ) {
-    __Push(c, entries);
+    c[CACHE_IDX] += 1;
+    const idx = c[CACHE_IDX];
+    if (idx === c.length) {
+        c.push(entries);
+    } else {
+        c[idx] = entries;
+    }
+
+    c[CACHE_CURRENT_ENTRIES] = entries;
 
     if (entries.length === 0) {
         for (let i = 0; i < ENTRIES_ITEMS_START; i++) {
@@ -394,8 +405,11 @@ function CacheEntriesBegin<T>(
         entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
         entries[ENTRIES_INTERNAL_TYPE] = internalType;
         entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
+        entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
+        entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = 0;
     }
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
+    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
 
     const map = entries[ENTRIES_KEYED_MAP] as (Map<ValidKey, ListMapBlock> | undefined);
     if (map !== undefined) {
@@ -407,23 +421,7 @@ function CacheEntriesBegin<T>(
     }
 }
 
-function __Push(c: ImCache, entries: ImCacheEntries) {
-    c[CACHE_IDX] += 1;
-    const idx = c[CACHE_IDX];
-    if (idx === c.length) {
-        c.push(entries);
-    } else {
-        c[idx] = entries;
-    }
-
-    c[CACHE_CURRENT_ENTRIES] = entries;
-}
-
 function CacheEntriesEnd(c: ImCache) {
-    __Pop(c);
-}
-
-function __Pop(c: ImCache): ImCacheEntries {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const idx = --c[CACHE_IDX];
     c[CACHE_CURRENT_ENTRIES] = c[idx];
@@ -431,6 +429,57 @@ function __Pop(c: ImCache): ImCacheEntries {
     return entries;
 }
 
+function pushParent<T>(c: ImCache, type: TypeId<T>, val: T) {
+    const parents = c[CACHE_PARENT_STACK];
+    parents.push(type);   // TypeId
+    parents.push(val);    // Actual value.
+}
+
+function popParent<T>(c: ImCache, type: TypeId<T>) {
+    const parents = c[CACHE_PARENT_STACK];
+    assert(parents[parents.length - 2] === type);
+    parents.length -= 2;
+}
+
+function getParent<T>(c: ImCache, type: TypeId<T>): T {
+    const parents = c[CACHE_PARENT_STACK];
+
+    // Make sure you're calling this immediate-mode function in the right context.
+    assert(parents[parents.length - 2] === type);
+
+    return parents[parents.length - 1] as T;
+}
+
+function getParentOrUndefined<T>(c: ImCache, type: TypeId<T>): T | undefined {
+    const parents = c[CACHE_PARENT_STACK];
+    if (parents[parents.length - 2] === type) {
+        return parents[parents.length - 1] as T;
+    }
+    return undefined;
+}
+
+function getNumParents(c: ImCache): number {
+    const parents = c[CACHE_PARENT_STACK];
+    return parents.length;
+}
+
+function imIsFirstRender(c: ImCache): boolean {
+    const entries = c[CACHE_CURRENT_ENTRIES];
+
+    let result = false;
+
+    // For performance reasons, we're just incrementing a number instead of inserting new entries.
+    // If your immediate-mode code was written correctly, it will be identical to just doing
+    // if (im.Memo(c, true)) {...}
+
+    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] += 1;
+    if (entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] < entries[ENTRIES_FIRST_RENDER_QUERY_COUNT]) {
+        entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = entries[ENTRIES_FIRST_RENDER_QUERY_COUNT];
+        result = true;
+    }
+
+    return result;
+}
 
 /**
  * Allows you to get/set state inline without using lambdas, when used with {@link imSet}:
@@ -1096,6 +1145,7 @@ function imMemo(c: ImCache, val: unknown = true): MemoResult {
 
 export type TryState = {
     entries: ImCacheEntries;
+    parentIdx: number;
     err: any | null;
     recover: () => void;
     unwoundThisFrame: boolean;
@@ -1133,6 +1183,7 @@ function imTry(c: ImCache): TryState {
                 rerenderCache(c);
             },
             entries,
+            parentIdx: getNumParents(c),
             unwoundThisFrame: false,
         };
         tryState = imSet(c, val);
@@ -1152,10 +1203,14 @@ function imCatch(c: ImCache, tryState: TryState, err: any) {
 
     c[CACHE_NEEDS_RERENDER] = true;
     tryState.err = err;
+
     const idx = c.lastIndexOf(tryState.entries);
     if (idx === -1) {
         throw new Error("Couldn't find the entries in the stack to unwind to!");
     }
+
+    const parents = c[CACHE_PARENT_STACK];
+    parents.length = tryState.parentIdx;
 
     c[CACHE_IDX] = idx - 1;
     c[CACHE_CURRENT_ENTRIES] = c[idx - 1];
@@ -1215,6 +1270,12 @@ export const im = {
     Memo: imMemo,
     MEMO_NOT_CHANGED, MEMO_CHANGED, MEMO_FIRST_RENDER, MEMO_FIRST_RENDER_CONDITIONAL,
 
+    /** 
+     * Executing code just once. Should behave identically to imMemo(c, true), but will be more performant since
+     * under the hood, it just increments a number rather than pushes entries to the entry list
+     */
+    IsFirstRender: imIsFirstRender,
+
     /** Animation */
     getDeltaTimeSeconds, // Gets the _seconds_ elapsed between the previous frame and the current frame
 
@@ -1226,6 +1287,12 @@ export const im = {
 
     /** State management - surprisingly useless method */
     getEntryAt,
+
+    /** 
+     * Parent scope management - You'll need to use this instead of your own global stack - 
+     * otherwise, a try-catch will unwind the stack, and your own custom state will be out of sync.
+     */
+    pushParent, popParent, getParent, getParentOrUndefined, getNumParents,
 
     /** You won't need these for your app, but you may need these to build a custom adapter */
 

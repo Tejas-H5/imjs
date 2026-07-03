@@ -137,7 +137,7 @@ export function imVisualTestHarness(
 
                 // Top bar
                 imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
-                    if (imdom.isFirstishRender()) imdom.setStyle(c, "overflow", "clip");
+                    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "clip");
                     if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
                     imui.Begin(c, ROW); imui.FlexWrap(c); {
@@ -151,7 +151,7 @@ export function imVisualTestHarness(
 
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
-                    if (imdom.isFirstishRender()) {
+                    if (im.IsFirstRender(c)) {
                         // makes way for the sidebar. Not ideal code but eh
                         imdom.setStyle(c, "paddingRight", "2em");
                     }
