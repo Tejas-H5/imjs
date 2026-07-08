@@ -1,5 +1,5 @@
 import { imdom, im, ImCache } from "im-js";
-import { COL, imui, cssVars } from "./im-ui.ts";
+import { COL, imui, cssVars } from "../im-ui.ts";
 
 export type DragAndDropState =  {
     move: { a: number; b: number; } | null;
@@ -77,7 +77,7 @@ export function imDropZoneForPrototyping(c: ImCache, dnd: DragAndDropState, idx:
 }
 
 export function imDragHandle(c: ImCache, dnd: DragAndDropState, idx: number) {
-    if (im.IsFirstRender(c)) {
+    if (im.isFirstRender(c)) {
         imdom.setStyle(c, "userSelect", "none");
         imdom.setStyle(c, "cursor", "move");
     }

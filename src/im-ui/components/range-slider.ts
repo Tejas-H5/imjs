@@ -1,6 +1,6 @@
 import { imdom, im, ImCache } from "im-js";
-import { BLOCK, imui, cssVars } from "./im-ui.ts";
-import { clamp } from "./math-utils.ts";
+import { BLOCK, imui, cssVars } from "im-ui";
+import { clamp } from "./math-utils";
 
 type RangeSliderHandle = {
     pos: number;
@@ -65,7 +65,7 @@ export function imRangeSlider(
         const endHandle = imui.Begin(c, BLOCK); imui.End(c);
     imui.End(c);
 
-    if (im.IsFirstRender(c)) {
+    if (im.isFirstRender(c)) {
         const handleBodyColor = cssVars.mg;
         const handeColor = cssVars.fg;
         const bgColor = cssVars.bg2;

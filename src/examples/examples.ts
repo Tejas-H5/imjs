@@ -1,13 +1,13 @@
 import { im, ImCache, imdom } from "im-js";
 import { COL, imui, PX } from "im-ui";
-import { imVisualTestHarness, newVisualTest, VisualTest } from "visual-testing-harness";
 import { imJsCompleteOverview } from "./overview";
+import { imVisualTestHarness, newVisualTest, VisualTest } from "visual-testing-harness";
 import { imJsPerformanceBenchmarks } from "./performance-benchmarking";
 
 const tests: VisualTest[] = [
     newVisualTest("imJS - A complete overview", imJsCompleteOverview),
     newVisualTest("Performance benchmarks", imJsPerformanceBenchmarks),
-];
+]
 
 export function imMain(c: ImCache) {
     im.CacheBegin(c, imMain); {

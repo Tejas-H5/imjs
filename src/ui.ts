@@ -1,6 +1,8 @@
 import { BLOCK, imui, PX, ROW } from "im-ui";
 import { im, imdom, el, ImCache } from "im-js";
 
+export const imStr = imdom.Str;
+
 export function imHeadingBegin(c: ImCache) {
     imdom.ElBegin(c, el.H1); imui.Layout(c, ROW); imui.Justify(c);
 }

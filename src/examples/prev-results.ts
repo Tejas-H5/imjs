@@ -1,6 +1,30 @@
-import { BenchmarkResult } from "./performance-benchmarking";
-
 export type UserAgentString = string & { readonly __UserAgentString: unique symbol; };
+
+export type BenchmarkResult = {
+    name: string;
+
+    /**
+    I want a table at the end that's like 
+     */
+
+    variable1Name: string;
+    variable1: number[];
+    variable1NumSamples: number[];
+    variable2Name: string;
+    variable2: number[];
+    variable2NumSamples: number[];
+    measurements: Measurement[];
+}
+
+type Measurement = {
+    values: number[];
+};
+
+function newMeasurement(): Measurement {
+    return  {
+        values: [],
+    };
+}
 
 let userAgentString = "";
 export function getUserAgentString(): UserAgentString {

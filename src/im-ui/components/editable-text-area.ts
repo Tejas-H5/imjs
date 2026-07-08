@@ -1,6 +1,6 @@
 import { imdom, im, ImCache, el } from "im-js";
-import { setInputValue } from "./dom-utils";
-import { BLOCK, cssVars, FIT_CONTENT, imui, INLINE, PERCENT } from "./im-ui";
+import { setInputValue } from "../dom-utils";
+import { BLOCK, cssVars, FIT_CONTENT, imui, INLINE, PERCENT } from "../im-ui";
 
 export function getLineBeforePos(text: string, pos: number): string {
     const i = getLineStartPos(text, pos);
@@ -71,7 +71,7 @@ export function imTextAreaBegin(c: ImCache, {
     let textArea: HTMLTextAreaElement;
 
     const root = imui.Begin(c, BLOCK); {
-        if (im.IsFirstRender(c)) {
+        if (im.isFirstRender(c)) {
             imdom.setStyle(c, "display",   "flex");
             imdom.setStyle(c, "flex",      "1");
             imdom.setStyle(c, "height",    "100%");
@@ -105,7 +105,7 @@ export function imTextAreaBegin(c: ImCache, {
 
             // This full-stop at the end of the text is what prevents the text-area from collapsing in on itself
             imui.Begin(c, INLINE); {
-                if (im.IsFirstRender(c)) {
+                if (im.isFirstRender(c)) {
                     imdom.setStyle(c, "color", "transparent");
                     imdom.setStyle(c, "userSelect", "none");
                     imdom.setTextUnsafe(c, ".");
@@ -113,7 +113,7 @@ export function imTextAreaBegin(c: ImCache, {
             } imui.End(c);
 
             textArea = imdom.ElBegin(c, el.TEXTAREA).root; {
-                if (im.IsFirstRender(c)) {
+                if (im.isFirstRender(c)) {
                     imdom.setStyle(c, "position", "absolute");
                     imdom.setStyle(c, "top", "0");
                     imdom.setStyle(c, "left", "0");

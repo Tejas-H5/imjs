@@ -1,6 +1,6 @@
 import { im, ImCache, imdom, el } from "im-js";
-import { imButtonIsClicked } from "im-ui/button";
-import { lerp01 } from "im-ui/math-utils";
+import { imButtonIsClicked } from "im-ui/components/button";
+import { lerp01 } from "im-ui/components/math-utils";
 import { BLOCK, COL, END, imui, NA, PX, ROW } from "../im-ui";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
@@ -137,7 +137,7 @@ export function imVisualTestHarness(
 
                 // Top bar
                 imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
-                    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "clip");
+                    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "clip");
                     if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
                     imui.Begin(c, ROW); imui.FlexWrap(c); {
@@ -151,7 +151,7 @@ export function imVisualTestHarness(
 
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
-                    if (im.IsFirstRender(c)) {
+                    if (im.isFirstRender(c)) {
                         // makes way for the sidebar. Not ideal code but eh
                         imdom.setStyle(c, "paddingRight", "2em");
                     }

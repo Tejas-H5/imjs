@@ -1,8 +1,8 @@
 import { ImCacheRerenderFn, im, ImCache, imdom, el } from "im-js";
-import { inverseLerp } from "im-ui/math-utils";
+import { inverseLerp } from "im-ui/components/math-utils";
 import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "im-ui";
 import { VisualTestHarnessState } from "./harness";
-import { imButtonIsClicked } from "im-ui/button";
+import { imButtonIsClicked } from "im-ui/components/button";
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -62,7 +62,7 @@ export function imVisualTestInstallation(
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
-            if (im.IsFirstRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
+            if (im.isFirstRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
 
             const center = !!(flags & TEST_CENTERED);
 
@@ -83,9 +83,9 @@ export function imVisualTestInstallation(
                 if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
 
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
 
                 if (im.Memo(c, mouse.X) && split.dragging) {
                     const rect = root.getBoundingClientRect();
@@ -95,9 +95,9 @@ export function imVisualTestInstallation(
 
             // Code
             imui.Begin(c, BLOCK); imui.PreWrap(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontSize", "18px");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "fontSize", "18px");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
                 
 
                 const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
@@ -105,7 +105,7 @@ export function imVisualTestInstallation(
                     const line = s.code[lineIdx];
                     // Line numbers. Exclude them from the user selection
                     imui.Begin(c, INLINE); {
-                        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
                         imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
                         imdom.Str(c, " | ");
                     } imui.End(c);

@@ -1,4 +1,4 @@
-// IM-DOM 1.80
+// IM-DOM 1.81
 
 import { assert } from "./assert";
 import { im, ImCache } from "./im-core";
@@ -248,7 +248,7 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
-    // TODO: support changing tne type
+    // TODO: support changing the type
     // Make this entry in the current entry list, so we can delete it easily
     const appender = getCurrentAppender(c);
 
@@ -317,20 +317,6 @@ function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGEl
 
 const imElSvgEnd = imElEnd;
 
-
-/**
- * Typicaly just used at the very root of the program:
- *
- * const globalim.Cache: im.Cache = [];
- * main(globalim.Cache);
- *
- * function main(c: im.Cache) {
- *      CacheBegin(c); {
- *          DomRootBegin(c, document.body); {
- *          }
- *      } CacheEnd(c);
- * }
- */
 function imRootBegin(c: ImCache, root: ValidElement) {
     let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
@@ -479,6 +465,10 @@ function setStyle<K extends (keyof ValidElement["style"])>(
 ) {
     // @ts-expect-error its fine tho
     root.style[key] = value;
+}
+
+function setStyleRed(c: ImCache) {
+    setStyle(c, "backgroundColor", "red");
 }
 
 function setTextUnsafe(c: ImCache, val: string) {
@@ -1683,7 +1673,25 @@ export const imdom = {
     getAppender: getCurrentAppender,  // Gets the current DOM appender. Very useful for utils
     getElement: getCurrentElement,    // Short for getAppender().root
 
-    /** Begin DOM root. Required before any calls to {@link imdom.ElBegin} */
+    /**
+     * Typicaly just used at the very root of the program:
+     *
+     * const globalim.Cache: im.Cache = [];
+     * main(globalim.Cache);
+     *
+     * function imMain(c: im.Cache) {
+     *      im.CacheBegin(c, imMain); {
+     *          const ev = imdom.RootBegin(c, document.body); {
+     *              imdom.GlobalEventSystemBegin(c); {
+     *                  // Your code here
+     *              } imdom.imGlobalEventSystemEnd(c, ev);
+     *          } imdom.RootEnd(c);
+     *      } im.CacheEnd(c);
+     * }
+     *
+     * const globalImCache: ImCache = []; // yes it's just an array
+     * imMain(globalImCache);
+     */
     RootBegin: imRootBegin, RootEnd: imRootEnd,
 
     /** DOM-node creation */
@@ -1709,6 +1717,7 @@ export const imdom = {
 
     /** Setting properties on DOM node */
     setStyle,
+    setStyleRed, // useful for debugging
     setStyleProperty,
     setClass,
     setAttr,

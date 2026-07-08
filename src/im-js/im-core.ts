@@ -1,4 +1,4 @@
-// IM-CORE 1.100
+// IM-CORE 1.102
 import { assert } from "./assert";
 
 // Conventions
@@ -463,7 +463,7 @@ function getNumParents(c: ImCache): number {
     return parents.length;
 }
 
-function imIsFirstRender(c: ImCache): boolean {
+function imisFirstRender(c: ImCache): boolean {
     const entries = c[CACHE_CURRENT_ENTRIES];
 
     let result = false;
@@ -484,25 +484,26 @@ function imIsFirstRender(c: ImCache): boolean {
 /**
  * Allows you to get/set state inline without using lambdas, when used with {@link imSet}:
  * ```ts
- * const s = Get(c, fn) ?? imSet(c, { blah });
+ * const s = Get(c, someConstructorFn) ?? imSet(c, someConstructorFn());
  * ```
  *
- * {@link typeId} is a function reference that we use to check that susbequent state access is for the 
- * correct state. This is required, because state is indexed by the position where `Get` is called,
- * and conditional rendering/etc can easily break this order. I've not looked at React sourcecode, but
- * I imagine it is very similar to the rule of hooks that they have.
+ * It's typical for the {@link typeId} to be the same as the function that initialises the state itself,
+ * but it doesn't have to be.
  *
- * The type of the value is assumed to have the return type of the `typeId` function that was specified.
- * It does not necessarily need to actually be constructed by that function. 
- * See {@link imGetInline} - it does not make this assumption, and allows you to use typeIds
- * purely as an ID.
+ * The main reason why we need a typeId is because state is indexed by the order in which it was accessed.
+ * If you access state conditionally, all accesses would be off by one, thus corrupting your state!
+ * We need a mechanism to panic when this happens, and detecting that the typeIds aren't lining up correctly
+ * is how we do that.
+ * Also see {@link imGetInline} - it lets you use any function you have lying around and doesn't
+ * connect the type of the typeId with the value of the state that it stores - that way you can just
+ * define your state inline without extracting out a constructor, and still keep this runtime check.
  *
  * You might need to refresh the state more often:
  *
  * ```ts
  * const depChanged = Memo(c, dep);
  *
- * let s = Get(c, fn);
+ * let s = Get(c, someConstructorFn);
  * if (!s || depChanged) {
  *      s = Set(c, someConstructorFn(dep));
  * };
@@ -594,10 +595,27 @@ function isSetRequired(c: ImCache): boolean {
  * the type returned by {@link typeIdInline} is not necessarily
  * the type being stored.
  *
- * NOTE: you're not really supposed to use the last parameter.
+ * ```ts
+ * const state = im.GetInline(c, someRandomMethodYouHaveLyingAround) ?? im.Set(c, { blah });
+ * ```
+ *
+ * See {@link im.Get} where I explain the typeId further.
+ * The {@link im.GetInline} method is useful for prototyping, but consider if your state
+ * can actually be created using a single method, in which 
+ * case you may be able to just use {@link im.Get}.
  *
  * ```ts
- * const = GetInline(c, fn) ?? imSet(c, { blah });
+ * // instead of this:
+ * const state = im.GetInline(c, someFunctionYouHaveLyingAround) ?? 
+ *               im.Set(c, newThing());
+ * // You can just do this:
+ * const state = im.State(c, newThing);
+ *
+ * // instead of this:
+ * const state = im.GetInline(c, someFunctionYouHaveLyingAround) ?? 
+ * if (im.Memo(c, arg1) | im.Memo(c, arg2)) {  * // TODO: make this work - it's totally doable.
+ *      im.Set(c, newThing(a));
+ * }
  * ```
  */
 function imGetInline<T = undefined>(
@@ -966,18 +984,17 @@ const EndFor = imForEnd;
  *      case c: { ... } break;
  * } SwitchEnd(c);
  * ```
- * ERROR: Don't use fallthrough, use if-else + If/imIfElse/imIfEnd instead. 
- * Fallthrough doesn't work as you would expect - for example:
+ * NOTE: Be careful with fallthrough. It may not work as you would expect - for example:
  * ```ts
  *  Switch(c,key); switch(key) {
- *          case "A": { Component1(c); } // fallthrough (nooo)
+ *          case "A": { Component1(c); } // fallthrough
  *          case "B": { Component2(c); }
  *  } SwitchEnd(c);
  * ```
  * When the key is `b`, an instance of Component2 is rendered. However,
  * when the key is `a`, two completely separate instances of `Component1` and `imComponent2` are rendered.
- *      You would expect the `Component2` from both switch cases to be the same instance, but they are duplicates 
- *      with none of the same state.
+ *      You would expect the `Component2` from both switch cases to be the same instance, but they are actually seperate instances
+ *      that look the same but have different state! If that doesn't matter for your usecase, then you can ignore this.
  * 
  */
 function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
@@ -1214,6 +1231,7 @@ function imCatch(c: ImCache, tryState: TryState, err: any) {
 
     c[CACHE_IDX] = idx - 1;
     c[CACHE_CURRENT_ENTRIES] = c[idx - 1];
+    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
 }
 
 function imTryEnd(c: ImCache, tryState: TryState) {
@@ -1274,7 +1292,7 @@ export const im = {
      * Executing code just once. Should behave identically to imMemo(c, true), but will be more performant since
      * under the hood, it just increments a number rather than pushes entries to the entry list
      */
-    IsFirstRender: imIsFirstRender,
+    isFirstRender: imisFirstRender,
 
     /** Animation */
     getDeltaTimeSeconds, // Gets the _seconds_ elapsed between the previous frame and the current frame

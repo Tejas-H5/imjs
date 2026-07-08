@@ -6,8 +6,9 @@
   "main": "./src/utils/im-js/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "node ./build/build.ts devserver",
-    "build": "node ./build/build.ts build"
+    "dev":   "node ./build/build.ts devserver",
+    "build": "node ./build/build.ts build",
+    "test":  "node ./build/test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",

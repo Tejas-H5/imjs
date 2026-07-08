@@ -4,8 +4,8 @@ import { BLOCK, CENTER, COL, cssVars, imui, INLINE, LEFT, PX, ROW } from "im-ui"
 import { imVisualTestInstallation, TEST_SCROLLABLE, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd, imParaBegin, imParaEnd, imSubheadingBegin, imSubheadingEnd } from "./common";
 import { getPreviousResult, getUserAgentString, previousResults, previousResultsByUserAgent, UserAgentString } from "./prev-results";
-import { imButtonIsClicked } from "im-ui/button";
-import { imSliderInput } from "im-ui/slider";
+import { imButtonIsClicked } from "im-ui/components/button";
+import { imSliderInput } from "im-ui/components/slider";
 
 export function imJsPerformanceBenchmarks(c: ImCache, harness: VisualTestHarnessState) {
     imBaseContainerBegin(c); {
@@ -120,7 +120,7 @@ const CELL_BOLD = (1 << 0);
 function imTableCellBegin(c: ImCache, alignment = LEFT, flags = 0) {
     const bold = !!(CELL_BOLD & flags);
     imui.Begin(c, ROW); imui.Justify(c, alignment); {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+        if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
         if (im.Memo(c, bold)) imdom.setStyle(c, "fontWeight", bold ? "bold" : "");
     } // imui.End(c);
 }
@@ -158,7 +158,7 @@ function imLotsOfBoxesWithUI(c: ImCache) {
     imui.Begin(c, COL); imui.Gap(c, 10, PX); imui.Flex(c); {
         imui.Begin(c, ROW); {
             imui.Begin(c, BLOCK); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "minWidth", "200px");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "minWidth", "200px");
                 imdom.Str(c, "Render ms budget: "); imdom.Str(c, s.renderBudgetMs);
             } imui.End(c);
 
@@ -392,7 +392,7 @@ function imBenchmarkResultsViewer(c: ImCache, res: BenchmarkResult, resPrev: Ben
     let regressions = 0;
 
     imui.Begin(c, BLOCK); {
-        if (im.IsFirstRender(c)) {
+        if (im.isFirstRender(c)) {
             imdom.setStyle(c, "display", "grid");
             imdom.setStyle(c, "gap", "1px");
             imdom.setStyle(c, "padding", "1px");
