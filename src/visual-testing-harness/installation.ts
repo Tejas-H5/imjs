@@ -14,11 +14,11 @@ export type VisualTestHarnessInstallationState = {
     title: string;
 };
 
-function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, code?: string): VisualTestHarnessInstallationState {
+function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, title: string, code?: string): VisualTestHarnessInstallationState {
     return {
         test: test,
         code: formatCode(code ?? test.toString(), code ? 4 : 2),
-        hash: test.name,
+        hash: title,
         title: "",
     };
 }
@@ -36,7 +36,7 @@ export function imVisualTestInstallation(
 
     let s; s = im.GetInline(c, imVisualTestInstallation); 
     if (!s || testChanged || codeChanged) {
-        s = im.Set(c, newVisualTestHarnessInstallationState(test, code));
+        s = im.Set(c, newVisualTestHarnessInstallationState(test, title, code));
     }
 
     harness.installations.push(s);
@@ -62,7 +62,9 @@ export function imVisualTestInstallation(
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
-            if (im.isFirstRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
+            if (im.isFirstRender(c)) {
+                imdom.setStyle(c, "maxHeight", "80vh");
+            }
 
             const center = !!(flags & TEST_CENTERED);
 
@@ -70,9 +72,12 @@ export function imVisualTestInstallation(
                 im.Set(c, { vSplit: 0.5, dragging: false });
 
             // Test Component
-            imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c, scroll); {
+            imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c); {
                 imui.Align(c, center ? CENTER : NONE);
-                imui.Justify(c, center ? CENTER : NONE);
+                // This messes with the the scroll overflow for some reason.
+                // I would have prefered the test be vertically centered, but I am prioritizing actually 
+                // being able to scroll through the whole output over that.
+                // imui.Justify(c, center ? CENTER : NONE);
 
                 imRenderWithErrorBoundary2(c, test);
             } imui.End(c);

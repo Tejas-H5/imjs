@@ -1,4 +1,4 @@
-// IM-DOM 1.81
+// IM-DOM 1.82
 
 import { assert } from "./assert";
 import { im, ImCache } from "./im-core";
@@ -471,7 +471,7 @@ function setStyleRed(c: ImCache) {
     setStyle(c, "backgroundColor", "red");
 }
 
-function setTextUnsafe(c: ImCache, val: string) {
+function setTextContent(c: ImCache, val: string) {
     let el = getCurrentElement(c);
     el.textContent = val;
 }
@@ -1721,7 +1721,9 @@ export const imdom = {
     setStyleProperty,
     setClass,
     setAttr,
-    setTextUnsafe, // Don't call this on an element that has non-text children! You'll delete them.
+    // Can be more performant that imdom.Str, since we don't need to do if (prevStr !== str) { updateStr } every frame.
+    // Don't call this on an element that has non-text children! You'll delete them.
+    setTextContent: setTextContent, 
 
     /** Utility hooks */
     On:                            imOn, // Wrapper for .addEventListener. No, there is no corresponding Off - it doesn't make sense here

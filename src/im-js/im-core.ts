@@ -1,4 +1,4 @@
-// IM-CORE 1.102
+// IM-CORE 1.103
 import { assert } from "./assert";
 
 // Conventions
@@ -306,7 +306,7 @@ function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
     c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
 
-    CacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], INTERNAL_TYPE_CACHE);
+    imCacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], INTERNAL_TYPE_CACHE);
 
     return c;
 }
@@ -325,7 +325,7 @@ function rerenderCache(c: ImCache) {
 function noOp() {}
 
 function imCacheEnd(c: ImCache) {
-    CacheEntriesEnd(c);
+    imCacheEntriesEnd(c);
 
     const startIdx = CACHE_ENTRIES_START - 1;
     if (c[CACHE_IDX] > startIdx) {
@@ -377,7 +377,7 @@ function internalTypeToString(internalType: number): string {
     return "Custom user type: " + internalType
 }
 
-function CacheEntriesBegin<T>(
+function imCacheEntriesBegin<T>(
     c: ImCache,
     entries: ImCacheEntries,
     internalType: number,
@@ -421,7 +421,7 @@ function CacheEntriesBegin<T>(
     }
 }
 
-function CacheEntriesEnd(c: ImCache) {
+function imCacheEntriesEnd(c: ImCache) {
     const entries = c[CACHE_CURRENT_ENTRIES];
     const idx = --c[CACHE_IDX];
     c[CACHE_CURRENT_ENTRIES] = c[idx];
@@ -463,10 +463,24 @@ function getNumParents(c: ImCache): number {
     return parents.length;
 }
 
-function imisFirstRender(c: ImCache): boolean {
+function imIsFirstRender(c: ImCache): boolean {
     const entries = c[CACHE_CURRENT_ENTRIES];
 
     let result = false;
+
+    // NOTE: we can't just do
+    // result = entries[ENTRIES_IS_FIRST_RENDER]; 
+    // entries[ENTRIES_IS_FIRST_RENDER] = false;
+    //
+    // Lots of other immediate-mode methods will call imIsFirstRender to initialize themselves,
+    // and they shouldn't need to worry about whether imIsFirstRender has already been queried. 
+    //
+    // We also can't just do entries[ENTRIES_IS_FIRST_RENDER] = false; in the call to imCacheEntriesEnd -
+    // If the component throws before calling this and then recovers, all the calls to imIsFirstRender
+    // remain true - this can cause subtle bugs like setting the same style twice, to catastrophic bugs 
+    // like double-subscribing event handlers. 
+    // (For the longest time, that was the best I could do and this method was called imIsFirstishRender,
+    // I've since realised that I could do better at around version 1.102).
 
     // For performance reasons, we're just incrementing a number instead of inserting new entries.
     // If your immediate-mode code was written correctly, it will be identical to just doing
@@ -704,7 +718,7 @@ function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel)
 
     block.rendered = true;
 
-    CacheEntriesBegin(c, block.entries, INTERNAL_TYPE_KEYED_BLOCK);
+    imCacheEntriesBegin(c, block.entries, INTERNAL_TYPE_KEYED_BLOCK);
 }
 
 /**
@@ -839,7 +853,7 @@ function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_T
         entries = imSet(c, [] as unknown as ImCacheEntries);
     }
 
-    CacheEntriesBegin(c, entries, internalType);
+    imCacheEntriesBegin(c, entries, internalType);
 
     return entries;
 }
@@ -895,7 +909,7 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
         }
     }
 
-    CacheEntriesEnd(c);
+    imCacheEntriesEnd(c);
 }
 
 function isEventRerender(c: ImCache) {
@@ -1212,6 +1226,8 @@ function imTry(c: ImCache): TryState {
 }
 
 function imCatch(c: ImCache, tryState: TryState, err: any) {
+    console.error("An error was caught by an error boundary: ", err);
+
     tryState.unwoundThisFrame = true;
 
     if (tryState.err != null) {
@@ -1292,7 +1308,7 @@ export const im = {
      * Executing code just once. Should behave identically to imMemo(c, true), but will be more performant since
      * under the hood, it just increments a number rather than pushes entries to the entry list
      */
-    isFirstRender: imisFirstRender,
+    isFirstRender: imIsFirstRender,
 
     /** Animation */
     getDeltaTimeSeconds, // Gets the _seconds_ elapsed between the previous frame and the current frame

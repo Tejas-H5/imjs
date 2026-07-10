@@ -151,11 +151,6 @@ export function imVisualTestHarness(
 
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
-                    if (im.isFirstRender(c)) {
-                        // makes way for the sidebar. Not ideal code but eh
-                        imdom.setStyle(c, "paddingRight", "2em");
-                    }
-
                     imHeading(c, s.currentTest.name, "heading");
 
                     imRenderWithErrorBoundary(c, s, s.currentTest.code);
