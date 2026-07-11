@@ -6,7 +6,7 @@ import { cssVars, DisplayType, imui, BLOCK, COL, INLINE, LEFT, NA, PX, ROW } fro
 import { imButtonStyle } from "im-ui/components/im-button";
 
 export type MarkupRendererState = {
-	blogpost: bl.BlogPost | undefined;
+	blogpost: bl.Blogpost | undefined;
 };
 
 export function newMarkupRendererState(): MarkupRendererState {
@@ -33,12 +33,12 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 		s.blogpost = bl.parse(markup);
 	}
 
-	imRenderBlogLangBlocks(c, s.blogpost.blocks, options);
+	imRenderBlogLangBlogpost(c, s.blogpost, options);
 }
 
-export function imRenderBlogLangBlocks(c: ImCache, blocks: bl.Block[], options = defaultBlogLangRenderOptions) {
+export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
 	imBegin(c); imui.Padding(c, 15, PX, 15, PX, 15, PX, 15, PX); {
-		imRenderBlocksInternal(c, blocks, options);
+		imRenderBlocksInternal(c, post.blocks, options);
 	} imEnd(c);
 }
 
@@ -76,16 +76,19 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 					} break;
 					case bl.S_HEADING1: {
 						imdom.ElBegin(c, el.H1); {
+							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems);
 						} imdom.ElEnd(c, el.H1);
 					} break;
 					case bl.S_HEADING2: {
 						imdom.ElBegin(c, el.H2); {
+							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems);
 						} imdom.ElEnd(c, el.H2);
 					} break;
 					case bl.S_HEADING3: {
 						imdom.ElBegin(c, el.H3); {
+							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems);
 						} imdom.ElEnd(c, el.H3);
 					} break;

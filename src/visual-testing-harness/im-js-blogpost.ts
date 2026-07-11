@@ -2,10 +2,10 @@ import { assert } from "assert";
 import * as bl from "blog-lang";
 import { el, ev, im, ImCache, ImCacheRerenderFn, imdom } from "im-js";
 import { BLOCK, cssVars, imui } from "im-ui";
-import { BlogLangRenderOptions, defaultBlogLangRenderOptions, imRenderBlogLangBlock, imRenderBlogLangMarkup } from "im-ui/components/im-blog-lang-viewer";
+import { BlogLangRenderOptions, defaultBlogLangRenderOptions, imRenderBlogLangBlock, imRenderBlogLangBlogpost, imRenderBlogLangMarkup } from "im-ui/components/im-blog-lang-viewer";
 import * as tsc from "minimal-tsc";
 import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
-import { imBaseContainerBegin, imBaseContainerEnd } from "./common";
+import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";
 
 type InlineTest = {
     originalTypescript:  string;
@@ -137,7 +137,7 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
     } im.IfEnd(c);
 }
 
-export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, staticContent: string) {
+export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, post: bl.Blogpost) {
     const renderOptions = im.GetInline(c, imJsBlogPost) ?? im.Set(c, {
         ...defaultBlogLangRenderOptions,
         imRenderBlock: imRenderBlockCustom
@@ -145,7 +145,7 @@ export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, static
     renderOptions.userPtr = harness;
 
     imBaseContainerBegin(c); {
-        imRenderBlogLangMarkup(c, staticContent, 0, renderOptions);
+        imRenderBlogLangBlogpost(c, post, renderOptions);
     } imBaseContainerEnd(c);
 }
 

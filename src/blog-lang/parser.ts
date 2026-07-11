@@ -20,7 +20,7 @@ import {
 // It's not markdown, but you can still edit it with a markdown editor.
 // Basically we are leeching off the existing tooling (more than usual) :DDD
 
-export type BlogPost = {
+export type Blogpost = {
 	blocks: Block[];
 }
 
@@ -175,12 +175,12 @@ function compareDotpointStart(parser: Parser, advance: boolean): boolean {
 	return false;
 }
 
-export function parse(markup: string): BlogPost {
+export function parse(markup: string): Blogpost {
 	// Let's not deal with line endings in the rest of the code.
 	markup = markup.split("\r\n").join("\n");
 
 	const parser = newParser(markup);
-	const result: BlogPost = {
+	const result: Blogpost = {
 		blocks: [],
 	};
 
@@ -189,6 +189,21 @@ export function parse(markup: string): BlogPost {
 	parseBlocks(parser, result.blocks, ctx);
 
 	return result;
+}
+
+export function getTextBlockContent(block: TextBlock): string {
+	const sb: string[] = [];
+
+	for (const item of block.inlineItems) {
+		switch (item.type) {
+			case T_TEXT: sb.push(item.text); break;
+			case T_URL:  sb.push(item.url);  break;
+			case T_CODE: sb.push(item.code); break;
+			// Ignore custom item types we can't recognise instead of throwing.
+		}
+	}
+
+	return sb.join("");
 }
 
 type ParseContext = {
