@@ -22,7 +22,7 @@ const cnButton = (() => {
     padding-top: 0; padding-bottom: 0;
 }`,
         ` > .inner { 
-    padding: 0.25rem; 
+    padding: 0.25rem 1rem; 
     min-width: 1.5rem;
     display: flex; align-items: center; justify-content: center;
     background-color: ${cssVars.bg2}; transition: background-color ${transiton}, color ${transiton}; 

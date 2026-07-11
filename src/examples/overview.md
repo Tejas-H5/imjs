@@ -1,10 +1,114 @@
 # Overview
 
-imJS is an immediate-mode web-UI framework I created due to my frustration with existing solutions. 
-I discuss every design choice in detail #url[on this page, "https://github.com/Tejas-H5/imjs/blob/main/Why.md"].
-This page just explains how to use ImJS to build things if you've never used it before.
-I hope you're on Keyboard+Mouse - if not, this page won't be very nice to use right now. 
-I intend to fix at some point in the distant future.
+`imJS` is an immediate-mode web-UI framework I've spent a couple years evolving alongside my personal projects.
+Here are the main things that I want to do in my code all the time, which are currently 
+poorly supported or impossible to do in modern Web-UI frameworks:
+
+#list[
+- I want to be able to extract components into reuseable building-blocks
+- I want to store my state anywhere, especially directly in plain objects
+    #list[ 
+    - Not Proxy objects or observables or UI lifecycle state or event emitters - actual plain objects
+    - I do NOT want to learn the pros and cons of every state-management library in order to get started with my project -
+        I would rather spend years making my own UI framework :D
+    ]
+- I want to mutate arrays, maps, sets, and datastructures directly, as oppopsed to shallow-copying them
+- I want rendering to be an imperative and fast - the result of iterating my data structures and specifying what gets rendered, as 
+    opposed to allocating a massive tree-object and reconciling it with the previous tree object.
+    #list[ 
+    - If re-rendering my entire UI at 60fps becomes possble due to this, that would be very nice! (it does)
+    ]
+- A lot of my UI depends on the current date/time or Date.now(), which cannot be cleanly expressed as a 'dependency' 
+    in many UI frameworks. I want writing these UIs to be a lot easier than they currently are
+- I do *not* want to ever manually invoke a `rerender()` method, if I can avoid it
+- I want to be able to keep more complicated UIs as a single function for as long as possible, so I can defer refactoring 
+    to when I've got a good idea of how it should be set up.
+    #list[
+    - I do not want to use a framework that imposes a refactor on my every time my list component needs to use 
+    immedate-mode state (aka 'hooks'). Rather than doing this:
+
+    ```tsx
+    const List = (props) => {
+        return (
+            <div>{props.items.map(v => <ListValue value={v} key={v.id} />)}</div>
+        );
+    }
+    const ListValue = (props) => { 
+        const user = useFetchUser(props.value.userId);
+        return <>{user.name}</>;
+    }
+    ```
+
+        I'd like to do something like this instead:
+
+    ```tsx
+    const List = (props) => {
+        return (
+            <div>
+                {props.items.map(v => {
+                    const user = useFetchUser(props.value.userId);
+                    return <>{user.name}</>;
+                })}
+            </div>
+        )
+    }
+    ```
+    ]
+]
+
+If you read this list of dotpoints and thought "These points are silly - you can easily to X with [framework of your choice] here", then
+great! You can stop reading now and save yourself some time - you probably won't find this framework particularly useful.
+
+However, if any or a large number of those points resonated with you continue reading - you may find this framework useful.
+
+## Main idea
+
+The claim I stake this framework on, is that if a UI framework could simply rerender it's UI at the refresh rate 
+    of the monitor using `reqestAnimationFrame`, every problem associated with web UI would be completely gone:
+
+#list[
+- Which library do users need to install to keep track of shared state and notify the right VDom subtree to 
+    rerender so that rerenders occur as little as possbile?
+    #list[ 
+    - No need 
+    - the entire UI will just update every frame so we don't need to do this 
+    ]
+- Which library do users need to install to track and react to asyncronous state?
+    #list[ 
+    - None. It can be observed directly, just like any state 
+    ]
+- How do we integrate with vanillaJS libraries that are external to the state management system but have their own queryable state
+    #list[ 
+    - Nothing special, now that any value anywhere can simply be read from and written to by the UI
+    ]
+- How do we robustly notify the UI elements that the mouse is no-longer over them, so that they aren't stuck in a 
+    hover state because someone used the framework's `useState` equivelant instead of css :hover ?
+    #list[ 
+    - Now that we're in an animation loop, we _can_ rely on variables in code. 
+        The 'app didn't rerender when it was supposed to' or 'event didnt fire for some reason' classes of bug 
+        are completely gone.
+    ]
+- Which library do users need to install animate the style or pretty much anything else using values in their code?
+    #list[
+    - None, you can now just use simple JavaScript and maths. It's pretty insane how far you can get with these two for other things:
+        #list[
+        - #url[Tsoding cube video, https://www.youtube.com/watch?v=qjWkNZ0SXfo]
+        - #url[dsp for audio programming, https://www.dspforaudioprogramming.com]
+        ]
+    ]
+]
+
+Problems that were originally non-trivial in the existing frameworks that required various external libraries to get right, 
+    become far simpler to just implement on your own.
+
+If a UI framework could make this possible in a way that doesn't comprimise too heavily on other things, the ceiling for what 
+    a single person can accomplish with just domain-knowledge (knowledge about the programming language itself, and about 
+    maths/physics/animation/digital-signal-processing/whatever as opposed to web/css/framework-specific knowledge) just got a lot higher.
+
+But JavaScript is a script kiddie toy language (not even a real language btw). There's no way it could loop over 5000 things right?
+Actually, it is no longer 2002, and thanks to v8 it's gotten quite fast! 
+Even Firefox's thing (spider-monkey) is fast too. 
+It is still twice as slow as v8, but that just means your app rerenders in 1ms instead of 0.5ms).
 
 ## How to install
 
@@ -13,18 +117,18 @@ you'll need to copy the im-js folder into somewhere in your project. Ideally, so
 where you can just import it like `import { ... } from "im-js"`.
 
 #list[
-#dot 
-    `im-core` contains immediate-mode primitives that you will need for control-flow and state management.
-#dot 
-    `im-dom` is the DOM adapter for im-core, and gives you utilities for building and controlling the DOM via the framework, 
+-  `im-core` contains immediate-mode primitives that you will need for control-flow and state management.
+-  `im-dom` is the DOM adapter for im-core, and gives you utilities for building and controlling the DOM via the framework, 
     and global event hooks to respond to common user input. It is by no means a 100% comprehensive DOM wrapper, and you may 
     need to create your own utility methods to do some things.
-#dot
-    By looking at how im-dom works, you can in theory build an adapter for any other tree structure. 
+-   By looking at how im-dom works, you can in theory build an adapter for any other tree structure. 
 ]
 
 This repo also contains an im-ui folder with all the UI components I use in my projects. It is completely optional. 
 Just copy the ones you want into your project as you need, and make any necessary changes.
+
+If people actually start using the framework, I will consider making an npm account and putting it on there.
+For now, it can only be found via this repo.
 
 ## Creating components
 
@@ -47,24 +151,20 @@ function imDateTimeViewer(c: ImCache) {
 There is actually _a lot_ going on here, so let's unpack it:
 
 #list[
-#dot 
-    imdom.ElBegin is a method that opens an immediate-mode scope, within which more DOM nodes may be rendered. 
+-   imdom.ElBegin is a method that opens an immediate-mode scope, within which more DOM nodes may be rendered. 
     This scope must eventually be closed off with another call to imdom.ElEnd. 
     The convention here is that any function named imXBegin can be assumed to open some kind of scope that must be 
         closed off with a call to a corresponding imXEnd method. 
     User methods that aren't suffixed with 'Begin' can be assumed to not create a scope.
-#dot
-    For imdom.ElBegin to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. 
+-   For imdom.ElBegin to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. 
     The 'c' is the immediate-mode cache where imdom.ElBegin saves it's div. 
     This cache is passed to every immediate mode function, as that makes it more explicit that a function reads from the 
         immediate-mode cache somehow. 
     The 'im' prefix is only for methods that actually write entries into the immediate mode state, which will be important later.
-#dot
-    Between imdom.Begin and imdom.End, there are two calls to imStr. 
+-   Between imdom.Begin and imdom.End, there are two calls to imStr. 
     This method creates a single Text node under the current DOM element, and updates the text whenever the object reference changes by 
         calling by calling toString() on this object.
-#dot
-    Since the entire framework runs in an animation loop, state can be read directly from anywhere without making any framework-specific 
+-   Since the entire framework runs in an animation loop, state can be read directly from anywhere without making any framework-specific 
         adapters. 
     This expression will always be up-to-date.
 ]
@@ -98,38 +198,30 @@ I've ommited the imports for brevity.
 This example is not much more complicated than the other example, but a couple more things are happening:
 
 #list[
-#dot
-    `im.Get`, `im.GetInline`, `im.Set` are the state-management primitives that all methods use to save immediate-mode 
+- `im.Get`, `im.GetInline`, `im.Set` are the state-management primitives that all methods use to save immediate-mode 
         state entries.
-#dot
-    `imGet(c, typeId)` requests state at the current index, increments the index, then either returns what we set in 
+- `imGet(c, typeId)` requests state at the current index, increments the index, then either returns what we set in 
     the previous frame, or undefined. 
-#dot
-    It will panic if the typeId does not line up with the typeId that was issued at that index in the previous frame.
+- It will panic if the typeId does not line up with the typeId that was issued at that index in the previous frame.
     This is important - if you were to gate a call to `im.Get()` behind an if-statement, it
     would move all subsequent calls to im.Get one index over, which can lead to silent data corruption!
     Before getting state, we check that the typeId specified this frame is the same as the one we already have,
         and then throw if that isn't the case to avoid this bug.
-#dot
-    As such, a `typeId` is simply a locally unique reference used to identify a particular piece of state in the
+- As such, a `typeId` is simply a locally unique reference used to identify a particular piece of state in the
     current component.
     I've decided to make it a function, because you've probably always got some kind of function lying around that
     you can just use!
     It was way better than defining a bunch of unique integers everywhere.
-#dot
-    `im.Get` will actually assume that the function you used as the unique local identifier
+- `im.Get` will actually assume that the function you used as the unique local identifier
     for a piece of state was the constructor for that state (a common idiom), and as such, can infer 
     it's return type. 
-#dot
-    However, it's a bit tedious to define constructors for every piece of state while you're prototyping - 
+- However, it's a bit tedious to define constructors for every piece of state while you're prototyping - 
     `im.GetInline` is like `im.Get`, except we can specify any typeId at all, and it will not use type-inference to link 
         the typeId to a return type, allowing us to create state directly inline without creating any constructor methods.
-#dot
-    `im.Set` will write to the current immediate-mode slot. 
+- `im.Set` will write to the current immediate-mode slot. 
     It MUST be called before the next call to `im.Get`, if the slot hasn't been initialised at least once. 
     The bug is fairly common, so we throw when you don't do this.
-#dot
-    `imdom.On` is a DOM-related immediate-mode helper that wraps the `addEventListener` callback. 
+- `imdom.On` is a DOM-related immediate-mode helper that wraps the `addEventListener` callback. 
     Whenever that callback fires, your entire app will be synchronously rerendered, so that
         methods on the event object like `ev.preventDefault()` can be called and work. 
     When the particular subtree is 'destroyed', the event listener will automatically be removed.
@@ -675,18 +767,18 @@ function imMemoExamples(c: ImCache) {
 Some things to notice:
 
 #list[
-#dot
+- 
     `im.Set` can be called again later, to overwrite/reset the state. 
     By default, the state is persisted unless destroyed, but here we've decided to reset it out whenever we re-attatch 
         the component as well. 
     Be careful that you aren't adding any destructuors in that initialisation block though - the previous destructor may not have ran.
-#dot
+- 
     The Regular logical-or `||` operator will short-circuit, but the bitwise-or `|` operator will not. 
     #list[
-    #dot Coincidentally, `im.Memo` returns a number, and not a boolean. 
-    #dot If you want to query the same number of slots as you read the previous frame, you need to chain imMemo using `|` instead of `||`.
+    -  Coincidentally, `im.Memo` returns a number, and not a boolean. 
+    -  If you want to query the same number of slots as you read the previous frame, you need to chain imMemo using `|` instead of `||`.
     ]
-#dot
+- 
     More subtle, and it's got to do with this part:
 
 ``` typescript
@@ -856,10 +948,8 @@ And in this framework, it will by default (and can be opted out of, as I've done
 
 ```ts - im.Memo - conditional pathway example - updated (working)
 function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
-    // const appState = im.GetInline(c, im.GetInline) ??
-    //     im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
     const appState = im.GetInline(c, im.GetInline) ??
-        im.Set(c, { currentView: 0, logs: [] });
+        im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 
     imDivBegin(c); {
         if (im.isFirstRender(c)) imdom.setStyle(c, "flex", "1");
@@ -934,19 +1024,15 @@ Time to start building!
 ## Future scope
 
 #list[
-#dot
-The global event system currently doesn't work well for mobile/touch interactions, need to fix that
-#dot
-In the future, I plan on making a static analysis tool (probably just an eslint rule) that matches imXBegin and imXEnd 
+- The global event system currently doesn't work well for mobile/touch interactions, need to fix that
+- In the future, I plan on making a static analysis tool (probably just an eslint rule) that matches imXBegin and imXEnd 
     and lets you know at compile time if these opening/closing pairs are matching or not. 
 It turns out to be hard to solve this without making the code overly verbose, and this framework has a LOT of assertions 
     in place specifically to catch bugs relating to this.
-#dot
-It currently doesn't have SSR, and though there is no technical limitation that makes it impossible - 
+- It currently doesn't have SSR, and though there is no technical limitation that makes it impossible - 
     I simply don't care to implement it at the moment. 
 But I am not against including it later.
-#dot
-Suspense boundaries not implemented yet.
+- Suspense boundaries not implemented yet.
 I haven't stress-tested the framework on client-server stuff as much as I have for
     local storage/indexed-db use cases, but I may end up doing this 
     when I eventually get around to it.
@@ -957,11 +1043,9 @@ I haven't stress-tested the framework on client-server stuff as much as I have f
 There are some things that I have specifically planned never work on:
 
 #list[
-#dot
-There will never be an imJS dev-tools. 
+- There will never be an imJS dev-tools. 
 Most things can just be done using the existing browser devtools, and this is especially the case with this framework.
-#dot
-HMR (Hot-module-reloading support) - the implementation details of the framework make adding it too complicated and 
+- HMR (Hot-module-reloading support) - the implementation details of the framework make adding it too complicated and 
     not really super worth it. 
 I did not build this framework with HMR in mind at all - I would rather have a small app that can be rebuild 
     instantly than an app that takes ages to rebuild, but supports HMR, but the HMR still takes a few seconds, 
@@ -972,8 +1056,7 @@ The dev-server I use can also reload my program so quickly that there is no real
 I've had set up a custom esbuild context, but with a custom server that has an extra long KeepAlive setting 
     on the connection (surprisingly effective).
     (Someone has since figured out #url[the real issue, https://github.com/vitejs/vite/issues/21653] that my local KeepAlive solution hid)
-#dot
-I also plan to never introduce a mechanism by which you can manually render just a subset of the UI tree, or keep some subset of your website 'static', with dynamic islands. The complexity is not worth it - just animate the entire page.
+- I also plan to never introduce a mechanism by which you can manually render just a subset of the UI tree, or keep some subset of your website 'static', with dynamic islands. The complexity is not worth it - just animate the entire page.
 ]
 
 

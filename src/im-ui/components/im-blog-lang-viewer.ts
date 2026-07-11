@@ -191,6 +191,19 @@ export function imRenderItemCode(c: ImCache, item: bl.InlineCode) {
 	} imEnd(c);
 }
 
+function makeUrl(url: string): URL | undefined {
+	try {
+		return new URL(url);
+	} catch (err) {
+		try {
+			const localPath = window.location.origin + window.location.pathname;
+			return new URL(localPath + url);
+		} catch (err2) {
+			throw err;
+		}
+	}
+}
+
 export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl) {
 	imBegin(c, INLINE); {
 		imdom.ElBegin(c, el.A); {
@@ -205,13 +218,7 @@ export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl) {
 			imStr(c, item.text);
 
 			if (im.If(c) && imdom.hasMouseOver(c)) {
-				let domain: URL | undefined = im.GetInline(c, imRenderItemUrl);
-				if (!domain || urlChanged) {
-					const urlObj = new URL(url);
-					domain = im.Set(c, urlObj);
-				}
 				imStr(c, " -> ");
-				imStr(c, url);
 			} im.IfEnd(c);
 		} imdom.ElEnd(c, el.A);
 	} imEnd(c);

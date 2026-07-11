@@ -5,21 +5,7 @@ import { BLOCK, cssVars, imui } from "im-ui";
 import { BlogLangRenderOptions, defaultBlogLangRenderOptions, imRenderBlogLangBlock, imRenderBlogLangMarkup } from "im-ui/components/im-blog-lang-viewer";
 import * as tsc from "minimal-tsc";
 import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
-
 import { imBaseContainerBegin, imBaseContainerEnd } from "./common";
-import OVERVIEW from "./overview.md";
-
-export function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState) {
-    const renderOptions = im.GetInline(c, imJsCompleteOverview) ?? im.Set(c, {
-        ...defaultBlogLangRenderOptions,
-        imRenderBlock: imRenderBlockCustom
-    });
-    renderOptions.userPtr = harness;
-
-    imBaseContainerBegin(c); {
-        imRenderBlogLangMarkup(c, OVERVIEW, 0, renderOptions);
-    } imBaseContainerEnd(c);
-}
 
 type InlineTest = {
     originalTypescript:  string;
@@ -132,7 +118,7 @@ function inlineTestFromCodeBlock(code: string, language: string): InlineTest {
 }
 
 function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRenderOptions): void {
-    if (im.If(c) && block.type === bl.B_CODE && block.language.startsWith("ts")) {
+    if (im.If(c) && block.type === bl.B_CODE && block.language.startsWith("ts ")) {
         // TODO: im.Memo on block.code
         let test = im.Get(c, inlineTestFromCodeBlock) ?? 
             im.Set(c, inlineTestFromCodeBlock(block.code, block.language));
@@ -151,5 +137,15 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
     } im.IfEnd(c);
 }
 
+export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, staticContent: string) {
+    const renderOptions = im.GetInline(c, imJsBlogPost) ?? im.Set(c, {
+        ...defaultBlogLangRenderOptions,
+        imRenderBlock: imRenderBlockCustom
+    });
+    renderOptions.userPtr = harness;
 
+    imBaseContainerBegin(c); {
+        imRenderBlogLangMarkup(c, staticContent, 0, renderOptions);
+    } imBaseContainerEnd(c);
+}
 

@@ -1,19 +1,24 @@
 import {
 	advance,
+	advanceBy,
 	compare,
 	compareAndAdvance,
 	compareAndAdvanceEnd,
 	compareAndMaybeAdvance,
 	computeStandardString,
+	isStartOfLine,
+	isWhitespace,
 	newParser,
 	Parser,
 	parserPos,
 	parseStandardString,
-	parseWhitespace,
 	reachedEnd,
 	reset,
 	TextPosition
 } from "./parser-utils";
+
+// It's not markdown, but you can still edit it with a markdown editor.
+// Basically we are leeching off the existing tooling (more than usual) :DDD
 
 export type BlogPost = {
 	blocks: Block[];
@@ -139,21 +144,35 @@ const BT_TABLE_CELL = 10;
 function parseBlockType(parser: Parser, advance: boolean): number {
 	let blockType = BT_NORMAL;
 
-		 if (compareAndMaybeAdvance(parser, "# ", advance))   { blockType = BT_HEADING1; }
-	else if (compareAndMaybeAdvance(parser, "## ", advance))  { blockType = BT_HEADING2; }
-	else if (compareAndMaybeAdvance(parser, "### ", advance)) { blockType = BT_HEADING3; }
-	else if (compareAndMaybeAdvance(parser, "> ", advance))   { blockType = BT_QUOTE;    }
-	else if (compareAndMaybeAdvance(parser, "```", advance))  { blockType = BT_CODE;     }
+	if (compareAndMaybeAdvance(parser, "# ",     advance)) { blockType = BT_HEADING1; }
+	else if (compareAndMaybeAdvance(parser, "## ",    advance)) { blockType = BT_HEADING2; }
+	else if (compareAndMaybeAdvance(parser, "### ",   advance)) { blockType = BT_HEADING3; }
+	// Heading 4 is never used. Just bold your text at that point.
+	else if (compareAndMaybeAdvance(parser, "> ",     advance))  { blockType = BT_QUOTE;    }
+	else if (compareAndMaybeAdvance(parser, "```",    advance))  { blockType = BT_CODE;     }
 	else if (compareAndMaybeAdvance(parser, "#list[", advance))  { blockType = BT_UNORDERED_LIST;  }
 	else if (compareAndMaybeAdvance(parser, "#ul[",   advance))  { blockType = BT_UNORDERED_LIST;  }
 	else if (compareAndMaybeAdvance(parser, "#ol[",   advance))  { blockType = BT_ORDERED_LIST;  }
-	else if (compareAndMaybeAdvance(parser, "#dot", advance))    { blockType = BT_ORDERED_LIST;   }
+	else if (compareDotpointStart(parser, advance))              { blockType = BT_ORDERED_LIST;   }
 	else if (compareAndMaybeAdvance(parser, "#table[", advance)) { blockType = BT_TABLE; }
 	else if (compareAndMaybeAdvance(parser, "#row", advance))    { blockType = BT_TABLE_ROW; }
 	else if (compareAndMaybeAdvance(parser, "#cell", advance))   { blockType = BT_TABLE_CELL; }
-	// Heading 4 is never used. Just bold your text at that point.
 	
 	return blockType;
+}
+
+function compareDotpointStart(parser: Parser, advance: boolean): boolean {
+	if (compareAndMaybeAdvance(parser, "#dot", advance)) {
+		return true;
+	}
+
+	// TODO: include this feature in latest blog lang
+	if (compare(parser, "-") && isStartOfLine(parser)) {
+		if (advance) advanceBy(parser, 1);
+		return true;
+	}
+
+	return false;
 }
 
 export function parse(markup: string): BlogPost {
@@ -177,6 +196,26 @@ type ParseContext = {
 	table?: TableBlock;
 };
 
+
+export function parseWhitespace(parser: Parser) {
+	// These are the same as markdown comments. Allows us to simply use the same tooling as a markdown editor.
+	// Comments are useful for structuring a post. But perhaps I should nail the outline before polishing. 
+	// Not sure about the optimal workflow yet ...
+	if (compareAndAdvance(parser, "<!--")) {
+		while (!compareAndAdvance(parser, "-->")) {
+			advance(parser);
+		}
+	}
+
+	while (!reachedEnd(parser)) {
+		if (!isWhitespace(parser.char)) {
+			break;
+		}
+		advance(parser);
+	}
+}
+
+
 function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 	let parseNext = B_NONE;
 	let listStyle = LS_UNORDERED;
@@ -191,7 +230,7 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 
 				if (ctx.list) {
 					// Advancing will be handled at the list level
-					if (compare(parser, "]") || compare(parser, "#dot")) {
+					if (compare(parser, "]") || compareDotpointStart(parser, false)) {
 						doneBlockList = true;
 						break outer;
 					}
@@ -288,7 +327,7 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 				// Parse list items
 				while (!reachedEnd(parser)) {
 					parseWhitespace(parser);
-					if (!compareAndAdvance(parser, "#dot")) {
+					if (!compareDotpointStart(parser, true)) {
 						if (!compareAndAdvance(parser, "]")) {
 							parseFailed = true;
 						}

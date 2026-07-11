@@ -54,18 +54,7 @@ function skipTypeExpression(tsCode: string, pos: number): number {
 		i++;
 	}
 
-	if (compare(tsCode, i, "<")) {
-		let openChevrons = 1;
-		i++;
-		while (i < tsCode.length && openChevrons > 0) {
-			if (tsCode[i] === "<") {
-				openChevrons++;
-			} else if (tsCode[i] === ">") {
-				openChevrons--;
-			}
-			i++;
-		}
-	}
+	i = skipTemplateExpression(tsCode, i);
 
 	i = toNonWhitespace(tsCode, i);
 
@@ -117,6 +106,8 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 			i++;
 
 			sb.push(tsCode.substring(start, i));
+		} else if (compare(tsCode, i, "<")) {
+			i = skipTemplateExpression(tsCode, i);
 		}
 
 		sb.push(tsCode[i]);
@@ -270,6 +261,24 @@ function skipObject(tsCode: string, i: number): number {
 			brackets -= 1;
 		}
 		i++;
+	}
+
+	return i;
+}
+
+function skipTemplateExpression(tsCode: string, i: number): number {
+	if (compare(tsCode, i, "<")) {
+		let openChevrons = 1;
+		i++;
+
+		while (i < tsCode.length && openChevrons > 0) {
+			if (tsCode[i] === "<") {
+				openChevrons++;
+			} else if (tsCode[i] === ">") {
+				openChevrons--;
+			}
+			i++;
+		}
 	}
 
 	return i;

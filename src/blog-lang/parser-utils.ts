@@ -275,12 +275,21 @@ export function computeStandardString(parser: Parser, start: TextPosition, end: 
 	return chars.join("");
 }
 
-export function parseWhitespace(parser: Parser) {
-	while (!reachedEnd(parser)) {
-		if (!isWhitespace(parser.char)) {
+export function isStartOfLine(parser: Parser): boolean {
+	let result = true;
+
+	let i = parser.pos.i - 1;
+	while (i >= 0) {
+		if (!isWhitespace(parser.text[i])) {
+			result = false;
 			break;
 		}
-		advance(parser);
+		if (parser.text[i] === "\n") {
+			break;
+		}
+		i--;
 	}
+
+	return result;
 }
 

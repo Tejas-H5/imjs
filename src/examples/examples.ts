@@ -1,8 +1,14 @@
 import { im, ImCache, imdom } from "im-js";
 import { COL, imui, PX } from "im-ui";
-import { imJsCompleteOverview } from "./overview";
-import { imVisualTestHarness, newVisualTest, VisualTest } from "visual-testing-harness";
+import { imVisualTestHarness, newVisualTest, VisualTest, VisualTestHarnessState } from "visual-testing-harness";
 import { imJsPerformanceBenchmarks } from "./performance-benchmarking";
+import { imJsBlogPost } from "./im-js-blogpost";
+
+import OVERVIEW from "./overview.md";
+
+function imJsCompleteOverview(c: ImCache, harness: VisualTestHarnessState) {
+    imJsBlogPost(c, harness, OVERVIEW);
+}
 
 const tests: VisualTest[] = [
     newVisualTest("imJS - A complete overview", imJsCompleteOverview),

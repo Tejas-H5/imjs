@@ -42,7 +42,7 @@ function newState(): VisualTestHarnessState {
         currentVisibleInstallation: undefined,
         seenIntro: false,
         animations: {
-            introToUse: 1, //Math.floor(Math.random() * numIntros),
+            introToUse: Math.floor(Math.random() * numIntros),
             scaleFactor: 0,
             t: 0,
             topBarOpen: 0,
@@ -136,7 +136,7 @@ export function imVisualTestHarness(
                 im.IfElse(c);
 
                 // Top bar
-                imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
+                imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); {
                     if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "clip");
                     if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
 
