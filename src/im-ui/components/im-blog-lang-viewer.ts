@@ -2,7 +2,7 @@
 
 import * as bl from "blog-lang";
 import { el, im, ImCache, imdom } from "im-js";
-import { cssVars, DisplayType, imui, BLOCK, COL, INLINE, LEFT, NA, PX, ROW } from "im-ui";
+import { cssVars, DisplayType, imui, BLOCK, COL, INLINE, LEFT, NA, PX, ROW, VH } from "im-ui";
 import { imButtonStyle } from "im-ui/components/im-button";
 
 export type MarkupRendererState = {
@@ -18,13 +18,24 @@ export function newMarkupRendererState(): MarkupRendererState {
 // Make sure the options you pass are stable immutable object.
 // The component won't work if this isn't the case.
 export type BlogLangRenderOptions = {
-	imRenderBlock: (c: ImCache, block: bl.Block, options: BlogLangRenderOptions) => void;
 	userPtr?: any;
+	imRenderBlock: (c: ImCache, block: bl.Block, options: BlogLangRenderOptions) => void;
+	imRenderInlineItem: (c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void;
 };
 
-export const defaultBlogLangRenderOptions: BlogLangRenderOptions = Object.freeze({
-	imRenderBlock: imRenderBlogLangBlock,
-})
+export const defaultBlogLangRenderOptions = newBlogLangRenderOptions();
+
+export function newBlogLangRenderOptions(
+	imRenderBlock: ((c: ImCache, block: bl.Block, options: BlogLangRenderOptions) => void) = imRenderBlogLangBlock,
+	imRenderInlineItem: ((c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void) = imRenderBlogLangBlockItem,
+	userPtr?: unknown,
+): BlogLangRenderOptions {
+	return {
+		imRenderBlock: imRenderBlock,
+		imRenderInlineItem: imRenderInlineItem,
+		userPtr:       userPtr,
+	};
+}
 
 export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion: number, options = defaultBlogLangRenderOptions) {
 	const s = im.State(c, newMarkupRendererState);
@@ -37,7 +48,11 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 }
 
 export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
-	imBegin(c); imui.Padding(c, 15, PX, 15, PX, 15, PX, 15, PX); {
+	imBegin(c); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
+		if (im.isFirstRender(c)) {
+			imdom.setStyle(c, "lineHeight", "1.4");
+		}
+
 		imRenderBlocksInternal(c, post.blocks, options);
 	} imEnd(c);
 }
@@ -71,25 +86,25 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 				im.Switch(c, block.style); switch (block.style) {
 					case bl.S_NORMAL: {
 						imBegin(c); {
-							imRenderBlogpostBlockItems(c, block.inlineItems);
+							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imEnd(c);
 					} break;
 					case bl.S_HEADING1: {
 						imdom.ElBegin(c, el.H1); {
 							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
-							imRenderBlogpostBlockItems(c, block.inlineItems);
+							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H1);
 					} break;
 					case bl.S_HEADING2: {
 						imdom.ElBegin(c, el.H2); {
 							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
-							imRenderBlogpostBlockItems(c, block.inlineItems);
+							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H2);
 					} break;
 					case bl.S_HEADING3: {
 						imdom.ElBegin(c, el.H3); {
 							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
-							imRenderBlogpostBlockItems(c, block.inlineItems);
+							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H3);
 					} break;
 					case bl.S_QUOTE: {
@@ -141,37 +156,73 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 					imdom.setStyle(c, "border", "1px solid " + cssVars.fg);
 				}
 
-				imBegin(c, COL); imGap(c, edgeWidth, PX); imui.Bg(c, cssVars.fg); {
-					im.For(c); for (const row of block.rows) {
-						imBegin(c, ROW); imGap(c, edgeWidth, PX); {
-							im.For(c); for (const cell of row.cells) {
-								imBegin(c); imFlex(c); imui.Bg(c, cssVars.bg); {
-									if (im.isFirstRender(c)) {
-										imdom.setStyle(c, "padding", "5px");
-									}
+				const tableState = im.GetInline(c, bl.parse) ??
+					im.Set(c, { maxCols: 0, gridTemplateCols: "" });
 
-									imRenderBlocksInternal(c, cell.contents, options);
-								} imEnd(c);
-							} im.ForEnd(c);
+				if (im.Memo(c, block)) {
+					tableState.maxCols          = 0;
+					tableState.gridTemplateCols = "";
+
+					if (block.rows.length > 0) {
+						for (const row of block.rows) {
+							tableState.maxCols = Math.max(tableState.maxCols, row.cells.length);
+						}
+
+						const firstRow = block.rows[0];
+						tableState.gridTemplateCols = firstRow.cells
+							.map(c => {
+								switch (c.style) {
+									case bl.TCS_FR:      return "1fr";
+									case bl.TCS_CONTENT: return "max-content";;
+								}
+								return "1fr";
+							})
+							.join(" ");
+
+					}
+
+					imdom.setStyle(c, "display", "grid");
+				}
+
+				imBegin(c, BLOCK); imGap(c, edgeWidth, PX); imui.Bg(c, cssVars.fg); {
+					if (im.Memo(c, tableState.gridTemplateCols)) {
+						imdom.setStyle(c, "display", "grid");
+						imdom.setStyle(c, "gridTemplateColumns", tableState.gridTemplateCols);
+					}
+
+					im.For(c); for (const row of block.rows) { for (let colIdx = 0; colIdx < row.cells.length; colIdx++) {
+						imBegin(c, BLOCK); imui.Bg(c, cssVars.bg); {
+							if (im.isFirstRender(c)) {
+								imdom.setStyle(c, "padding", "5px");
+							}
+
+							if (im.If(c) && colIdx < row.cells.length) {
+								const cell = row.cells[colIdx];
+								imRenderBlocksInternal(c, cell.contents, options);
+							} im.IfEnd(c);
 						} imEnd(c);
-					} im.ForEnd(c);
+					}} im.ForEnd(c);
 				} imEnd(c);
 			} break;
 		} im.SwitchEnd(c);
 	} imEnd(c);
 }
 
-export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[]) {
+export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[], options: BlogLangRenderOptions) {
 	im.For(c); for (const item of items) {
-		im.Switch(c, item.type); switch (item.type) {
-			case bl.T_TEXT: imRenderItemText(c, item); break;
-			case bl.T_CODE: imRenderItemCode(c, item); break;
-			case bl.T_URL: imRenderItemUrl(c, item); break;
-		} im.SwitchEnd(c);
+		options.imRenderInlineItem(c, item, options);
 	} im.ForEnd(c);
 }
 
-export function imRenderItemText(c: ImCache, item: bl.InlineText) {
+export function imRenderBlogLangBlockItem(c: ImCache, item: bl.InlineItem, options: BlogLangRenderOptions) {
+	im.Switch(c, item.type); switch (item.type) {
+		case bl.T_TEXT: imRenderItemText(c, item, options); break;
+		case bl.T_CODE: imRenderItemCode(c, item, options); break;
+		case bl.T_URL:  imRenderItemUrl(c, item, options); break;
+	} im.SwitchEnd(c);
+}
+
+export function imRenderItemText(c: ImCache, item: bl.InlineText, options: BlogLangRenderOptions) {
 	imBegin(c, INLINE); {
 		if (im.isFirstRender(c)) {
 			imdom.setStyle(c, "fontStyle", (item.styleFlags & bl.V_ITALIC) ? "italic" : "");
@@ -182,10 +233,11 @@ export function imRenderItemText(c: ImCache, item: bl.InlineText) {
 	} imEnd(c);
 }
 
-export function imRenderItemCode(c: ImCache, item: bl.InlineCode) {
+export function imRenderItemCode(c: ImCache, item: bl.InlineCode, options: BlogLangRenderOptions) {
 	imBegin(c, INLINE); {
 		if (im.isFirstRender(c)) {
 			imdom.setStyle(c, "backgroundColor", cssVars.bg2);
+			imdom.setStyle(c, "color", cssVars.fg2);
 			imdom.setStyle(c, "fontFamily", "monospace");
 			imdom.setStyle(c, "padding", "2px 2px");
 			imdom.setStyle(c, "borderRadius", "5px");
@@ -207,7 +259,13 @@ function makeUrl(url: string): URL | undefined {
 	}
 }
 
-export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl) {
+export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl, options: BlogLangRenderOptions) {
+	imItemUrlBegin(c, item, options); {
+		imStr(c, item.text);
+	} imItemUrlEnd(c);
+}
+
+export function imItemUrlBegin(c: ImCache, item: bl.InlineUrl, options: BlogLangRenderOptions) {
 	imBegin(c, INLINE); {
 		imdom.ElBegin(c, el.A); {
 			imButtonStyle(c, false);
@@ -218,7 +276,15 @@ export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl) {
 				imdom.setAttr(c, "href", url);
 			}
 
-			imStr(c, item.text);
+		} // imdom.ElEnd(c, el.A);
+	} // imEnd
+}
+
+export function imItemUrlEnd(c: ImCache) {
+	// imBegin
+	{
+		// imdom.ElBegin(c, el.A); 
+		{
 
 			if (im.If(c) && imdom.hasMouseOver(c)) {
 				imStr(c, " -> ");

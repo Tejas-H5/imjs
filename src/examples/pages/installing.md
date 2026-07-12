@@ -1,17 +1,38 @@
 # How to install imJS
 
-imJS is actually written entirely in TypeScript (I just didn't like the name imTS very much). 
-As such, these instructions assume you already know how to set up an empty typescript SPA project.
-Once you've done that, you'll need to copy the entire `/im-js` folder into somewhere in your project. 
-Ideally, some sort of absolute path you've set up where you can just import things from it like `import { ... } from "im-js"`.
+The `imJS` codebase is actually written entirely in TypeScript (I just didn't like the name imTS very much). 
+It contains the following important folders:
 
-### Note about code-formatters
+```
+im-js/
+ +- im-core/
+ +- im-dom/
+```
 
-This framework abuses the hell out of the semi-colon. 
-We achieve similar-ish code aesthetics to a React component by putting multiple relevant function calls on the same line,
-    as you'll see in a moment. 
-As such, if you're using formatting tools, I would recommend using a formatter that does *not* convert
-    multiple constructs on the same line like this:
+`im-js` contains the core immediate mode primitives in `im`, and the DOM-related adapter in `imdom`. 
+You'll need to copy the `im-js` folder somewhere that you can import from it via an absolute import, i.e `import { ... } from "im-js"`.
+
+## What is the im-ui folder
+
+
+```
+im-js/
+...
+ +- im-ui/
+```
+
+I also include an `im-ui` folder with several UI components I share between multiple projects.
+You do *not* need `im-ui` to use `im-js` - there are too many ways to make a design system, and while the one I've made
+    is very well suited for the things I make, and may be a good source of inspiration, it will be sorely lacking or 
+    wrong for the look of your project.
+
+## Code-formatters
+
+This framework abuses the hell out of the semi-colon, code blocks, 
+    and putting multiple relevant function calls on the same line, as you've seen in the #url[previous page, /?test=imJS+-+Overview].
+It makes otherwise verbose code far less verbose at minimal cost.
+However, this does mean if you're using formatting tools, it would need to be configured to 
+    *not* convert multiple constructs on the same line:
 
 ```typescript
 im.For(c); for (const item of items) {
@@ -22,7 +43,7 @@ im.For(c); for (const item of items) {
 To multiple lines:
 
 ```typescript
-// 'fixed it' :D
+// 'fixed it' - your welcome :D
 im.For(c); 
 for (const item of items) 
 {
@@ -31,23 +52,10 @@ for (const item of items)
 im.ForEnd(c);
 ```
 
-The default TypeScript formatter for example will not do this.
-Other formatters may or may-not be configurable for this, I wouldn't really know about them.
+The default TypeScript formatter, for example, is the one that I use - it only fixes up whitespace and indentation without
+    moving statements around.
+Other formatters may or may not let you configure this.
 
+## The end
 
-#list[
--  `im-core` contains immediate-mode primitives that you will need for control-flow, state management.
--  `im-dom` is the DOM adapter for im-core, and gives you additional utilities for building and controlling the DOM via the framework, 
-    and global event hooks to respond to common user input. It is by no means a 100% comprehensive DOM wrapper, and you _will_
-    need to create your own utility methods to do various DOM things.
--   By looking at how im-dom works, you can in theory build an adapter for any other tree structure. 
-]
-
-This repo also contains an `im-ui` folder with all the UI components I use in my projects. 
-It is completely optional. 
-It has a peer-dependency on `"im-js"`, meaning that for those components to work, you need to have a compatible version of 
-    `"im-js"` available and importable via the absolute path.
-Just copy the ones you want into your project as you need, and make any necessary changes.
-You can also PR those changes #url[upstream, https://github.com/Tejas-H5/imjs] if you think its useful 🥺👉👈.
-
-If people actually start using the framework, I will consider making an npm account and putting this stuff on there.
+You are now ready to #url[create your page, /?test=Creating a page]

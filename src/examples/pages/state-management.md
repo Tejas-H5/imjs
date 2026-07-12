@@ -60,7 +60,7 @@ function imInitializeAndDestroyState(c: ImCache) {
         im.GetInline(c, imInitializeAndDestroyState) ?? 
         im.Set(c, { initializationCount: 0, enabled: false, x: 0, y: 0 });
 
-    if (imExampleButtonIsClicked(c, "Toggle mouse tracking")) {
+    if (imButtonIsClicked(c, "Toggle mouse tracking")) {
         s.enabled = !s.enabled;
     }
 
@@ -109,7 +109,7 @@ function imInitializeJustOnceExampleWithWorkingDestructor(c: ImCache) {
         im.GetInline(c, imInitializeJustOnceExampleWithWorkingDestructor) ?? 
         im.Set(c, { initializationCount: 0, enabled: false, x: 0, y: 0 });
 
-    if (imExampleButtonIsClicked(c, "Toggle mouse tracking")) {
+    if (imButtonIsClicked(c, "Toggle mouse tracking")) {
         s.enabled = !s.enabled;
     }
 
@@ -201,7 +201,7 @@ function imMemoExamples(c: ImCache) {
         } imDivEnd(c);
 
         imDivBegin(c); {
-            if (imExampleButtonIsClicked(c, "Increment count")) {
+            if (imButtonIsClicked(c, "Increment count")) {
                 s.count++;
             }
         } imDivEnd(c);
@@ -338,9 +338,9 @@ function imMemoConditionalPathwayExampleUpdatedReqs(c: ImCache) {
     imDivBegin(c); {
         if (im.isFirstRender(c)) imdom.setStyle(c, "display", "flex");
         if (im.isFirstRender(c)) imdom.setStyle(c, "gap", "10px");
-        if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
-        if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
-        if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
+        if (imButtonIsClicked(c, "View 0")) appState.currentView = 0;
+        if (imButtonIsClicked(c, "View 1")) appState.currentView = 1;
+        if (imButtonIsClicked(c, "View 2")) appState.currentView = 2;
     } imDivEnd(c);
     im.For(c); for (const log of appState.logs) {
         imDivBegin(c); {
@@ -412,9 +412,9 @@ function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
     imDivBegin(c); {
         if (im.isFirstRender(c)) imdom.setStyle(c, "display", "flex");
         if (im.isFirstRender(c)) imdom.setStyle(c, "gap", "10px");
-        if (imExampleButtonIsClicked(c, "View 0")) appState.currentView = 0;
-        if (imExampleButtonIsClicked(c, "View 1")) appState.currentView = 1;
-        if (imExampleButtonIsClicked(c, "View 2")) appState.currentView = 2;
+        if (imButtonIsClicked(c, "View 0")) appState.currentView = 0;
+        if (imButtonIsClicked(c, "View 1")) appState.currentView = 1;
+        if (imButtonIsClicked(c, "View 2")) appState.currentView = 2;
     } imDivEnd(c);
     im.For(c); for (const log of appState.logs) {
         imDivBegin(c); {

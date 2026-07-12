@@ -191,6 +191,7 @@ export const PERCENT = 30001 as SizeUnitInstance;
 export const REM = 40001 as SizeUnitInstance;
 export const CH = 50001 as SizeUnitInstance;
 export const NA = 60001 as SizeUnitInstance; // Not applicable. Nahh. 
+export const VH = 70001 as SizeUnitInstance;
 export const FIT_CONTENT = 60002 as SizeUnitInstance; 
 
 export type SizeUnits = typeof PX |
@@ -198,6 +199,7 @@ export type SizeUnits = typeof PX |
     typeof PERCENT |
     typeof REM |
     typeof CH |
+    typeof VH |
     typeof NA;
 
 function getUnits(num: SizeUnits) {
@@ -207,6 +209,7 @@ function getUnits(num: SizeUnits) {
         case PERCENT: return "%";
         case REM:     return "rem";
         case CH:      return "ch";
+        case VH:      return "vh";
         default:      return "px";
     }
 }

@@ -19,13 +19,13 @@ function imDateTimeViewer(c: ImCache) {
 There is actually _a lot_ going on here, so let's unpack it:
 
 #list[
--   imdom.ElBegin is a method that opens an immediate-mode scope, within which more DOM nodes may be rendered. 
+-   `imdom.ElBegin` is a method that opens an immediate-mode scope, within which more DOM nodes may be rendered. 
     This scope must eventually be closed off with another call to imdom.ElEnd. 
-    The convention here is that any function named imXBegin can be assumed to open some kind of scope that must be 
-        closed off with a call to a corresponding imXEnd method. 
-    User methods that aren't suffixed with 'Begin' can be assumed to not create a scope.
--   For imdom.ElBegin to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. 
-    The 'c' is the immediate-mode cache where imdom.ElBegin saves it's div. 
+    The convention here is that any function named `imXBegin` can be assumed to open some kind of scope that must be 
+        closed off with a call to a corresponding `imXEnd` method. 
+    User methods that aren't suffixed with `Begin` can be assumed to not create a scope.
+-   For `imdom.ElBegin` to be performant, it must create a DOM element on the first render, and then reuse it on subsequent renders. 
+    The `c` is the immediate-mode cache where `imdom.ElBegin` saves it's div. 
     This cache is passed to every immediate mode function, as that makes it more explicit that a function reads from the 
         immediate-mode cache somehow. 
     The 'im' prefix is only for methods that actually write entries into the immediate mode state, which will be important later.
@@ -109,7 +109,7 @@ function imSimpleComponentCounterRefactored(c: ImCache) {
     } imDivEnd(c);
 
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Increment the count")) {
+        if (imButtonIsClicked(c, "Increment the count")) {
             s.count++;
         }
     } imDivEnd(c);
@@ -127,7 +127,7 @@ function imDivEnd(c: ImCache) {
     imdom.ElEnd(c, el.DIV);
 }
 
-function imExampleButtonIsClicked(c: ImCache, text: string): MouseEvent | null {
+function imButtonIsClicked(c: ImCache, text: string): MouseEvent | null {
     let result: MouseEvent | null = null;
     imdom.ElBegin(c, el.BUTTON); {
         result = imdom.On(c, ev.MOUSEDOWN);
@@ -148,7 +148,34 @@ TODO: mention begin/end pairs
 ## However, there is a problem
 
 You'll notice that there are a couple of things I've avoided showing in this page. 
-Namely, `if`, `for`, `switch`, etc. You know - the things that make a programming language useful!
+Namely, `if`, `for`, `switch`, etc. You know - the things that make a programming language useful ...
 
-Sadly, they don't _just work(TM)_. It will be explained in the next page!
+Sadly, they don't _just work(TM)_. The following component will break once the count reaches 3:
+
+```ts - Conditional rendering - but sadly, it doesn't just work
+function imConditionalRenderingExampleIfStatementBad(c: ImCache) {
+    const s = im.GetInline(c, im.GetInline) ?? im.Set(c, { count: 0 });
+    imDivBegin(c); {
+        if (imButtonIsClicked(c, "Increment the count")) {
+            s.count++;
+        }
+    } imDivEnd(c);
+
+    imDivBegin(c); {
+        if (s.count < 3) {
+            imdom.Str(c, "It's time to pump up those numbers, rookie.");
+        } else {
+            imdom.ElBegin(c, el.B); {
+                imdom.Str(c, "Gee, that's a high count! ");
+            } imdom.ElEnd(c, el.B);
+        } 
+    } imDivEnd(c);
+
+    imDivBegin(c); {
+        imdom.Str(c, s.count);
+    } imDivEnd(c);
+}
+```
+
+Why? All will be clear after the #url[next page, /?test=Control+flow+part+1+-+conditional%2Flist+rendering]!
 

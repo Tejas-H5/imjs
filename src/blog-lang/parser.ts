@@ -61,6 +61,7 @@ export type TableRow = {
 }
 export type TableCell = {
 	contents: Block[];
+	style: number;
 };
 
 export type Block = 
@@ -124,6 +125,10 @@ export const S_QUOTE    = 4;
 // List styles
 export const LS_UNORDERED = 0;
 export const LS_ORDERED   = 1;
+
+// Table column styles
+export const TCS_FR      = 0;
+export const TCS_CONTENT = 1;
 
 // Block type - this value is internal to the parser - 
 // it determines what kind of thing we've just stumbled into,
@@ -394,7 +399,33 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 							break;
 						}
 
-						const cell: TableCell = { contents: [] };
+						let columnStyle = TCS_FR;
+
+						// NOTE: It's valid for every cell to specify styling. 
+						// BUT - only the styling from the first row will be used. 
+						parseWhitespace(parser);
+						if (compareAndAdvance(parser, "[")) {
+							const styleArg = parseFunctionArgument(parser);
+							if (styleArg) {
+								const styleArgVal = styleArg.val.trim();
+								// TODO: 1fr, 2fr type shii
+								// "fr" is a fractional unit from css-grid-templates
+								if (styleArgVal.endsWith("fr")) {
+									columnStyle = TCS_FR;
+								} else if(
+									styleArgVal.endsWith("c") ||
+									styleArgVal.endsWith("content")
+								) {
+									// similar to max-content
+									columnStyle = TCS_CONTENT;
+								}
+							}
+						}
+
+						const cell: TableCell = {
+							contents: [],
+							style: columnStyle,
+						};
 						row.cells.push(cell);
 						parseBlocks(parser, cell.contents, ctx);
 					}

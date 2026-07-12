@@ -1,11 +1,12 @@
 import { im, ImCache, imdom, el } from "im-js";
-import { BLOCK, COL, cssVars, END, imui, NA, PX, ROW, START } from "im-ui";
+import { BLOCK, COL, cssVars, END, imui, INLINE, NA, PX, ROW, START } from "im-ui";
 import { imButtonIsClicked } from "im-ui/components/button";
 import { lerp, lerp01 } from "im-ui/components/math-utils";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
 import * as bl from "blog-lang";
 import { imJsBlogPost } from "./im-js-blogpost";
+import { Module } from "minimal-tsc";
 
 export type VisualTest = {
     name: string;
@@ -21,7 +22,7 @@ export function newVisualTest(
 
 const SIDEBAR_OPEN_TRIGGER_THRESHOLD = 0.03;
 
-export function newVisualTestFromBlogLang(markup: string) {
+export function newVisualTestFromBlogLang(markup: string, modules: Module[]) {
     const post = bl.parse(markup);
 
     let name = "Unknown";
@@ -37,12 +38,13 @@ export function newVisualTestFromBlogLang(markup: string) {
     return {
         name: name,
         code: (c: ImCache, harness: VisualTestHarnessState) => {
-            imJsBlogPost(c, harness, post);
+            imJsBlogPost(c, harness, post, modules);
         },
     };
 }
 
 export type VisualTestHarnessState = {
+    tests: VisualTest[],
     currentTest: VisualTest | undefined;
     currentInstallation: VisualTestHarnessInstallationState | undefined;
     currentVisibleInstallation: VisualTestHarnessInstallationState | undefined;
@@ -85,6 +87,7 @@ const numIntros = 3;
 
 function newState(): VisualTestHarnessState {
     return {
+        tests: [],
         currentTest: undefined,
         currentInstallation: undefined,
         currentVisibleInstallation: undefined,
@@ -112,7 +115,7 @@ export function imHeading(c: ImCache, text: string, id: string) {
     } imdom.ElEnd(c, el.H1);
 }
 
-function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
+export function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
     if (s.currentTest === test) return;
 
     s.currentTest = test;
@@ -125,6 +128,7 @@ function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined,
 
     if (pushHistory) {
         window.history.pushState(null, "", "?" + params.toString());
+        document.getElementById("top")?.scrollIntoView();
     }
 }
 
@@ -151,6 +155,7 @@ export function imVisualTestHarness(
 
     s.installations.length = 0;
     s.currentVisibleInstallation = undefined;
+    s.tests = tests;
 
     const currentTestName = queryParams.get("test");
     const isTestingIntro = queryParams.has("intro");
@@ -358,8 +363,10 @@ function updateWindowLocationHash(hash: string) {
 }
 
 function imSidebarTitle(c: ImCache, isLeft: boolean, str: string) {
-    imui.Begin(c, ROW); imui.Justify(c, isLeft ? START : END); imui.Bg(c, cssVars.bg); imui.Padding(c, 10, PX, 10, PX, 10, PX, 10, PX); {
-        imdom.Str(c, str);
+    imui.Begin(c, ROW); imui.Justify(c, isLeft ? START : END); imui.Padding(c, 10, PX, 10, PX, 10, PX, 10, PX); {
+        imui.Begin(c, INLINE); imui.Bg(c, cssVars.bg);  {
+            imdom.Str(c, str);
+        } imui.End(c);
     } imui.End(c);
 }
 

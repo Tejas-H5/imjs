@@ -107,7 +107,8 @@ export function transform(tsCode: string, modules: Module[]): CompileResult {
 
 			sb.push(tsCode.substring(start, i));
 		} else if (compare(tsCode, i, "<")) {
-			i = skipTemplateExpression(tsCode, i);
+			// TODO: need to disambiguate between call<T> and a < b
+			// i = skipTemplateExpression(tsCode, i);
 		}
 
 		sb.push(tsCode[i]);

@@ -13,7 +13,7 @@ Sadly, it's not magic - this next component will actually stop working after inc
 function imConditionalRenderingExampleIfStatementBad(c: ImCache) {
     const s = im.GetInline(c, im.GetInline) ?? im.Set(c, { count: 0 });
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Increment the count")) {
+        if (imButtonIsClicked(c, "Increment the count")) {
             s.count++;
         }
     } imDivEnd(c);
@@ -46,7 +46,7 @@ The solution this framework has settled on, is for you to annotate if-blocks wit
 function imConditionalRenderingExampleIfStatementNotBad(c: ImCache) {
     const s = im.GetInline(c, im.GetInline) ?? im.Set(c, { count: 0 });
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Increment the count")) {
+        if (imButtonIsClicked(c, "Increment the count")) {
             s.count++;
         }
     } imDivEnd(c);
@@ -84,7 +84,7 @@ In this example, the immediate-mode code in the for-loop will start eating into 
 function imListRenderingExampleBad(c: ImCache) {
     const s = im.GetInline(c, im.GetInline) ?? im.Set(c, { count: 0 });
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Increment the count")) {
+        if (imButtonIsClicked(c, "Increment the count")) {
             s.count++;
         }
 
@@ -109,7 +109,7 @@ The framework deals with for-loops with the im.For and im.ForEnd methods:
 function imListRenderingExampleBad(c: ImCache) {
     const s = im.GetInline(c, im.GetInline) ?? im.Set(c, { count: 0 });
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Increment the count")) {
+        if (imButtonIsClicked(c, "Increment the count")) {
             s.count++;
         }
 

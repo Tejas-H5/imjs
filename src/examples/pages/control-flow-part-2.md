@@ -18,7 +18,7 @@ function imListRenderingExampleKeyed(c: ImCache) {
         });
 
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Shuffle items")) {
+        if (imButtonIsClicked(c, "Shuffle items")) {
             s.items.sort(() => Math.random() - 0.5);
         }
         im.For(c); for (const item of s.items) {
@@ -49,7 +49,7 @@ function imListRenderingExampleNotKeyed(c: ImCache) {
         items: [1, 2, 3, 4, 5].map(id => ({ id, isBold: id % 2 === 0 })),
     });
     imDivBegin(c); {
-        if (imExampleButtonIsClicked(c, "Shuffle items")) {
+        if (imButtonIsClicked(c, "Shuffle items")) {
             s.items.sort(() => Math.random() - 0.5);
         }
         im.For(c); for (const item of s.items) {
@@ -174,12 +174,12 @@ function imErrorBoundaryExampleView(c: ImCache) {
                 imdom.Str(c, err);
             } imDivEnd(c);
             imDivBegin(c); {
-                if (imExampleButtonIsClicked(c, "Dismiss error")) {
+                if (imButtonIsClicked(c, "Dismiss error")) {
                     recover();
                 }
             } imDivEnd(c);
         } else if (im.Else(c)) { 
-            if (imExampleButtonIsClicked(c, "Click here to launch orbital nuke!")) {
+            if (imButtonIsClicked(c, "Click here to launch orbital nuke!")) {
                 if (s.orbitalNukes <= 0) throw new Error("All orbital nukes have already been used");
                 s.orbitalNukes--;
             }
