@@ -1,4 +1,4 @@
-import { BLOCK, NA, PERCENT, PX, cssVars, imui } from "./im-ui";
+import { BLOCK, NA, PERCENT, PX, cssVars, imui } from "../im-ui";
 import { imdom, im, ImCache } from "im-js";
 
 // Surprisingly useful. That being said, I have been informed that using lines to design instead of spacing is usally a bad idea
@@ -25,7 +25,7 @@ export function imLine(
         !isH ? height : 100, !isH ? heightUnit : PERCENT,
          isH ? height : 100,  isH ? heightUnit : PERCENT,
     ); {
-        if (im.IsFirstRender(c)) {
+        if (im.isFirstRender(c)) {
             imdom.setStyle(c, "backgroundColor", cssVars.fg);
             imdom.setClass(c, cnHLine);
         }

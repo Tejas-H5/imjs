@@ -1,4 +1,4 @@
-import { COL, imui, NA, PX, ROW, cssVars } from "./im-ui";
+import { COL, imui, NA, PX, ROW, cssVars } from "../im-ui";
 import { imdom, im, ImCache } from "im-js";
 
 // context-menu V0.01
@@ -47,7 +47,7 @@ export function imContextMenuBegin(c: ImCache, s: ContextMenuState) {
                 s.position.y = wantedTop;
             }
 
-            if (im.IsFirstRender(c)) {
+            if (im.isFirstRender(c)) {
                 imdom.setStyle(c, "padding", "3px");
                 imdom.setStyle(c, "userSelect", "none");
                 imdom.setStyle(c, "backgroundColor", cssVars.bg);
@@ -80,7 +80,7 @@ export function imContextMenuEnd(c: ImCache, s: ContextMenuState) {
 // This is not as important as imContextMenuBegin/End, and can be changed for something else.
 export function imContextMenuItemBegin(c: ImCache) {
     imui.Begin(c, ROW); imui.Justify(c); {
-        if (im.IsFirstRender(c)) {
+        if (im.isFirstRender(c)) {
             imdom.setStyle(c, "borderBottom", "1px solid rgba(0,0,0,0.37)");
         }
     } // imui.End

@@ -1,5 +1,5 @@
 import { imdom, im, ImCache, el, ev } from "im-js";
-import { cssVars, imui } from "./im-ui";
+import { cssVars, imui } from "../im-ui";
 import { imTextAreaBegin, imTextAreaEnd } from "./editable-text-area";
 
 const cssb = imui.newCssBuilder();
@@ -28,7 +28,7 @@ export function imTextInputBegin(c: ImCache, {
     placeholder?: string;
 }) {
     const input = imdom.ElBegin(c, el.INPUT); {
-        if (im.IsFirstRender(c)) {
+        if (im.isFirstRender(c)) {
             imdom.setClass(c, cnInput);
             imdom.setAttr(c, "type", "text");
         }

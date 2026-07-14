@@ -1,6 +1,6 @@
 import { im, ImCache } from "im-js";
 import { COL, imui, ROW } from "im-ui";
-import { getScrollVHEx } from "./dom-utils";
+import { getScrollVHEx } from "../dom-utils";
 
 
 // NOTE: if all we need is idx, let's just inline it.

@@ -1,4 +1,4 @@
-// IM-DOM 1.80
+// IM-DOM 1.84
 
 import { assert } from "./assert";
 import { im, ImCache } from "./im-core";
@@ -248,7 +248,7 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
     r: KeyRef<K>
 ): DomAppender<HTMLElementTagNameMap[K]> {
-    // TODO: support changing tne type
+    // TODO: support changing the type
     // Make this entry in the current entry list, so we can delete it easily
     const appender = getCurrentAppender(c);
 
@@ -317,20 +317,6 @@ function imElEnd(c: ImCache, r: KeyRef<keyof HTMLElementTagNameMap | keyof SVGEl
 
 const imElSvgEnd = imElEnd;
 
-
-/**
- * Typicaly just used at the very root of the program:
- *
- * const globalim.Cache: im.Cache = [];
- * main(globalim.Cache);
- *
- * function main(c: im.Cache) {
- *      CacheBegin(c); {
- *          DomRootBegin(c, document.body); {
- *          }
- *      } CacheEnd(c);
- * }
- */
 function imRootBegin(c: ImCache, root: ValidElement) {
     let appender = im.Get(c, newDomAppender);
     if (appender === undefined) {
@@ -355,6 +341,47 @@ function imRootBegin(c: ImCache, root: ValidElement) {
     appender.deferList.length = 0;
 
     return appender;
+}
+
+function imRootEnd(c: ImCache, root: ValidElement) {
+    const appender = getCurrentAppender(c);
+    assert(appender.keyRef === root);
+
+    // By finalizing at the very end, we get two things:
+    // - Opportunity to make a 'global key' - a component that can be instantiated anywhere but reuses the same cache entries. 
+    //      a context menu is a good example of a usecase. Every component wants to instantiate it as if it were it's own, but really, 
+    //      only one can be open at a time - there is an opportunity to save resources here and reuse the same context menu every time.
+    // - Allows existing dom appenders to be re-pushed onto the stack, and appended to. 
+    //      Useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
+    //      For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
+    //      but then organising the components becomes a bit annoying.
+
+    // deferred finalization.
+    const deferList = appender.domRoot!.deferList;
+    assert(!!deferList);
+    for (let i = 0; i < deferList.length; i++) {
+        const item = deferList[i];
+        finalizeDomAppender(item);
+    }
+
+    // Finally, finalize the root
+    finalizeDomAppender(appender);
+
+    endDomAppender(c, appender);
+}
+
+/**
+ * If you will only ever have a single root (majority of usecases), this is the one to use.
+ * If you need multiple roots for some reason, then you want a call to {@link imRootBegin}/{@link imRootEnd}
+ * per-root, and just a single call to {@link imGlobalEventSystemPoll}/{@link imGlobalEventSystemEnd}
+ */
+function imDomBegin(c: ImCache, singleRoot: HTMLElement) {
+    imGlobalEventSystemPoll(c);
+    imRootBegin(c, singleRoot);
+}
+
+function imDomEnd(c: ImCache, singleRoot: HTMLElement) {
+    imRootEnd(c, singleRoot);
 }
 
 function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
@@ -386,33 +413,6 @@ function imFinalizeDeferred(c: ImCache) {
     getCurrentAppender(c).finalizeType = FINALIZE_DEFERRED;
 }
 
-
-function imRootEnd(c: ImCache, root: ValidElement) {
-    const appender = getCurrentAppender(c);
-    assert(appender.keyRef === root);
-
-    // By finalizing at the very end, we get two things:
-    // - Opportunity to make a 'global key' - a component that can be instantiated anywhere but reuses the same cache entries. 
-    //      a context menu is a good example of a usecase. Every component wants to instantiate it as if it were it's own, but really, 
-    //      only one can be open at a time - there is an opportunity to save resources here and reuse the same context menu every time.
-    // - Allows existing dom appenders to be re-pushed onto the stack, and appended to. 
-    //      Useful for creating 'layers' that exist in another part of the DOM tree that other components might want to render to.
-    //      For example, if I am making a node editor with SVG paths as edges, it is best to just have a single SVG layer to render everything into
-    //      but then organising the components becomes a bit annoying.
-
-    // deferred finalization.
-    const deferList = appender.domRoot!.deferList;
-    assert(!!deferList);
-    for (let i = 0; i < deferList.length; i++) {
-        const item = deferList[i];
-        finalizeDomAppender(item);
-    }
-
-    // Finally, finalize the root
-    finalizeDomAppender(appender);
-
-    endDomAppender(c, appender);
-}
 
 export interface Stringifyable {
     // Allows you to memoize the text on the object reference, and not the literal string itself, as needed.
@@ -481,7 +481,11 @@ function setStyle<K extends (keyof ValidElement["style"])>(
     root.style[key] = value;
 }
 
-function setTextUnsafe(c: ImCache, val: string) {
+function setStyleRed(c: ImCache) {
+    setStyle(c, "backgroundColor", "red");
+}
+
+function setTextContent(c: ImCache, val: string) {
     let el = getCurrentElement(c);
     el.textContent = val;
 }
@@ -683,6 +687,7 @@ export type GlobalEventSystem = {
     keyboard: KeyboardState;
     mouse: MouseState;
     blur:  boolean;
+    dontClear: boolean;
     globalEventHandlers: {
         mousedown:  (e: MouseEvent) => void;
         mousemove:  (e: MouseEvent) => void;
@@ -713,9 +718,6 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
     };
 
     const mouse: MouseState = {
-        lastX: 0,
-        lastY: 0,
-
         ev: null,
 
         leftMouseButton: false,
@@ -724,8 +726,12 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
 
         dX: 0,
         dY: 0,
-        X: 0,
-        Y: 0,
+        // By making the initial position offscreen, the mouse 
+        // doesn't hover any UI element on page-load
+        X: -1,
+        Y: -1,
+        lastX: -1,
+        lastY: -1,
 
         scrollWheel: 0,
 
@@ -742,8 +748,10 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
         mouse.lastY = mouse.Y;
         mouse.X = e.clientX;
         mouse.Y = e.clientY;
-        mouse.dX += mouse.X - mouse.lastX;
-        mouse.dY += mouse.Y - mouse.lastY;
+        if (mouse.lastX >= 0 && mouse.lastY >= 0) {
+            mouse.dX += mouse.X - mouse.lastX;
+            mouse.dY += mouse.Y - mouse.lastY;
+        }
 
         if (mouse.lastMouseOverElement !== e.target) {
             mouse.lastMouseOverElement = e.target as ValidElement;
@@ -761,10 +769,14 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
     }
 
     const eventSystem: GlobalEventSystem = {
-        rerender: () => im.rerenderCache(c),
+        rerender: () => {
+            eventSystem.dontClear = true;
+            im.rerenderCache(c)
+        },
         keyboard,
         mouse,
         blur: false,
+        dontClear: false,
         // stored, so we can dispose them later if needed.
         globalEventHandlers: {
             mousedown: (e: MouseEvent) => {
@@ -860,30 +872,36 @@ function resetImKeyboardState(keyboard: KeyboardState) {
 let globalEventSystem: GlobalEventSystem | undefined;
 
 // TODO: is there any point in separating this from DomRoot ?
-function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
-    let state = im.Get(c, newImGlobalEventSystem);
-    if (state === undefined) {
+function imGlobalEventSystemPoll(c: ImCache): GlobalEventSystem {
+    let eventSystem = im.Get(c, newImGlobalEventSystem);
+    if (eventSystem === undefined) {
         // Can't make two of these
         assert(globalEventSystem === undefined);
 
-        const eventSystem = newImGlobalEventSystem(c);
-        addDocumentAndWindowEventListeners(eventSystem);
-        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
-        state = im.Set(c, eventSystem);
+        const newEventSystem = newImGlobalEventSystem(c);
+        addDocumentAndWindowEventListeners(newEventSystem);
+        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(newEventSystem));
+        eventSystem = im.Set(c, newEventSystem);
 
-        globalEventSystem = state;
+        globalEventSystem = newEventSystem;
     }
 
-    return state;
-}
+    if (eventSystem.dontClear === false) {
+        updateMouseState(eventSystem.mouse);
+        updateKeysState(eventSystem.keyboard.keys, null, null, false);
 
-function imGlobalEventSystemEnd(_c: ImCache, eventSystem: GlobalEventSystem) {
-    updateMouseState(eventSystem.mouse);
-    updateKeysState(eventSystem.keyboard.keys, null, null, false);
+        eventSystem.keyboard.keyDown = null
+        eventSystem.keyboard.keyUp = null
+        eventSystem.blur = false;
+    } else {
+        // Ensure that we only ever let 1 event through - 
+        // make sure that if the component threw before reaching 
+        // imGlobalEventSystemPoll, the next render of the component
+        // will still clear out the event 
+        eventSystem.dontClear = true;
+    }
 
-    eventSystem.keyboard.keyDown = null
-    eventSystem.keyboard.keyUp = null
-    eventSystem.blur = false;
+    return eventSystem;
 }
 
 function imTrackSize(c: ImCache, rerender = false) {
@@ -1683,7 +1701,24 @@ export const imdom = {
     getAppender: getCurrentAppender,  // Gets the current DOM appender. Very useful for utils
     getElement: getCurrentElement,    // Short for getAppender().root
 
-    /** Begin DOM root. Required before any calls to {@link imdom.ElBegin} */
+    /**
+     * Typicaly just used at the very root of the program:
+     *
+     * const globalim.Cache: im.Cache = [];
+     * main(globalim.Cache);
+     *
+     * function imMain(c: im.Cache) {
+     *      im.CacheBegin(c, imMain); {
+     *          const ev = imdom.Begin(c, document.body); {
+     *              // Your code here
+     *          } imdom.End(c, document.body, ev);
+     *      } im.CacheEnd(c);
+     * }
+     *
+     * const globalImCache: ImCache = []; // yes it's just an array
+     * imMain(globalImCache);
+     */
+    Begin: imDomBegin, End:   imDomEnd,
     RootBegin: imRootBegin, RootEnd: imRootEnd,
 
     /** DOM-node creation */
@@ -1709,10 +1744,13 @@ export const imdom = {
 
     /** Setting properties on DOM node */
     setStyle,
+    setStyleRed, // useful for debugging
     setStyleProperty,
     setClass,
     setAttr,
-    setTextUnsafe, // Don't call this on an element that has non-text children! You'll delete them.
+    // Can be more performant that imdom.Str, since we don't need to do if (prevStr !== str) { updateStr } every frame.
+    // Don't call this on an element that has non-text children! You'll delete them.
+    setTextUnsafe: setTextContent, 
 
     /** Utility hooks */
     On:                            imOn, // Wrapper for .addEventListener. No, there is no corresponding Off - it doesn't make sense here
@@ -1722,8 +1760,8 @@ export const imdom = {
 
     /** Global event system */
 
-    // These must be called at the root of the program for the global event system to work
-    GlobalEventSystemBegin: imGlobalEventSystemBegin, GlobalEventSystemEnd: imGlobalEventSystemEnd, 
+    /* Already called by {@link imdom.Begin}, so you don't need to use it yourself */
+    imGlobalEventSystemPoll: imGlobalEventSystemPoll, 
 
     getMouse,
     getKeyboard,

@@ -1,22 +1,68 @@
-import { im, ImCache, imdom } from "im-js";
-import { COL, imui, PX } from "im-ui";
-import { imVisualTestHarness, newVisualTest, VisualTest } from "visual-testing-harness";
-import { imJsCompleteOverview } from "./overview";
-import { imJsPerformanceBenchmarks } from "./performance-benchmarking";
+import { el, ev, im, ImCache, imdom } from "im-js";
+import { COL, cssVars, imui, PX } from "im-ui";
+import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visual-testing-harness";
+
+import page0 from "./pages/overview.md";
+import page1 from "./pages/installing.md";
+import page2 from "./pages/creating-an-spa.md";
+import page3 from "./pages/creating-components.md";
+import page4 from "./pages/control-flow.md";
+import page5 from "./pages/control-flow-part-2.md";
+import page6 from "./pages/state-management.md";
+import page7 from "./pages/the-end.md";
+import { assert } from "assert";
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+
+const imStr = imdom.Str;
+
+function imButtonIsClicked(c: ImCache, text: string): MouseEvent | null {
+    let result: MouseEvent | null = null;
+    imdom.ElBegin(c, el.BUTTON); {
+        result = imdom.On(c, ev.MOUSEDOWN);
+        imdom.Str(c, text);
+    } imdom.ElEnd(c, el.BUTTON);
+    return result;
+}
+
+const modules = [
+    { namespace: "im",      env: im },
+    { namespace: "imdom",   env: imdom },
+    { namespace: "el",      env: el },
+    { namespace: "ev",      env: ev },
+    { namespace: "imui",    env: imui },
+    { namespace: "cssVars", env: cssVars },
+    { env: {
+        assert: assert,
+        imDivBegin: imDivBegin, imDivEnd: imDivEnd, 
+        imButtonIsClicked: imButtonIsClicked,
+        imStr: imStr,
+    }}
+]
 
 const tests: VisualTest[] = [
-    newVisualTest("imJS - A complete overview", imJsCompleteOverview),
-    newVisualTest("Performance benchmarks", imJsPerformanceBenchmarks),
-];
+    newVisualTestFromBlogLang(page0, modules),
+    newVisualTestFromBlogLang(page1, modules),
+    newVisualTestFromBlogLang(page2, modules),
+    newVisualTestFromBlogLang(page3, modules),
+    newVisualTestFromBlogLang(page4, modules),
+    newVisualTestFromBlogLang(page5, modules),
+    newVisualTestFromBlogLang(page6, modules),
+    newVisualTestFromBlogLang(page7, modules),
+]
 
 export function imMain(c: ImCache) {
     im.CacheBegin(c, imMain); {
-        imdom.RootBegin(c, document.body); {
-            const ev = imdom.GlobalEventSystemBegin(c); {
-                imui.LayoutBegin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                    imVisualTestHarness(c, tests);
-                } imui.LayoutEnd(c);
-            } imdom.GlobalEventSystemEnd(c, ev);
-        } imdom.RootEnd(c, document.body);
+        imdom.Begin(c, document.body); {
+            imui.LayoutBegin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+                imVisualTestHarness(c, tests);
+            } imui.LayoutEnd(c);
+        } imdom.End(c, document.body);
     } im.CacheEnd(c);
 }

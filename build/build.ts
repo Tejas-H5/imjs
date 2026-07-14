@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import * as http from "http";
 import { ChildProcess, spawn } from "node:child_process"
 
-// @Tejas-H5: esbuild-build-script V0.0.5
+// @Tejas-H5: esbuild-build-script V0.0.6
 // Add these scripts to your package.json
 /** 
 	"dev": "node ./build/build.ts devserver",
@@ -82,6 +82,7 @@ const commonBuildOptions: esbuild.BuildOptions = {
 	),
 	write: false,
 	sourcemap: config === "devserver" ? "inline" : undefined,
+	loader: { ".md": "text" },
 }
 
 let tscProcessLast: ChildProcess | undefined;

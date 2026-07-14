@@ -1,6 +1,8 @@
 import { DisplayType, imui, INLINE, ROW, cssVars } from "im-ui";
 import { imdom, im, ImCache } from "im-js";
 
+// Legacy button component. TODO: move to im-button
+
 const cssb = imui.newCssBuilder();
 
 const cnButton = (() => {
@@ -20,7 +22,7 @@ const cnButton = (() => {
     padding-top: 0; padding-bottom: 0;
 }`,
         ` > .inner { 
-    padding: 0.25rem; 
+    padding: 0.25rem 1rem; 
     min-width: 1.5rem;
     display: flex; align-items: center; justify-content: center;
     background-color: ${cssVars.bg2}; transition: background-color ${transiton}, color ${transiton}; 
@@ -37,7 +39,7 @@ export const BUTTON_TOGGLED = 1 << 0;
 export const BUTTON_HIDDEN = 1 << 1;
 
 export function imButton(c: ImCache, flags = 0) {
-    if (im.IsFirstRender(c)) {
+    if (im.isFirstRender(c)) {
         imdom.setClass(c, cnButton);
     }
 
@@ -64,7 +66,7 @@ export function imButtonBegin(
         }
 
         imui.Begin(c, INLINE); {
-            if (im.IsFirstRender(c)) {
+            if (im.isFirstRender(c)) {
                 imdom.setClass(c, "inner");
             }
 

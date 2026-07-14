@@ -6,13 +6,28 @@
   "main": "./src/utils/im-js/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "node ./build/build.ts devserver",
-    "build": "node ./build/build.ts build"
+    "dev":   "node ./build/build.ts devserver",
+    "build": "node ./build/build.ts build",
+    "test":  "node ./build/test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
-  }
+  },
+  "exports": {
+    ".": {
+      "import": "./src/im-js/index.ts",
+      "types":  "./src/im-js/index.ts"
+    },
+    "imui": {
+      "import": "./src/im-ui/index.ts",
+      "types":  "./src/im-ui/index.ts"
+    }
+  },
+  "files": [
+    "src/im-js",
+    "src/im-ui"
+  ]
 }

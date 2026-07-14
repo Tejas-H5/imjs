@@ -2,8 +2,6 @@ import { im } from "im-js";
 import { imMain } from "./examples/examples";
 import { cssVars, imui, } from "./im-ui";
 
-const SPACING_1 = "10px";
-
 imui.newCssBuilder().s(`
 html {
 	color: ${cssVars.fg};
@@ -19,14 +17,8 @@ body {
 	margin: 0;
 }
 
-h1 {
-	margin-top: ${SPACING_1};
-	margin-bottom: ${SPACING_1};
-}
-
-p {
-	margin-top: 0px;
-	margin-bottom: ${SPACING_1};
+h1, h2, h3, h4, p, ul {
+	margin: 0;
 }
 `);
 

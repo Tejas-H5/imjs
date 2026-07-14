@@ -191,6 +191,7 @@ export const PERCENT = 30001 as SizeUnitInstance;
 export const REM = 40001 as SizeUnitInstance;
 export const CH = 50001 as SizeUnitInstance;
 export const NA = 60001 as SizeUnitInstance; // Not applicable. Nahh. 
+export const VH = 70001 as SizeUnitInstance;
 export const FIT_CONTENT = 60002 as SizeUnitInstance; 
 
 export type SizeUnits = typeof PX |
@@ -198,6 +199,7 @@ export type SizeUnits = typeof PX |
     typeof PERCENT |
     typeof REM |
     typeof CH |
+    typeof VH |
     typeof NA;
 
 function getUnits(num: SizeUnits) {
@@ -207,6 +209,7 @@ function getUnits(num: SizeUnits) {
         case PERCENT: return "%";
         case REM:     return "rem";
         case CH:      return "ch";
+        case VH:      return "vh";
         default:      return "px";
     }
 }
@@ -259,7 +262,7 @@ function imOpacity(c: ImCache, val: number) {
 }
 
 function imRelative(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
 }
 
 function imBg(c: ImCache, colour: string) {
@@ -317,7 +320,7 @@ export type DisplayType
  */
 function imFlex1(c: ImCache) {
     imLayoutBegin(c, BLOCK); {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "flex", "1");
     } imLayoutEnd(c);
 }
 
@@ -377,19 +380,19 @@ function imLayoutEnd(c: ImCache) {
 }
 
 function imPre(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "whiteSpace", "pre");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "whiteSpace", "pre");
 }
 
 function imPreWrap(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "whiteSpace", "pre-wrap");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "whiteSpace", "pre-wrap");
 }
 
 function imNoWrap(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "whiteSpace", "nowrap");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "whiteSpace", "nowrap");
 }
 
 function imNoSelect(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
 }
 
 function imFlex(c: ImCache, ratio = 1) {
@@ -402,7 +405,7 @@ function imFlex(c: ImCache, ratio = 1) {
 }
 
 function imFlexWrap(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "flexWrap", "wrap");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "flexWrap", "wrap");
 }
 
 function imGap(c: ImCache, val = 0, units: SizeUnits) {
@@ -467,7 +470,7 @@ function imFixed(
     bottom: number, bottomType: SizeUnits,
     left: number, leftType: SizeUnits,
 ) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "fixed");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "fixed");
     if (im.Memo(c, top) | im.Memo(c, topType))       imdom.setStyle(c, "top",    getSize(top, topType)); 
     if (im.Memo(c, right) | im.Memo(c, rightType))   imdom.setStyle(c, "right",  getSize(right, rightType)); 
     if (im.Memo(c, bottom) | im.Memo(c, bottomType)) imdom.setStyle(c, "bottom", getSize(bottom, bottomType)); 
@@ -475,7 +478,7 @@ function imFixed(
 }
 
 function imFixedXY(c: ImCache, x: number, xUnits: SizeUnits, y: number, yUnits: SizeUnits) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "fixed");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "fixed");
     if (im.Memo(c, x) | im.Memo(c, xUnits)) imdom.setStyle(c, "left",  getSize(x, xUnits)); 
     if (im.Memo(c, y) | im.Memo(c, yUnits)) imdom.setStyle(c, "top", getSize(y, yUnits)); 
 }
@@ -521,7 +524,7 @@ function imAbsolute(
     bottom: number, bottomType: SizeUnits, 
     left: number, leftType: SizeUnits,
 ) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
     if (im.Memo(c, top) | im.Memo(c, topType))       imdom.setStyle(c, "top",    getSize(top, topType)); 
     if (im.Memo(c, right) | im.Memo(c, rightType))   imdom.setStyle(c, "right",  getSize(right, rightType)); 
     if (im.Memo(c, bottom) | im.Memo(c, bottomType)) imdom.setStyle(c, "bottom", getSize(bottom, bottomType)); 
@@ -529,14 +532,14 @@ function imAbsolute(
 }
 
 function imAbsoluteXY(c: ImCache, x: number, xType: SizeUnits, y: number, yType: SizeUnits) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
     if (im.Memo(c, x) | im.Memo(c, xType)) imdom.setStyle(c, "left", getSize(x, xType)); 
     if (im.Memo(c, y) | im.Memo(c, yType)) imdom.setStyle(c, "top",  getSize(y, yType)); 
 }
 
 // NOTE: should be before imSize
 function imAspectRatio(c: ImCache, w: number, h: number) {
-    if (im.IsFirstRender(c)) {
+    if (im.isFirstRender(c)) {
         imdom.setStyle(c, "width", "auto");
         imdom.setStyle(c, "height", "auto");
     }
@@ -554,7 +557,7 @@ function imZIndex(c: ImCache, z: number) {
 }
 
 function imHandleLongWords(c: ImCache) {
-    if (im.IsFirstRender(c)) {
+    if (im.isFirstRender(c)) {
         imdom.setStyle(c, "overflowWrap", "anywhere");
         imdom.setStyle(c, "wordBreak", "normal");
     }

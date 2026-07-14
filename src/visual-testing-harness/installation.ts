@@ -1,8 +1,8 @@
 import { ImCacheRerenderFn, im, ImCache, imdom, el } from "im-js";
-import { inverseLerp } from "im-ui/math-utils";
+import { inverseLerp } from "im-ui/components/math-utils";
 import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "im-ui";
 import { VisualTestHarnessState } from "./harness";
-import { imButtonIsClicked } from "im-ui/button";
+import { imButtonIsClicked } from "im-ui/components/button";
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -14,11 +14,11 @@ export type VisualTestHarnessInstallationState = {
     title: string;
 };
 
-function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, code?: string): VisualTestHarnessInstallationState {
+function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, title: string, code?: string): VisualTestHarnessInstallationState {
     return {
         test: test,
         code: formatCode(code ?? test.toString(), code ? 4 : 2),
-        hash: test.name,
+        hash: title,
         title: "",
     };
 }
@@ -36,13 +36,11 @@ export function imVisualTestInstallation(
 
     let s; s = im.GetInline(c, imVisualTestInstallation); 
     if (!s || testChanged || codeChanged) {
-        s = im.Set(c, newVisualTestHarnessInstallationState(test, code));
+        s = im.Set(c, newVisualTestHarnessInstallationState(test, title, code));
     }
 
     harness.installations.push(s);
     s.title = title;
-
-    const scroll = !!(flags & TEST_SCROLLABLE);
 
     imui.Begin(c, BLOCK); {
         const visibility = imdom.TrackVisibility(c, 1);
@@ -62,17 +60,23 @@ export function imVisualTestInstallation(
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
-            if (im.IsFirstRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
+            if (im.isFirstRender(c)) {
+                imdom.setStyle(c, "maxHeight", "80vh");
+            }
 
             const center = !!(flags & TEST_CENTERED);
 
             const split = im.GetInline(c, imVisualTestInstallation) ?? 
-                im.Set(c, { vSplit: 0.5, dragging: false });
+                im.Set(c, { vSplit: 0.4, dragging: false });
 
             // Test Component
-            imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c, scroll); {
+            imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c); {
                 imui.Align(c, center ? CENTER : NONE);
-                imui.Justify(c, center ? CENTER : NONE);
+
+                // This messes with the the scroll overflow for some reason.
+                // I would have prefered the test be vertically centered, but I am prioritizing actually 
+                // being able to scroll through the whole output over that.
+                // imui.Justify(c, center ? CENTER : NONE);
 
                 imRenderWithErrorBoundary2(c, test);
             } imui.End(c);
@@ -83,9 +87,9 @@ export function imVisualTestInstallation(
                 if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
 
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
 
                 if (im.Memo(c, mouse.X) && split.dragging) {
                     const rect = root.getBoundingClientRect();
@@ -95,17 +99,18 @@ export function imVisualTestInstallation(
 
             // Code
             imui.Begin(c, BLOCK); imui.PreWrap(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontSize", "18px");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
-                
+                if (im.isFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
+                imui.Fg(c, cssVars.fg2);
+                imui.Bg(c, cssVars.bg2);
 
                 const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
                 im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
                     const line = s.code[lineIdx];
                     // Line numbers. Exclude them from the user selection
                     imui.Begin(c, INLINE); {
-                        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                        imdom.Str(c, " ");
                         imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
                         imdom.Str(c, " | ");
                     } imui.End(c);

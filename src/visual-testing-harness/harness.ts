@@ -1,9 +1,12 @@
 import { im, ImCache, imdom, el } from "im-js";
-import { imButtonIsClicked } from "im-ui/button";
-import { lerp01 } from "im-ui/math-utils";
-import { BLOCK, COL, END, imui, NA, PX, ROW } from "../im-ui";
+import { BLOCK, COL, cssVars, END, imui, INLINE, NA, PX, ROW, START } from "im-ui";
+import { imButtonIsClicked } from "im-ui/components/button";
+import { lerp, lerp01 } from "im-ui/components/math-utils";
 import { VisualTestHarnessInstallationState } from "./installation";
 import { imSplashScreen } from "./splash-screen";
+import * as bl from "blog-lang";
+import { imJsBlogPost } from "./im-js-blogpost";
+import { Module } from "minimal-tsc";
 
 export type VisualTest = {
     name: string;
@@ -17,37 +20,80 @@ export function newVisualTest(
     return { name, code };
 }
 
+const SIDEBAR_OPEN_TRIGGER_THRESHOLD = 0.03;
+
+export function newVisualTestFromBlogLang(markup: string, modules: Module[]) {
+    const post = bl.parse(markup);
+
+    let name = "Unknown";
+
+    const firstBlock = post.blocks[0];
+    if (firstBlock.type === bl.B_TEXT) {
+        name = bl.getTextBlockContent(firstBlock);
+        if (name.length > 100) {
+            name = name.substring(0, 100);
+        }
+    }
+
+    return {
+        name: name,
+        code: (c: ImCache, harness: VisualTestHarnessState) => {
+            imJsBlogPost(c, harness, post, modules);
+        },
+    };
+}
+
 export type VisualTestHarnessState = {
+    tests: VisualTest[],
     currentTest: VisualTest | undefined;
     currentInstallation: VisualTestHarnessInstallationState | undefined;
     currentVisibleInstallation: VisualTestHarnessInstallationState | undefined;
-    seenIntro: boolean;
     animations: {
         introToUse: number;
         scaleFactor: number;
         t: number;
-        topBarOpen: number;
-        sideBarOpen01: number;
-        sideBarOpen: boolean;
+        rightSidebar: SidebarState;
+        leftSidebar: SidebarState;
     },
     installations: VisualTestHarnessInstallationState[];
 }
 
-const numIntros = 3;
+type SidebarState = {
+    isLeft: boolean;
+    sideBarOpen01: number;
+    sideBarOpen: boolean;
+
+    currentItem: unknown;
+    hoveredItem: unknown;
+    hoveredItemNext: unknown;
+    isHovering: boolean;
+};
+
+function newSidebarState(isLeft: boolean): SidebarState {
+    return {
+        isLeft:          isLeft,
+        sideBarOpen01:   0,
+        sideBarOpen:     false,
+        isHovering:      false,
+
+        currentItem:     undefined,
+        hoveredItem:     undefined,
+        hoveredItemNext: undefined,
+    }
+}
 
 function newState(): VisualTestHarnessState {
     return {
+        tests: [],
         currentTest: undefined,
         currentInstallation: undefined,
         currentVisibleInstallation: undefined,
-        seenIntro: false,
         animations: {
-            introToUse: 1, //Math.floor(Math.random() * numIntros),
+            introToUse: 0,
             scaleFactor: 0,
             t: 0,
-            topBarOpen: 0,
-            sideBarOpen01: 0,
-            sideBarOpen: false,
+            rightSidebar: newSidebarState(false),
+            leftSidebar: newSidebarState(true),
         },
         installations: [],
     };
@@ -65,7 +111,7 @@ export function imHeading(c: ImCache, text: string, id: string) {
     } imdom.ElEnd(c, el.H1);
 }
 
-function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
+export function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined, pushHistory: boolean) {
     if (s.currentTest === test) return;
 
     s.currentTest = test;
@@ -78,6 +124,7 @@ function setCurrentTest(s: VisualTestHarnessState, test: VisualTest | undefined,
 
     if (pushHistory) {
         window.history.pushState(null, "", "?" + params.toString());
+        document.getElementById("top")?.scrollIntoView();
     }
 }
 
@@ -104,21 +151,17 @@ export function imVisualTestHarness(
 
     s.installations.length = 0;
     s.currentVisibleInstallation = undefined;
+    s.tests = tests;
 
     const currentTestName = queryParams.get("test");
-    const isTestingIntro = queryParams.has("intro");
 
-    if ((!isTestingIntro || s.seenIntro) && (
-        !s.currentTest || s.currentTest.name !== currentTestName
-    )) {
+    if (im.Memo(c, currentTestName)) {
         const wantedTest = tests.find(test => test.name === currentTestName);
         if (wantedTest) {
             setCurrentTest(s, wantedTest, false);
+        } else {
+            setCurrentTest(s, undefined, false);
         }
-    }
-
-    if (s.seenIntro && !s.currentTest && tests.length > 0) {
-        setCurrentTest(s, tests[0], true);
     }
 
     let scrollView;
@@ -135,112 +178,112 @@ export function imVisualTestHarness(
             } else {
                 im.IfElse(c);
 
-                // Top bar
-                imui.Begin(c, ROW); imui.Align(c); imui.FlexWrap(c); imui.Gap(c, 10, PX); {
-                    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "clip");
-                    if (im.Memo(c, s.animations.topBarOpen)) imdom.setStyle(c, "fontSize", s.animations.topBarOpen + "em");
-
-                    imui.Begin(c, ROW); imui.FlexWrap(c); {
-                        im.For(c); for (const test of tests) {
-                            if (imButtonIsClicked(c, test.name, s.currentTest === test)) {
-                                setCurrentTest(s, test, true);
-                            }
-                        } im.ForEnd(c);
-                    } imui.End(c);
-                } imui.End(c);
-
                 // Main view
                 scrollView = imui.Begin(c, COL); imui.Flex(c); imui.Relative(c); imui.ScrollOverflow(c); {
-                    if (im.IsFirstRender(c)) {
-                        // makes way for the sidebar. Not ideal code but eh
-                        imdom.setStyle(c, "paddingRight", "2em");
-                    }
+                    // We need to be able to highlight the things without triggering the sidebars.
+                    const paddingPx = rootClientRect.width * SIDEBAR_OPEN_TRIGGER_THRESHOLD + 5;
+                    imui.PaddingRL(c, paddingPx, PX, paddingPx, PX);
 
-                    imHeading(c, s.currentTest.name, "heading");
+                    imui.Begin(c, BLOCK); { 
+                        if (im.isFirstRender(c)) {
+                            imdom.setAttr(c, "id", "top");
+                        }
+                    } imui.End(c);
 
                     imRenderWithErrorBoundary(c, s, s.currentTest.code);
                 } imui.End(c);
 
                 scrolledToTop = scrollView.scrollTop < 20;
 
-                const mouse = imdom.getMouse();
-
-                // Animate the top bar
+                // Left
                 {
-                    let target = 0;
-                    if (scrolledToTop) {
-                        target = 1;
-                    } else {
-                        const yPos = lerp01(rootClientRect.top, rootClientRect.bottom, 0.05)
-                        if (rootClientRect.top < mouse.Y && mouse.Y < yPos) {
-                            target = 1;
+                    const sidebar = s.animations.leftSidebar;
+                    imSidebarBegin(c, sidebar, s.currentTest); {
+                        imSidebarTitle(c, sidebar.isLeft, "Tests");
+
+                        let isHoveringSidebar = false;
+                        let deferredEvent: (() => void) | undefined;
+
+                        im.For(c); for (const test of tests) {
+                            imSidebarItemBegin(c, sidebar, test); {
+                                const hasMouseOver = imdom.hasMouseOver(c);
+                                if (hasMouseOver) {
+                                    isHoveringSidebar = true;
+                                }
+
+                                if (imButtonIsClicked(c, test.name, test === s.currentTest)) {
+                                    deferredEvent = () => {
+                                        setCurrentTest(s, test, true);
+                                        sidebar.sideBarOpen = false;
+                                    }
+                                }
+                            } imSidebarItemEnd(c, sidebar, test);
+                        } im.ForEnd(c);
+
+                        if (deferredEvent) {
+                            deferredEvent();
                         }
-                    }
-                    s.animations.topBarOpen = lerp01(s.animations.topBarOpen, target, 30 * im.getDeltaTimeSeconds(c));
+
+                        if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
+                            scrollToInstalllation(s, s.currentInstallation);
+                        }
+                    } imSidebarEnd(c);
                 }
 
-                // Sidebar
-                imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, NA); imui.Justify(c); imui.ScrollOverflow(c); {
-                    if (im.Memo(c, s.animations.sideBarOpen01)) {
-                        imdom.setStyle(c, "fontSize", (1 * s.animations.sideBarOpen01) + "em");
-                        imdom.setStyle(c, "maxWidth", (500 * s.animations.sideBarOpen01 + 10) + "px");
-                    }
+                // Right 
+                if (im.If(c) && s.installations.length > 0) {
+                    const sidebar = s.animations.rightSidebar;
+                    imSidebarBegin(c, sidebar, s.currentInstallation); {
+                        imSidebarTitle(c, sidebar.isLeft, "Installations");
 
-                    let isHoveringSidebar = false;
+                        let isHoveringSidebar = false;
+                        let deferredEvent: (() => void) | undefined;
 
-                    im.For(c); for (let i = -1; i < s.installations.length; i++) {
-                        const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
+                        im.For(c); for (let i = -1; i < s.installations.length; i++) {
+                            const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
 
-                        imui.Begin(c, ROW); imui.Justify(c, END); {
-                            imui.Begin(c, ROW); imui.Align(c); imui.Gap(c, 10, PX); {
+                            imSidebarItemBegin(c, sidebar, installation); {
                                 const hasMouseOver = imdom.hasMouseOver(c);
                                 if (hasMouseOver) {
                                     isHoveringSidebar = true;
                                     scrollToInstalllation(s, installation);
                                 }
 
-                                if (im.If(c) && hasMouseOver && s.currentInstallation !== installation) {
-                                    imdom.Str(c, " -> ");
-                                } im.IfEnd(c);
-
                                 if (imButtonIsClicked(c, installation?.title ?? s.currentTest.name, installation === s.currentInstallation)) {
-                                    scrollToInstalllation(s, installation);
-                                    updateHash(s, installation);
-                                    s.animations.sideBarOpen = false;
+                                    deferredEvent = () => {
+                                        scrollToInstalllation(s, installation);
+                                        updateHash(s, installation);
+                                        sidebar.sideBarOpen = false;
+                                    }
                                 }
-                            } imui.End(c);
-                        } imui.End(c);
-                    } im.ForEnd(c);
+                            } imSidebarItemEnd(c, sidebar, installation);
+                        } im.ForEnd(c);
 
-                    if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
-                        scrollToInstalllation(s, s.currentInstallation);
-                    }
-
-                    // animate sidebar
-                    {
-                        const threshold = s.animations.sideBarOpen ? 0.7 : 0.95;
-                        const xPos = lerp01(rootClientRect.left, rootClientRect.right, threshold);
-                        if (mouse.X < xPos || mouse.X > rootClientRect.right) {
-                            s.animations.sideBarOpen = false;
-                        } else {
-                            s.animations.sideBarOpen = true;
+                        if (deferredEvent) {
+                            deferredEvent();
                         }
 
-                        const target = s.animations.sideBarOpen ? 1 : 0;
-                        s.animations.sideBarOpen01 = lerp01(s.animations.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
-                    }
-                } imui.End(c);
+                        if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
+                            scrollToInstalllation(s, s.currentInstallation);
+                        }
+                    } imSidebarEnd(c);
+                } im.IfEnd(c);
             } im.IfEnd(c);
         } else {
             im.IfElse(c);
             if (imSplashScreen(c, s)) {
-                s.seenIntro = true;
+                if (tests.length > 0) {
+                    setCurrentTest(s, tests[0], true);
+                } else {
+                    // TODO: we should have a UI for this.
+                    console.error("Need at least one test")
+                }
             }
         } im.IfEnd(c);
     } imui.End(c);
 
     if (im.Memo(c, s.currentVisibleInstallation) | im.Memo(c, scrolledToTop)) {
-        if (!s.animations.sideBarOpen) {
+        if (!s.animations.rightSidebar.sideBarOpen && !s.animations.leftSidebar.sideBarOpen) {
             if (s.currentVisibleInstallation || scrolledToTop) {
                 if (scrolledToTop) {
                     s.currentVisibleInstallation = undefined;
@@ -282,9 +325,9 @@ export function imRenderWithErrorBoundary(
 }
 
 export function scrollToInstalllation(harness: VisualTestHarnessState, installation: VisualTestHarnessInstallationState | undefined) {
-    // Yooo. The # is the id selector. Its also the hash in the URL.
-    // The hash in the url navigates to the element on the page with id=hash. Damn. Orthogonality of design. crazy
-    const handle = document.getElementById(installation ? installation.hash : "heading");
+    // Yooo. The # is the css id selector. Its also the hash in the URL.
+    // The hash in the url navigates to the element on the page with #<hash>. Damn. Orthogonality of design. crazy
+    const handle = document.getElementById(installation ? installation.hash : "top");
     if (handle) {
         handle.scrollIntoView();
     }
@@ -315,3 +358,180 @@ function updateWindowLocationHash(hash: string) {
     window.history.replaceState(null, "", url);
 }
 
+function imSidebarTitle(c: ImCache, isLeft: boolean, str: string) {
+    imui.Begin(c, ROW); imui.Justify(c, isLeft ? START : END); imui.Padding(c, 10, PX, 10, PX, 10, PX, 10, PX); {
+        imui.Begin(c, INLINE); imui.Bg(c, cssVars.bg);  {
+            imdom.Str(c, str);
+        } imui.End(c);
+    } imui.End(c);
+}
+
+function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown) {
+    const isLeft = sidebar.isLeft;
+
+    const leftUnit  = isLeft ? PX : NA;
+    const rightUnit = isLeft ? NA : PX;
+
+    const el             = imdom.getElement(c);
+    const rootClientRect = el.getBoundingClientRect();
+
+    imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, rightUnit, 0, PX, 0, leftUnit); imui.Justify(c); imui.ScrollOverflow(c); {
+        if (im.Memo(c, sidebar.sideBarOpen01) | im.Memo(c, rootClientRect.width)) {
+            imdom.setStyle(c, "fontSize", (1 * sidebar.sideBarOpen01) + "em");
+            imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * rootClientRect.width, 5000, sidebar.sideBarOpen01) + "px");
+        }
+
+        sidebar.hoveredItem     = sidebar.hoveredItemNext;
+        sidebar.hoveredItemNext = undefined;
+        sidebar.currentItem     =  currentItem;
+
+        // animate sidebar
+        {
+            const mouse = imdom.getMouse();
+            const threshold = sidebar.sideBarOpen ? 0.3 : SIDEBAR_OPEN_TRIGGER_THRESHOLD;
+            let minX = 0, maxX = 0;
+
+            if (isLeft) {
+                minX = rootClientRect.left;
+                maxX = lerp01(rootClientRect.left, rootClientRect.right, threshold);
+            } else {
+                minX = lerp01(rootClientRect.left, rootClientRect.right, 1 - threshold);
+                maxX = rootClientRect.right;
+            }
+
+            if (minX <= mouse.X && mouse.X <= maxX) {
+                sidebar.sideBarOpen = true;
+            } else {
+                sidebar.sideBarOpen = false;
+            }
+
+            const target = sidebar.sideBarOpen ? 1 : 0;
+            sidebar.sideBarOpen01 = lerp01(sidebar.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
+        }
+    } // imui.End
+}
+
+function imSidebarEnd(c: ImCache) {
+    {
+    } imui.End(c);
+}
+
+// function imSidebar(
+//     c: ImCache,
+//     s: VisualTestHarnessState,
+//     currentTest: VisualTest,
+//     rootClientRect: DOMRect,
+//     title: string,
+//     sidebar: SidebarState,
+//     isLeft = false,
+// ) {
+//     const leftUnit =  isLeft ? PX : NA;
+//     const rightUnit = isLeft ? NA : PX;
+//
+//     imui.Begin(c, COL); imui.Absolute(c, 0, PX, 0, rightUnit, 0, PX, 0, leftUnit); imui.Justify(c); imui.ScrollOverflow(c); {
+//         if (im.Memo(c, sidebar.sideBarOpen01) | im.Memo(c, rootClientRect.width)) {
+//             imdom.setStyle(c, "fontSize", (1 * sidebar.sideBarOpen01) + "em");
+//             imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * rootClientRect.width, 5000, sidebar.sideBarOpen01) + "px");
+//         }
+//
+//         let isHoveringSidebar = false;
+//
+//         imui.Begin(c, ROW); imui.Justify(c, isLeft ? START : END); imui.Bg(c, cssVars.bg); imui.Padding(c, 10, PX, 10, PX, 10, PX, 10, PX); {
+//             imdom.Str(c, title);
+//         } imui.End(c);
+//
+//         im.For(c); for (let i = -1; i < s.installations.length; i++) {
+//             const installation = s.installations[i] as VisualTestHarnessInstallationState | undefined;
+//
+//             imSidebarItemBegin(c, isLeft); {
+//                 const hasMouseOver = imdom.hasMouseOver(c);
+//                 if (hasMouseOver) {
+//                     isHoveringSidebar = true;
+//                     scrollToInstalllation(s, installation);
+//                 }
+//
+//                 const showArrow = hasMouseOver && s.currentInstallation !== installation;
+//
+//                 if (im.If(c) && !isLeft && showArrow) {
+//                     imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); imui.Fg(c, cssVars.bg); {
+//                         imdom.Str(c, " -> ");
+//                     } imui.End(c);
+//                 } im.IfEnd(c);
+//
+//                 if (imButtonIsClicked(c, installation?.title ?? currentTest.name, installation === s.currentInstallation)) {
+//                     scrollToInstalllation(s, installation);
+//                     updateHash(s, installation);
+//                     sidebar.sideBarOpen = false;
+//                 }
+//
+//                 if (im.If(c) && isLeft && showArrow) {
+//                     imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); imui.Fg(c, cssVars.bg); {
+//                         imdom.Str(c, " <- ");
+//                     } imui.End(c);
+//                 } im.IfEnd(c);
+//             } imSidebarItemEnd(c, isLeft);
+//         } im.ForEnd(c);
+//
+//         if (im.Memo(c, isHoveringSidebar) && !isHoveringSidebar) {
+//             scrollToInstalllation(s, s.currentInstallation);
+//         }
+//
+//         // animate sidebar
+//         {
+//             const mouse = imdom.getMouse();
+//             const threshold = sidebar.sideBarOpen ? 0.3 : SIDEBAR_OPEN_TRIGGER_THRESHOLD;
+//             let minX = 0, maxX = 0;
+//
+//             if (isLeft) {
+//                 minX = rootClientRect.left;
+//                 maxX = lerp01(rootClientRect.left, rootClientRect.right, threshold);
+//             } else {
+//                 minX = lerp01(rootClientRect.left, rootClientRect.right, 1 - threshold);
+//                 maxX = rootClientRect.right;
+//             }
+//
+//             if (minX < mouse.X && mouse.X < maxX) {
+//                 sidebar.sideBarOpen = true;
+//             } else {
+//                 sidebar.sideBarOpen = false;
+//             }
+//
+//             const target = sidebar.sideBarOpen ? 1 : 0;
+//             sidebar.sideBarOpen01 = lerp01(sidebar.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
+//         }
+//     } imui.End(c);
+// }
+
+function imSidebarItemBegin(c: ImCache, sidebar: SidebarState, item: unknown) {
+    const isLeft = sidebar.isLeft;
+
+    imui.Begin(c, ROW); imui.Justify(c, isLeft ? START : END); {
+        imui.Begin(c, ROW); imui.Align(c); imui.Gap(c, 10, PX); {
+            const hasMouseOver = imdom.hasMouseOver(c);
+            const canShowArrow = hasMouseOver && sidebar.currentItem !== item;
+            if (im.If(c) && !isLeft && canShowArrow) {
+                imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); imui.Fg(c, cssVars.bg); {
+                    imdom.Str(c, " -> ");
+                } imui.End(c);
+            } im.IfEnd(c);
+        } // imui.End
+    } // imui.End
+}
+
+function imSidebarItemEnd(c: ImCache, sidebar: SidebarState, item: unknown) {
+    const isLeft = sidebar.isLeft;
+
+    // imui.Begin
+    {
+        // imui.Begin
+        {
+            const hasMouseOver = imdom.hasMouseOver(c);
+            const canShowArrow = hasMouseOver && sidebar.currentItem !== item;
+            if (im.If(c) && isLeft && canShowArrow) {
+                imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); imui.Fg(c, cssVars.bg); {
+                    imdom.Str(c, " <- ");
+                } imui.End(c);
+            } im.IfEnd(c);
+        } imui.End(c);
+    } imui.End(c);
+}
