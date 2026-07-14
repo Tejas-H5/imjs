@@ -15,6 +15,8 @@ export function newMarkupRendererState(): MarkupRendererState {
 	};
 }
 
+// TODO: style this purely with CSS.
+
 // Make sure the options you pass are stable immutable object.
 // The component won't work if this isn't the case.
 export type BlogLangRenderOptions = {
@@ -49,10 +51,6 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 
 export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
 	imBegin(c); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
-		if (im.isFirstRender(c)) {
-			imdom.setStyle(c, "lineHeight", "1.4");
-		}
-
 		imRenderBlocksInternal(c, post.blocks, options);
 	} imEnd(c);
 }
@@ -69,10 +67,6 @@ export function imRenderBlocksInternal(c: ImCache, blocks: bl.Block[], options: 
 					needsExtraSpace = true;
 				}
 			}
-
-			if (im.If(c) && needsExtraSpace) {
-				imBegin(c); imui.Size(c, 0, NA, 10, PX); imEnd(c);
-			} im.IfEnd(c);
 
 			options.imRenderBlock(c, block, options);
 		} im.ForEnd(c);
@@ -209,7 +203,12 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 }
 
 export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[], options: BlogLangRenderOptions) {
+	if (im.isFirstRender(c)) {
+		imdom.setStyle(c, "lineHeight", "1.4");
+	}
+	
 	im.For(c); for (const item of items) {
+
 		options.imRenderInlineItem(c, item, options);
 	} im.ForEnd(c);
 }

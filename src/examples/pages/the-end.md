@@ -133,7 +133,7 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
 
                 imdom.ElBegin(c, el.STYLE); {
                     if (im.isFirstRender(c)) {
-                        imdom.setTextContent(c, `.${cnHighlight} { outline: 10px solid #FF00FF; }`);
+                        imdom.setTextUnsafe(c, `.${cnHighlight} { outline: 10px solid #FF00FF; }`);
                     }
                 } imdom.ElEnd(c, el.STYLE);
             } imDivEnd(c);

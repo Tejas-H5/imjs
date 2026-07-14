@@ -48,7 +48,6 @@ export type VisualTestHarnessState = {
     currentTest: VisualTest | undefined;
     currentInstallation: VisualTestHarnessInstallationState | undefined;
     currentVisibleInstallation: VisualTestHarnessInstallationState | undefined;
-    seenIntro: boolean;
     animations: {
         introToUse: number;
         scaleFactor: number;
@@ -83,17 +82,14 @@ function newSidebarState(isLeft: boolean): SidebarState {
     }
 }
 
-const numIntros = 3;
-
 function newState(): VisualTestHarnessState {
     return {
         tests: [],
         currentTest: undefined,
         currentInstallation: undefined,
         currentVisibleInstallation: undefined,
-        seenIntro: false,
         animations: {
-            introToUse: Math.floor(Math.random() * numIntros),
+            introToUse: 0,
             scaleFactor: 0,
             t: 0,
             rightSidebar: newSidebarState(false),
@@ -158,19 +154,14 @@ export function imVisualTestHarness(
     s.tests = tests;
 
     const currentTestName = queryParams.get("test");
-    const isTestingIntro = queryParams.has("intro");
 
-    if ((!isTestingIntro || s.seenIntro) && (
-        !s.currentTest || s.currentTest.name !== currentTestName
-    )) {
+    if (im.Memo(c, currentTestName)) {
         const wantedTest = tests.find(test => test.name === currentTestName);
         if (wantedTest) {
             setCurrentTest(s, wantedTest, false);
+        } else {
+            setCurrentTest(s, undefined, false);
         }
-    }
-
-    if (s.seenIntro && !s.currentTest && tests.length > 0) {
-        setCurrentTest(s, tests[0], true);
     }
 
     let scrollView;
@@ -281,7 +272,12 @@ export function imVisualTestHarness(
         } else {
             im.IfElse(c);
             if (imSplashScreen(c, s)) {
-                s.seenIntro = true;
+                if (tests.length > 0) {
+                    setCurrentTest(s, tests[0], true);
+                } else {
+                    // TODO: we should have a UI for this.
+                    console.error("Need at least one test")
+                }
             }
         } im.IfEnd(c);
     } imui.End(c);
@@ -403,7 +399,7 @@ function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown)
                 maxX = rootClientRect.right;
             }
 
-            if (minX < mouse.X && mouse.X < maxX) {
+            if (minX <= mouse.X && mouse.X <= maxX) {
                 sidebar.sideBarOpen = true;
             } else {
                 sidebar.sideBarOpen = false;

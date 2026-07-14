@@ -1,16 +1,18 @@
 # How to install imJS
 
-The `imJS` codebase is actually written entirely in TypeScript (I just didn't like the name imTS very much). 
-It contains the following important folders:
+#url[The github repository, https://github.com/Tejas-H5/imjs] contains the following:
 
 ```
 im-js/
- +- im-core/
- +- im-dom/
+    im-core/
+    im-dom/
 ```
 
-`im-js` contains the core immediate mode primitives in `im`, and the DOM-related adapter in `imdom`. 
-You'll need to copy the `im-js` folder somewhere that you can import from it via an absolute import, i.e `import { ... } from "im-js"`.
+You'll need to copy the `im-js` folder somewhere that you can import from it via 
+    an absolute import, i.e `import { ImCache, im, imdom, etc. } from "im-js"`.
+
+`im-js` is a barrel module that re-exports all of `im-core` and `im-dom`. 
+You'll always want both - `im` contains the core immediate mode primitives, and `imdom` contains the DOM-related adapters.
 
 ## What is the im-ui folder
 

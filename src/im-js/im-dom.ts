@@ -718,9 +718,6 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
     };
 
     const mouse: MouseState = {
-        lastX: 0,
-        lastY: 0,
-
         ev: null,
 
         leftMouseButton: false,
@@ -729,8 +726,12 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
 
         dX: 0,
         dY: 0,
-        X: 0,
-        Y: 0,
+        // By making the initial position offscreen, the mouse 
+        // doesn't hover any UI element on page-load
+        X: -1,
+        Y: -1,
+        lastX: -1,
+        lastY: -1,
 
         scrollWheel: 0,
 
@@ -747,8 +748,10 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
         mouse.lastY = mouse.Y;
         mouse.X = e.clientX;
         mouse.Y = e.clientY;
-        mouse.dX += mouse.X - mouse.lastX;
-        mouse.dY += mouse.Y - mouse.lastY;
+        if (mouse.lastX >= 0 && mouse.lastY >= 0) {
+            mouse.dX += mouse.X - mouse.lastX;
+            mouse.dY += mouse.Y - mouse.lastY;
+        }
 
         if (mouse.lastMouseOverElement !== e.target) {
             mouse.lastMouseOverElement = e.target as ValidElement;

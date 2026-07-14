@@ -393,6 +393,8 @@ And in this framework, it will by default (and can be opted out of, as I've done
 
 ```ts - im.Memo - conditional pathway example - updated (working)
 function imMemoConditionalPathwayExampleUpdatedReqsWorking(c: ImCache) {
+    // const appState = im.GetInline(c, im.GetInline) ??
+    //     im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
     const appState = im.GetInline(c, im.GetInline) ??
         im.Set<MemoConditionalPathwayExampleAppState>(c, { currentView: 0, logs: [] });
 

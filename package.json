@@ -15,5 +15,19 @@
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
-  }
+  },
+  "exports": {
+    ".": {
+      "import": "./src/im-js/index.ts",
+      "types":  "./src/im-js/index.ts"
+    },
+    "imui": {
+      "import": "./src/im-ui/index.ts",
+      "types":  "./src/im-ui/index.ts"
+    }
+  },
+  "files": [
+    "src/im-js",
+    "src/im-ui"
+  ]
 }

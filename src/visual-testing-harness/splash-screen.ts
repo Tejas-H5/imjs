@@ -3,12 +3,20 @@ import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-ui";
 import { lerp01 } from "im-ui/components/math-utils";
 import { VisualTestHarnessState } from "./harness";
 
+const numIntros = 3;
+
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     const { size } = imdom.TrackSize(c);
     const { width, height } = size;
 
     const a = s.animations;
     let animationComplete = false;
+
+    if (im.Memo(c, true)) {
+        a.t          = 0;
+        a.introToUse = Math.floor(Math.random() * numIntros);
+    }
+
     im.Switch(c, a.introToUse); switch(a.introToUse) {
         case 0: { // Not sure what this is. im / JS. I have since scrapped the line
             const target = 0.2;
@@ -169,10 +177,9 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                 imdom.Str(c, "Visual testing harness");
             } imui.End(c);
         } break;
-        // We need more of these. I want 90% lok of this harness to just be various intro screens.
+        // We need more of these. I want 90% loc of this harness to just be various intro screens.
         // That being said. Maybe this is the mindset that is preventing me from shipping things...
     } im.SwitchEnd(c);
-
 
     return animationComplete;
 }
