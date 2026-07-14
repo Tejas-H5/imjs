@@ -274,6 +274,8 @@ export function imItemUrlBegin(c: ImCache, item: bl.InlineUrl, options: BlogLang
 			const urlChanged = im.Memo(c, url);
 			if (urlChanged) {
 				imdom.setAttr(c, "href", url);
+				imdom.setAttr(c, "target", "_blank");
+				imdom.setAttr(c, "rel", "noopener noreferrer");
 			}
 
 		} // imdom.ElEnd(c, el.A);

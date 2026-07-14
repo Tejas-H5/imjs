@@ -21,7 +21,7 @@
       "import": "./src/im-js/index.ts",
       "types":  "./src/im-js/index.ts"
     },
-    "./imui": {
+    "./im-ui": {
       "import": "./src/im-ui/index.ts",
       "types":  "./src/im-ui/index.ts"
     }
