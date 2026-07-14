@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.2",
   "description": "An immediate-mode UI framework",
-  "main": "./src/utils/im-js/index.ts",
   "type": "module",
   "scripts": {
     "dev":   "node ./build/build.ts devserver",

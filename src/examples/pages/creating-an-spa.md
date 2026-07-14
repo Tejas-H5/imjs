@@ -1,12 +1,6 @@
 # Creating a page
 
-This tutorial assumes you already know how to bootstrap a plain TypeScript project, and
-    you already have typescript entrypoint file being bunlded into an `index.html` somehow.
-There are a lot of different ways to do this, so I'm not going to step through the examples.
-
-If you don't know how to do this, I'd suggest using #url[Vite, https://vite.dev/guide/] to create a 'Vanilla TypeScript' project. 
-
-## im-core
+## Setting up the immediate mode cache
 
 We need to create the immediate mode cache. 
 It's just an array `[]`.
@@ -20,7 +14,7 @@ function imMain(c: ImCache) {
     // TODO: implement
 }
 
-const globalImCache: ImCache = []; // It's just an array
+const globalImCache: ImCache = [];
 imMain(globalImCache);
 ```
 
@@ -28,6 +22,18 @@ imMain(globalImCache);
 It makes it clear at-a-glance that a method will _read_ from the immediate mode cache.
 Methods that start with `im` AND have this `c: ImCache` arugment will most likely _write_
 to the immediate-mode cache.
+
+## Further documentation
+
+Before we continue, you should try navigating to the definition of `im` in your editor. 
+There, you'll find basically every method and constant, and it will 
+    be somewhat extensively documented. 
+You may even be able to figure out how to bootstrap `im-js` entirely yourself just by
+    reading the code!
+Try that, and when you're finished and want to check if it matches or you are just
+    stuck, come back to this.
+
+## Starting the animation loop
 
 Let's start the main animation loop:
 
@@ -90,4 +96,3 @@ imMain(globalImCache);
 ```
 
 You are now ready to start #url[making actual components!, /?test=Creating+components]
-Good luck.

@@ -1,7 +1,12 @@
 # How to install imJS
 
-This framework is typescript-first (however, I did not like the name imTS as much).
-Your bundler needs to support typescript for this package install to work.
+I assume you already know how to create an empty TypeScript web-app project.
+If not, I'd suggest using #url[Vite, https://vite.dev/guide/] to create a 'Vanilla TypeScript' project,
+    and then coming back to this.
+
+This framework is typescript-first
+(However, it simply did not occur to me to call it im-TS).
+Your bundler needs to support typescript for this package to work.
 
 It's not available on npm, because you can just install it from #url[this 
     GitHub repository, https://github.com/Tejas-H5/imjs] directly:
@@ -12,7 +17,7 @@ npm install github:Tejas-H5/imjs --ignore-scripts
 
 #list[
 - `--ignore-scripts` will disable install hooks. It's a strange time in the web ecosystem,
-    and you'll need to start putting this on all your npm installs if you don't already
+    and you'll need to start putting this on all your npm installs if you aren't already
 ]
 
 The main framework is everything exported from `"im-js"`:
