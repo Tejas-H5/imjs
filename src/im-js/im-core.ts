@@ -1,4 +1,3 @@
-// IM-CORE 1.103
 import { assert } from "./assert";
 
 // Conventions

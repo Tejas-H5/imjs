@@ -178,25 +178,26 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 					imdom.setStyle(c, "display", "grid");
 				}
 
-				imBegin(c, BLOCK); imGap(c, edgeWidth, PX); imui.Bg(c, cssVars.fg); {
-					if (im.Memo(c, tableState.gridTemplateCols)) {
-						imdom.setStyle(c, "display", "grid");
-						imdom.setStyle(c, "gridTemplateColumns", tableState.gridTemplateCols);
-					}
+				if (im.Memo(c, tableState.gridTemplateCols)) {
+					imdom.setStyle(c, "display", "grid");
+					imdom.setStyle(c, "gridTemplateColumns", tableState.gridTemplateCols);
+					imdom.setStyle(c, "backgroundColor", cssVars.fg);
+					imdom.setStyle(c, "gap", "1px");
+				}
 
-					im.For(c); for (const row of block.rows) { for (let colIdx = 0; colIdx < row.cells.length; colIdx++) {
-						imBegin(c, BLOCK); imui.Bg(c, cssVars.bg); {
-							if (im.isFirstRender(c)) {
-								imdom.setStyle(c, "padding", "5px");
-							}
+				im.For(c); for (const row of block.rows) { for (let colIdx = 0; colIdx < row.cells.length; colIdx++) {
+					imBegin(c, BLOCK); {
+						if (im.isFirstRender(c)) {
+							imdom.setStyle(c, "padding", "5px");
+							imdom.setStyle(c, "backgroundColor", cssVars.bg);
+						}
 
-							if (im.If(c) && colIdx < row.cells.length) {
-								const cell = row.cells[colIdx];
-								imRenderBlocksInternal(c, cell.contents, options);
-							} im.IfEnd(c);
-						} imEnd(c);
-					}} im.ForEnd(c);
-				} imEnd(c);
+						if (im.If(c) && colIdx < row.cells.length) {
+							const cell = row.cells[colIdx];
+							imRenderBlocksInternal(c, cell.contents, options);
+						} im.IfEnd(c);
+					} imEnd(c);
+				}} im.ForEnd(c);
 			} break;
 		} im.SwitchEnd(c);
 	} imEnd(c);

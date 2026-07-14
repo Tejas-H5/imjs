@@ -1,64 +1,69 @@
 # How to install imJS
 
-Nowadays, we can just host packages on GitHub directly:
+It's not available on npm, because you can just install it from GitHub repository directly:
 
 ```shell
 npm install github:Tejas-H5/imjs --ignore-scripts
 ```
 
-I've added `--ignore-scripts` onto the end there for you to prevent me
-    from hacking you, you're welcome.
-A little paranoia is  healthy every now and then.
+#list[
+- `--ignore-scripts` will disable install hooks. It's a strange time in the web ecosystem,
+    and you'll need to start putting this on all your npm installs if you don't already
+]
 
+The main framework is everything exported from `"im-js"`:
 
-I'm 
-
-#url[The github repository, https://github.com/Tejas-H5/imjs] contains the following:
-
-```
-im-js/
-    im-core/
-    im-dom/
+```typescript
+import { im } from "im-js";
 ```
 
-You'll need to copy the `im-js` folder somewhere that you can import from it via 
-    an absolute import, i.e `import { ImCache, im, imdom, etc. } from "im-js"`.
+I've also included `im-ui`, for my own convenience really:
 
-`im-js` is a barrel module that re-exports all of `im-core` and `im-dom`. 
-You'll always want both - `im` contains the core immediate mode primitives, and `imdom` contains the DOM-related adapters.
-
-## What is the im-ui folder
-
-
-```
-im-js/
-...
- +- im-ui/
+```typescript
+import { im } from "im-js/im-ui";
 ```
 
-I also include an `im-ui` folder with several UI components I share between multiple projects.
-You do *not* need `im-ui` to use `im-js` - there are too many ways to make a design system, and while the one I've made
-    is very well suited for the things I make, and may be a good source of inspiration, it will be sorely lacking or 
-    wrong for the look of your project.
+It's a minimal component library and design-system that I use for all my projects. 
+It most-likely won't be any good for your project - it exists for you
+    to quickly try stuff out, and draw inspiration from for your
+    own design system that will be better suited to your projects.
+
+## Versioning
+
+This framework now adheres to SemVer `<major.minor.patch>`
+#list[
+- Increments to `major` are breaking changes, like deprecating or changing existing APIs. 
+    As such, you can probably ignore them.
+- Increments to `minor` include new features and functionality that are backwards-compatible.
+    As such, you can still probably ignore them.
+- Increments to `patch` include fixes to ~stupid mistakes I've accidentally introduced~
+    critical security vulerabilities. 
+    You'll want to install these ASAP. 
+]
+
+The default npm semver prefix is `^`, meaning that the `major` version is locked, while
+    minor and patch will be incremented. This will be OK.
 
 ## Code-formatters
 
-This framework abuses the hell out of the semi-colon, code blocks, 
-    and putting multiple relevant function calls on the same line, as you've seen in the #url[previous page, /?test=imJS+-+Overview].
-It makes otherwise verbose code far less verbose at minimal cost.
-However, this does mean if you're using formatting tools, it would need to be configured to 
-    *not* convert multiple constructs on the same line:
+The code you write in this framework will abuses the hell out of semi-colons, code blocks
+    and putting multiple relevant function calls on the same line in general 
+    (See the examples on #url[previous page, /?test=imJS+-+Overview]).
+Your formatter needs to be configured to not do this:
+
+#table[
+#row #cell Unformatted #cell Formatted. It's good for normal code, but bad for our framework's UI code
+#row 
+#cell
 
 ```typescript
 im.For(c); for (const item of items) {
     ...
 } im.ForEnd(c);
 ```
-
-To multiple lines:
+#cell
 
 ```typescript
-// 'fixed it' - your welcome :D
 im.For(c); 
 for (const item of items) 
 {
@@ -66,11 +71,10 @@ for (const item of items)
 } 
 im.ForEnd(c);
 ```
+]
 
-The default TypeScript formatter, for example, is the one that I use - it only fixes up whitespace and indentation without
-    moving statements around.
-Other formatters may or may not let you configure this.
 
-## The end
+The default TypeScript formatter, for example, does just that - as such, 
+    it's the one that I use.
 
-You are now ready to #url[create your page, /?test=Creating a page]
+Now that you're set up, let's #url[create your page, /?test=Creating a page]
