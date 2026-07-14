@@ -1,5 +1,18 @@
 # How to install imJS
 
+Nowadays, we can just host packages on GitHub directly:
+
+```shell
+npm install github:Tejas-H5/imjs --ignore-scripts
+```
+
+I've added `--ignore-scripts` onto the end there for you to prevent me
+    from hacking you, you're welcome.
+A little paranoia is  healthy every now and then.
+
+
+I'm 
+
 #url[The github repository, https://github.com/Tejas-H5/imjs] contains the following:
 
 ```
