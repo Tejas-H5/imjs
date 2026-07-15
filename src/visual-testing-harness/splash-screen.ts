@@ -1,6 +1,6 @@
 import { im, imdom, ImCache } from "im-js";
-import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-ui";
-import { lerp01 } from "im-ui/components/math-utils";
+import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-js/im-ui";
+import { lerp01 } from "im-js/im-ui/components/math-utils";
 import { VisualTestHarnessState } from "./harness";
 
 const numIntros = 3;

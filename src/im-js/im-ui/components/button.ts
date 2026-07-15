@@ -1,4 +1,4 @@
-import { DisplayType, imui, INLINE, ROW, cssVars } from "im-ui";
+import { DisplayType, imui, INLINE, ROW, cssVars } from "im-js/im-ui";
 import { imdom, im, ImCache } from "im-js";
 
 // Legacy button component. TODO: move to im-button

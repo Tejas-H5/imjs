@@ -1,10 +1,10 @@
 import { el, ev, im, ImCache, imdom } from "im-js";
-import { COL, cssVars, imui, PX } from "im-ui";
+import { COL, cssVars, imui, PX } from "im-js/im-ui";
 import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visual-testing-harness";
 
 import page0 from "./pages/overview.md";
 import page1 from "./pages/installing.md";
-import page2 from "./pages/creating-an-spa.md";
+import page2 from "./pages/creating-a-page.md";
 import page3 from "./pages/creating-components.md";
 import page4 from "./pages/control-flow.md";
 import page5 from "./pages/control-flow-part-2.md";

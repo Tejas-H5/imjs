@@ -1280,7 +1280,7 @@ export const im = {
     CACHE_ENTRIES_START, // Offset into an Imcache where the actual entries start
     ENTRIES_ITEMS_START, // Offset into an ImCacheEntries where the actual items start
 
-    /** State management - all different flavours of Get/Set */
+    /** State management - all different flavours of im.Get/im.Set */
     Get: imGet, Set: imSet,
     GetInline: imGetInline,  
     isSetRequired,  // Useful for when you want to store `undefined` as a valid value
@@ -1334,7 +1334,12 @@ export const im = {
     getEntriesRemoveLevel,    // When this entry list leaves the conditional pathway, to what extent should we remove it?
     REMOVE_LEVEL_NONE, REMOVE_LEVEL_DETATCHED, REMOVE_LEVEL_DESTROYED,
     getEntriesIsInConditionalPathway,   // Is this entry list currently in the conditional pathway?
-    rerenderCache,      // Use this to rerender the cache. Either immediately afther the current render, or a new render. Happens outside the animation frame.
+    // Use this to rerender the cache in response to events.
+    // If we're currently rendering, this schedules another render immediately after
+    //      in the same event tick.
+    // Else, it will request a new animation frame and render in that.
+    // NOTE: You should never need to use this directly in application code. 
+    rerenderCache,               
     recursivelyEnumerateEntries, // Recursively enumerate your entries
 
     ImmediateModeBlockBegin: imImmediateModeBlockBegin, // This is the typeId of an ImCacheEntries object

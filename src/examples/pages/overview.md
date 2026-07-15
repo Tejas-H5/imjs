@@ -217,7 +217,7 @@ function imGalaxyOfDivs(c: ImCache) {
                         }
 
                         const letter = subliminalMessage[squareIdx % subliminalMessage.length];
-                        imSquare(c, x, y, size, opacity, letter);
+                        imSquareLetter(c, x, y, size, opacity, letter);
                     } im.ForEnd(c);
                 } im.ForEnd(c);
             } imdom.ElEnd(c, el.DIV);
@@ -251,7 +251,7 @@ function getAverage(values: Array<number>) {
 }
 
 
-function imSquare(
+function imSquareLetter(
     c: ImCache,
     x: number, y: number,
     size: number,
@@ -270,6 +270,8 @@ function imSquare(
             imdom.setStyle(c, "position", "absolute");
             imdom.setStyle(c, "transform", "translate(50%, 50%)")
             imdom.setStyle(c, "fontWeight", "bold")
+            // Does literally nothing what the heck
+            imdom.setStyle(c, "textRendering", "optimizeSpeed")
         }
 
         if (im.Memo(c, size)) {
@@ -305,6 +307,6 @@ However, some things about these examples may have stuck out to you.
 -   What is `im.If` and `im.For`, and why do I need them?
 -   Why `im.GetInline`? Does this imply the existance of `im.Get`?
 -   How do I handle exceptions? 
-}
+]
 
 Before I tell you, you should probably #url[get set up, /?test=How+to+install+imJS] first.

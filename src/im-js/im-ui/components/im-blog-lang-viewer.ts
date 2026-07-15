@@ -2,8 +2,8 @@
 
 import * as bl from "blog-lang";
 import { el, im, ImCache, imdom } from "im-js";
-import { cssVars, DisplayType, imui, BLOCK, COL, INLINE, LEFT, NA, PX, ROW, VH } from "im-ui";
-import { imButtonStyle } from "im-ui/components/im-button";
+import { cssVars, DisplayType, imui, BLOCK, COL, CENTER, INLINE, LEFT, NA, PX, ROW, VH } from "im-js/im-ui";
+import { imButtonStyle } from "im-js/im-ui/components/im-button";
 
 export type MarkupRendererState = {
 	blogpost: bl.Blogpost | undefined;
@@ -50,8 +50,18 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 }
 
 export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
-	imBegin(c); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
-		imRenderBlocksInternal(c, post.blocks, options);
+	imBegin(c, COL, CENTER); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
+		imBegin(c); {
+			// Code blocks look VERY ugly when we let them take up the full width
+			// of a 16:9 monitor. However, they look fine on a 4:3 monitor. 
+			// TODO: mobile
+			const maxWidth = Math.min(window.innerWidth, 1.2 * window.innerHeight);
+			if (im.Memo(c, maxWidth)) {
+				imdom.setStyle(c, "width", maxWidth + "px");
+			}
+
+			imRenderBlocksInternal(c, post.blocks, options);
+		} imEnd(c);
 	} imEnd(c);
 }
 

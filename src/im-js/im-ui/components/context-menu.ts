@@ -1,4 +1,4 @@
-import { COL, imui, NA, PX, ROW, cssVars } from "../im-ui";
+import { COL, imui, NA, PX, ROW, cssVars } from "im-js/im-ui";
 import { imdom, im, ImCache } from "im-js";
 
 // context-menu V0.01

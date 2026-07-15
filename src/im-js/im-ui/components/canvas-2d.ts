@@ -1,5 +1,5 @@
 import { imdom, im, ImCache, el } from "im-js";
-import { BLOCK, imui } from "im-ui";
+import { BLOCK, imui } from "im-js/im-ui";
 
 type ImCanvasRenderingContext = [
     canvas: HTMLCanvasElement,

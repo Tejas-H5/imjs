@@ -1,62 +1,54 @@
 # How to install imJS
 
-I assume you already know how to create an empty TypeScript web-app project.
-If not, I'd suggest using #url[Vite, https://vite.dev/guide/] to create a 'Vanilla TypeScript' project,
-    and then coming back to this.
+## Downloading
 
-This framework is typescript-first
-(However, it simply did not occur to me to call it im-TS).
-Your bundler needs to support typescript for this package to work.
+There are a couple of ways:
 
-It's not available on npm, because you can just install it from #url[this 
-    GitHub repository, https://github.com/Tejas-H5/imjs] directly:
+#table[
+#row
+#cell[content] *Manually vendoring*
+#cell
+    Copy the folders you need from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]
+        into your project.
+
+```
+/im-js/ (required)
+    The core framework. You'll need everything from here
+    ...
+    /im-ui/ (optional)
+        A minimal design system I've included for my own convenience.
+        It's optional - im-js will work without it.
+```
+
+#row
+#cell
+    *Npm*
+#cell
+    It's not available on npm (the package registry), because you can just install it from 
+        #url[this GitHub repository, https://github.com/Tejas-H5/imjs] directly:
 
 ```cmd
 npm install github:Tejas-H5/imjs --ignore-scripts
 ```
-
-#list[
-- `--ignore-scripts` will disable install hooks. It's a strange time in the web ecosystem,
-    and you'll need to start putting this on all your npm installs if you aren't already
 ]
+
+## Importing stuff
 
 The main framework is everything exported from `"im-js"`:
 
 ```typescript
-import { im } from "im-js";
+import { im, imdom, el, elsvg, ev, key } from "im-js";
 ```
 
 I've also included `im-ui`, for my own convenience really:
 
 ```typescript
-import { im } from "im-js/im-ui";
+import { imButtonPressed } from "im-js/im-ui/components/im-button";
 ```
 
 It's a minimal component library and design-system that I use for all my projects. 
-It most-likely won't be any good for your project - it exists for you
-    to quickly try stuff out, and draw inspiration for your
-    own design system that will be better suited to the things you're working on.
-
-## Versioning
-
-This framework now adheres to SemVer `<major.minor.patch>`
-#list[
-- Increments to `major` are big changes that will break your stuff.
-    As such, you can probably ignore them.
-- Increments to `minor` include new features and functionality that I 
-    think are are backwards-compatible, but will somehow break your stuff anyway.
-    As such, you can probably ignore them.
-- Increments to `patch` include fixes to stupid mistakes I've accidentally introduced.
-    If these changes break your stuff, your stuff was always wrong to begin with,
-    and my fix has exposed this. You'll want to install these ASAP. 
-]
-
-The default npm semver prefix is `^`, meaning that the `major` version is locked, while
-    minor and patch will be incremented. This will be OK, assuming that we both
-    agree on what 'backwards compatible' means. 
-I will not elaborate. 
-Maybe you really want the `~` prefix. 
-Installing the package with this prefix instead is left as an excesize to the reader.
+It most-likely won't be any good for your project - it exists to draw inspiration 
+    for your own design system that will be better suited to the things you're working on.
 
 ## Code-formatters
 

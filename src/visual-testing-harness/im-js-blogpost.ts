@@ -1,6 +1,6 @@
 import * as bl from "blog-lang";
 import { ev, im, ImCache, ImCacheRerenderFn, imdom } from "im-js";
-import { BLOCK, imui } from "im-ui";
+import { BLOCK, imui } from "im-js/im-ui";
 import {
     BlogLangRenderOptions,
     imItemUrlBegin,
@@ -9,7 +9,7 @@ import {
     imRenderBlogLangBlockItem,
     imRenderBlogLangBlogpost,
     newBlogLangRenderOptions
-} from "im-ui/components/im-blog-lang-viewer";
+} from "im-js/im-ui/components/im-blog-lang-viewer";
 import * as tsc from "minimal-tsc";
 import { imVisualTestInstallation, setCurrentTest, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";

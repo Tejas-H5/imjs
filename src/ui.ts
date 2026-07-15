@@ -1,4 +1,4 @@
-import { BLOCK, imui, PX, ROW } from "im-ui";
+import { BLOCK, imui, PX, ROW } from "im-js/im-ui";
 import { im, imdom, el, ImCache } from "im-js";
 
 export const imStr = imdom.Str;

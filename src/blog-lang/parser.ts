@@ -145,6 +145,7 @@ const BT_ORDERED_LIST   = 7;
 const BT_TABLE      = 8;
 const BT_TABLE_ROW  = 9;
 const BT_TABLE_CELL = 10;
+const BT_COMMENT = 11;
 
 function parseBlockType(parser: Parser, advance: boolean): number {
 	let blockType = BT_NORMAL;
@@ -162,6 +163,7 @@ function parseBlockType(parser: Parser, advance: boolean): number {
 	else if (compareAndMaybeAdvance(parser, "#table[", advance)) { blockType = BT_TABLE; }
 	else if (compareAndMaybeAdvance(parser, "#row", advance))    { blockType = BT_TABLE_ROW; }
 	else if (compareAndMaybeAdvance(parser, "#cell", advance))   { blockType = BT_TABLE_CELL; }
+	else if (compareAndMaybeAdvance(parser, "<!--", advance))   { blockType = BT_COMMENT; }
 	
 	return blockType;
 }
@@ -216,17 +218,17 @@ type ParseContext = {
 	table?: TableBlock;
 };
 
-
-export function parseWhitespace(parser: Parser) {
+function parseComment(parser: Parser) {
 	// These are the same as markdown comments. Allows us to simply use the same tooling as a markdown editor.
 	// Comments are useful for structuring a post. But perhaps I should nail the outline before polishing. 
 	// Not sure about the optimal workflow yet ...
-	if (compareAndAdvance(parser, "<!--")) {
-		while (!compareAndAdvance(parser, "-->")) {
-			advance(parser);
-		}
+	compareAndAdvance(parser, "<!--")
+	while (!compareAndAdvance(parser, "-->")) {
+		advance(parser);
 	}
+}
 
+function parseWhitespace(parser: Parser) {
 	while (!reachedEnd(parser)) {
 		if (!isWhitespace(parser.char)) {
 			break;
@@ -273,7 +275,6 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 					case BT_HEADING1: { style = S_HEADING1 } break;
 					case BT_HEADING2: { style = S_HEADING2 } break;
 					case BT_HEADING3: { style = S_HEADING3 } break;
-					case BT_HEADING3: { style = S_HEADING3 } break;
 					case BT_QUOTE:    { style = S_QUOTE } break;
 					case BT_CODE:     { parseNext = B_CODE } break;
 					case BT_UNORDERED_LIST:  { parseNext = B_LIST; listStyle = LS_UNORDERED; } break;
@@ -285,6 +286,9 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 					} break;
 					case BT_TABLE_CELL: {
 						// TODO: Nothing ?
+					} break;
+					case BT_COMMENT: {
+						parseComment(parser);
 					} break;
 				}
 			} break;
