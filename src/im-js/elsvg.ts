@@ -1,5 +1,5 @@
 /** HTML svg elements */
-export const elsvg = {
+export const EL_SVG = {
     A: { val: "a" }, // Yep, its actually an SVG
     ANIMATE: { val: "animate" },
     ANIMATEMOTION: { val: "animateMotion" },

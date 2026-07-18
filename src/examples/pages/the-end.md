@@ -1,14 +1,18 @@
 # The end
 
-I'm surprised you made it this far, congrats! 
-You now know the framework well enough to read and understand the rest of the code that I didn't mention, 
-    as well as work on your own stuff.
-Take a look at `im-dom` and `im-ui` for more ideas of how to structure your code, if needed. 
+Now that you've completed every tutorial, you're well on your way to becoming god 
+    emperor of frontend UI web-dev. 
 Time to start building!
 
 ## Future scope
 
 #list[
+- Hot module reload (or another solution to this problem). 
+    The stuff I work on right now is all local-first. This means that the
+        software loads fast, and can read/write it's state whenever it wants.
+    This also means that the framework won't be suited to debugging web apps, where your
+        site might populate after some back and forth with a server.
+- Real tests (written and curated by myself, not shat out in the hundreds by AI)
 - The global event system currently doesn't work well for mobile/touch interactions, need to fix that
 - In the future, I plan on making a static analysis tool (probably just an eslint rule) that matches imXBegin and imXEnd 
     and lets you know at compile time if these opening/closing pairs are matching or not. 
@@ -21,6 +25,10 @@ But I am not against including it later.
 I haven't stress-tested the framework on client-server stuff as much as I have for
     local storage/indexed-db use cases, but I may end up doing this 
     when I eventually get around to it.
+- The default error behaviour is a bit shit - the animation loop simply breaks, and the page
+    stops animating. But everything is still responsive! 
+    The result is that everything is subtley broken, but it also isn't super clear that is the case.
+    Anyway, not ideal.
 ]
 
 ## Out of scope
@@ -28,20 +36,17 @@ I haven't stress-tested the framework on client-server stuff as much as I have f
 There are some things that I have specifically planned never work on:
 
 #list[
+- Making `c` an object. I designed the API the way I did because I am very much a functions+data 
+    kind of programmer - thinking of problems that way has made a lot of things much easier for me.
+    It also makes porting the framework to Odin, should I ever want to do this, much easier.
+    (this is my favourite language. It has been for 3 years before Primeagen started 
+        raising awareness of it. I was using it _before_ it was cool, nyeahhh).
 - There will never be an imJS dev-tools. 
-Most things can just be done using the existing browser devtools, and this is especially the case with this framework.
-- HMR (Hot-module-reloading support) - the implementation details of the framework make adding it too complicated and 
-    not really super worth it. 
-I did not build this framework with HMR in mind at all - I would rather have a small app that can be rebuild 
-    instantly than an app that takes ages to rebuild, but supports HMR, but the HMR still takes a few seconds, 
-    and every now and then it causes bugs, etc. etc. 
-It is too difficult to evolve my apps alongside it. 
-Just persist the current state of your program to localStorage/indexedDB as needed. 
-The dev-server I use can also reload my program so quickly that there is no real benefit to having HMR. 
-I've had set up a custom esbuild context, but with a custom server that has an extra long KeepAlive setting 
-    on the connection (surprisingly effective).
-    (Someone has since figured out #url[the real issue, https://github.com/vitejs/vite/issues/21653] that my local KeepAlive solution hid)
-- I also plan to never introduce a mechanism by which you can manually render just a subset of the UI tree, or keep some subset of your website 'static', with dynamic islands. The complexity is not worth it - just animate the entire page.
+    Most things can just be done using the existing browser devtools, and this is especially the case with this framework.
+- I also plan to never introduce a mechanism by which you can manually render just a 
+    subset of the UI tree.
+    The subtle buggy feel of a DOM that is present but not being driven by anything
+    is not worth it - just animate the entire page.
 ]
 
 .

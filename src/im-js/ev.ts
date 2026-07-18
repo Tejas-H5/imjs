@@ -1,5 +1,5 @@
 /** Events (the most common ones, at least) */
-export const ev = {
+export const EV = {
     ABORT: { val: "abort" },
     ANIMATIONCANCEL: { val: "animationcancel" },
     ANIMATIONEND: { val: "animationend" },

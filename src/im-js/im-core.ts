@@ -242,7 +242,7 @@ function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
 
         c[CACHE_RERENDER_FN] = (c: ImCache) => {
             // I've found a significant speedup by writing code like
-            // if (x === false) or if (x === true) instaed of if (!x) or if (x).
+            // if (x === false) or if (x === true) instead of if (!x) or if (x).
             // You won't need to do this in 99.9999% of your code, but it
             // would be nice if all 'library'-like code that underpins most of the stuff did it.
             if (c[CACHE_IS_RENDERING] === true) {
@@ -552,7 +552,7 @@ function imGet<T>(
             if (expectedName === gotName) {
                 errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got <same name, but new object reference>. Only functions that don't change can be used as typeIds. If you wrote some code like State(c, () => ({ ... })), consider using imGet/imSet directly instead.`
             } else {
-                errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got ${gotName} . Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state`;
+                errorMessage = `Expected to populate this cache entry with type=${expectedName}, but got ${gotName} . ${CONDITIONAL_RENDERING_ERROR_MESSAGE}`;
             }
             console.error(errorMessage, entries[idx], typeId);
             throw new Error(errorMessage);
@@ -567,6 +567,8 @@ function imGet<T>(
 
     return entries[idx + 1];
 }
+
+const CONDITIONAL_RENDERING_ERROR_MESSAGE = `Either your begin/end pairs probably aren't lining up right, or you're conditionally rendering immediate-mode state`;
 
 function onMaybeStartedRenderingEntries(c: ImCache, entries: ImCacheEntries) {
     const idx = entries[ENTRIES_IDX];
@@ -1355,4 +1357,6 @@ export const im = {
 
     /** I made this literally for some demo that I canned, but might be useful idk */
     ForEachCacheEntryItem: imForEachCacheEntryItem,
+
+    CONDITIONAL_RENDERING_ERROR_MESSAGE,
 };

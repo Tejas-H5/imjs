@@ -145,7 +145,7 @@ function imGalaxyOfDivs(c: ImCache) {
     const visible = imdom.TrackVisibility(c, 0).isVisible;
     if (im.If(c) && visible) {
         imdom.ElBegin(c, el.DIV); {
-            const numArms    = 30;
+            const numArms    = 5;
 
             if (im.isFirstRender(c)) {
                 imdom.setStyle(c, "position", "relative");
@@ -189,7 +189,6 @@ function imGalaxyOfDivs(c: ImCache) {
 
                 im.For(c); for (let armIdx = 0; armIdx < numArms; armIdx++) {
                     let angleOffset = (armIdx / numArms) * 2 * Math.PI + anim.t;
-                    // let tMult = 1 + 0.00 * (1 + 0.5 * Math.sin(angleOffset));
                     let tMult = 1;
 
                     const numSquares = subliminalMessage.length * 3;
@@ -200,7 +199,7 @@ function imGalaxyOfDivs(c: ImCache) {
                         }
 
                         const size = 10 * angle;
-                        const positionOffset = 80;
+                        const positionOffset = 60;
 
                         const x = positionOffset * Math.cos(angle + angleOffset) * angle;
                         const y = positionOffset * Math.sin(angle + angleOffset) * angle;
@@ -265,24 +264,24 @@ function imSquareLetter(
     size = Math.floor(size);
     opacity = Math.floor(opacity * 255) / 255;
 
-    imdom.ElBegin(c, el.DIV); {
-        if (im.isFirstRender(c)) {
-            imdom.setStyle(c, "position", "absolute");
-            imdom.setStyle(c, "transform", "translate(50%, 50%)")
-            imdom.setStyle(c, "fontWeight", "bold")
-            // Does literally nothing what the heck
-            imdom.setStyle(c, "textRendering", "optimizeSpeed")
-        }
+    if (im.If(c) && opacity > 0.01) {
+        imdom.ElBegin(c, el.DIV); {
+            if (im.isFirstRender(c)) {
+                imdom.setStyle(c, "position", "absolute");
+                imdom.setStyle(c, "transform", "translate(50%, 50%)")
+                imdom.setStyle(c, "fontWeight", "bold")
+                // Does literally nothing what the heck
+                imdom.setStyle(c, "textRendering", "optimizeSpeed")
+            }
 
-        if (im.Memo(c, size)) {
-            imdom.setStyle(c, "fontSize", 18 + size + "px");
-        }
-        if (im.Memo(c, x))       { imdom.setStyle(c, "top", x + "px"); }
-        if (im.Memo(c, y))       { imdom.setStyle(c, "left", y + "px"); }
-        if (im.Memo(c, opacity)) { imdom.setStyle(c, "opacity", "" + opacity); }
+            if (im.Memo(c, size))    { imdom.setStyle(c, "fontSize", 18 + size + "px"); }
+            if (im.Memo(c, x))       { imdom.setStyle(c, "top", x + "px"); }
+            if (im.Memo(c, y))       { imdom.setStyle(c, "left", y + "px"); }
+            if (im.Memo(c, opacity)) { imdom.setStyle(c, "opacity", "" + opacity); }
 
-        imdom.Str(c, letter);
-    } imdom.ElEnd(c, el.DIV);
+            imdom.Str(c, letter);
+        } imdom.ElEnd(c, el.DIV);
+    } im.IfEnd(c);
 }
 
 

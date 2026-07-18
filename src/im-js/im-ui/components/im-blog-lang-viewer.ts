@@ -2,7 +2,7 @@
 
 import * as bl from "blog-lang";
 import { el, im, ImCache, imdom } from "im-js";
-import { cssVars, DisplayType, imui, BLOCK, COL, CENTER, INLINE, LEFT, NA, PX, ROW, VH } from "im-js/im-ui";
+import { cssVars, DisplayType, imui, BLOCK, COL, CENTER, INLINE, LEFT, NA, PX, ROW, VH, STRETCH } from "im-js/im-ui";
 import { imButtonStyle } from "im-js/im-ui/components/im-button";
 
 export type MarkupRendererState = {
@@ -52,14 +52,6 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
 	imBegin(c, COL, CENTER); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
 		imBegin(c); {
-			// Code blocks look VERY ugly when we let them take up the full width
-			// of a 16:9 monitor. However, they look fine on a 4:3 monitor. 
-			// TODO: mobile
-			const maxWidth = Math.min(window.innerWidth, 1.2 * window.innerHeight);
-			if (im.Memo(c, maxWidth)) {
-				imdom.setStyle(c, "width", maxWidth + "px");
-			}
-
 			imRenderBlocksInternal(c, post.blocks, options);
 		} imEnd(c);
 	} imEnd(c);
@@ -116,12 +108,12 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 				} im.SwitchEnd(c)
 			} break;
 			case bl.B_CODE: {
-				const padding = 5;
+				const padding = 10;
 				imBegin(c); imui.Relative(c); {
 					if (im.isFirstRender(c)) {
 						imdom.setStyle(c, "backgroundColor", cssVars.bg2);
 						imdom.setStyle(c, "padding", padding + "px");
-						imdom.setStyle(c, "borderRadius", padding + "px");
+						imdom.setStyle(c, "borderRadius", 0.5 * padding + "px");
 					}
 					imBegin(c); imui.Absolute(c, padding, PX, padding, PX, 0, NA, 0, NA); {
 						if (im.isFirstRender(c)) {
@@ -186,9 +178,6 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 					}
 
 					imdom.setStyle(c, "display", "grid");
-				}
-
-				if (im.Memo(c, tableState.gridTemplateCols)) {
 					imdom.setStyle(c, "display", "grid");
 					imdom.setStyle(c, "gridTemplateColumns", tableState.gridTemplateCols);
 					imdom.setStyle(c, "backgroundColor", cssVars.fg);

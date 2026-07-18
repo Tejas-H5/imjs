@@ -4,12 +4,11 @@ import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visu
 
 import page0 from "./pages/overview.md";
 import page1 from "./pages/installing.md";
-import page2 from "./pages/creating-a-page.md";
-import page3 from "./pages/creating-components.md";
-import page4 from "./pages/control-flow.md";
-import page5 from "./pages/control-flow-part-2.md";
-import page6 from "./pages/state-management.md";
 import page7 from "./pages/the-end.md";
+
+// Not sure where it should go yet
+import tutorial1 from "./pages/tutorial-1-todo-list.md";
+
 import { assert } from "assert";
 
 function imDivBegin(c: ImCache) {
@@ -49,11 +48,7 @@ const modules = [
 const tests: VisualTest[] = [
     newVisualTestFromBlogLang(page0, modules),
     newVisualTestFromBlogLang(page1, modules),
-    newVisualTestFromBlogLang(page2, modules),
-    newVisualTestFromBlogLang(page3, modules),
-    newVisualTestFromBlogLang(page4, modules),
-    newVisualTestFromBlogLang(page5, modules),
-    newVisualTestFromBlogLang(page6, modules),
+    newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
 

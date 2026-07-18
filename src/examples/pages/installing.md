@@ -1,15 +1,9 @@
 # How to install imJS
 
-## Downloading
+## Manually vendoring
 
-There are a couple of ways:
-
-#table[
-#row
-#cell[content] *Manually vendoring*
-#cell
-    Copy the folders you need from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]
-        into your project.
+Copy the folders you need from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]
+    into your project.
 
 ```
 /im-js/ (required)
@@ -20,17 +14,14 @@ There are a couple of ways:
         It's optional - im-js will work without it.
 ```
 
-#row
-#cell
-    *Npm*
-#cell
-    It's not available on npm (the package registry), because you can just install it from 
-        #url[this GitHub repository, https://github.com/Tejas-H5/imjs] directly:
+## npm
+
+It's not available on npm (the package registry), but you can still `npm install` it
+    directly from #url[this GitHub repository, https://github.com/Tejas-H5/imjs]:
 
 ```cmd
 npm install github:Tejas-H5/imjs --ignore-scripts
 ```
-]
 
 ## Importing stuff
 
@@ -83,4 +74,6 @@ im.ForEnd(c);
 The default TypeScript formatter, for example, does just that - as such, 
     it's the one that I use.
 
-Now that you're set up, let's #url[create your page, /?test=Creating a page]
+Now that you're set up, you'll want to do the #url[first tutorial, /?test=Tutorial+1+-+a+TODO+List].
+It's the only one that you shouldn't skip - do that one first, and then the others
+are optional.

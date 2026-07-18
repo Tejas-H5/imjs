@@ -69,7 +69,8 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
 
     const transformResult = tsc.transform(code, modules);
 
-    const firstMethod = Object.values(transformResult.values)[0] ?? undefined;
+    const firstMethod = Object.values(transformResult.values)
+            .filter(m => m.name.startsWith("im"))[0] ?? undefined;
 
     return {
         name: language.substring("ts - ".length),
@@ -113,7 +114,8 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
                                 imCodeBlock(c, transformResult.javaScript);
                             } imui.End(c);
                         } im.IfEnd(c);
-                    } else { im.Else(c);
+                    } else { 
+                        im.Else(c);
                         firstMethod(c);
 
                         if (im.If(c) && testState.logs.length > 0) {
@@ -141,7 +143,7 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
 
 function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRenderOptions, modules: tsc.Module[]): void {
     if (im.If(c) && block.type === bl.B_CODE && block.language.startsWith("ts ")) {
-        imui.Begin(c, BLOCK); {
+        imui.Begin(c, BLOCK); imui.Relative(c); {
             const modulesChanged = im.Memo(c, modules);
             const blockChanged = im.Memo(c, block);
 

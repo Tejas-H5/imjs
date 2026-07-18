@@ -1,5 +1,9 @@
 import { assert } from "./assert";
+import { EL } from "./el";
+import { EL_SVG } from "./elsvg";
+import { EV } from "./ev";
 import { im, ImCache } from "./im-core";
+import { KEY } from "./key";
 
 ///////////////////////////
 // DOM-node management
@@ -25,7 +29,7 @@ export type DomAppender<E extends AppendableElement = AppendableElement> = {
     label?: string; // purely for debug
 
     root: E;
-    keyRef: unknown; // Could be a key, or a dom element. Used to check pairs are linining up corectly.
+    keyRef: KeyRef<string> | null; // Could be a key, or a dom element. Used to check pairs are linining up corectly.
 
     // Set this to true manually when you want to manage the DOM children yourself.
     // Hopefully that isn't all the time. If it is, then the framework isn't doing you too many favours.
@@ -257,6 +261,10 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
         childAppender.keyRef = r;
     }
 
+    if (childAppender.keyRef !== r) {
+        throw new Error(`Expected ${r.val} here, but got ${childAppender.keyRef?.val} instead - ${im.CONDITIONAL_RENDERING_ERROR_MESSAGE}`);
+    }
+
     beginDomAppender(c, appender, childAppender);
 
     return childAppender;
@@ -292,6 +300,11 @@ function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
         childAppender.keyRef = r;
     }
 
+    // make sure we're beginning the right thing
+    if (childAppender.keyRef !== r) {
+        throw new Error(`Expected ${r.val} here, but got ${childAppender.keyRef?.val} instead - ${im.CONDITIONAL_RENDERING_ERROR_MESSAGE}`);
+    }
+
     beginDomAppender(c, appender, childAppender);
 
     return childAppender;
@@ -320,7 +333,6 @@ function imRootBegin(c: ImCache, root: ValidElement) {
     if (appender === undefined) {
         appender = im.Set(c, newDomAppender(root, null, []));
         appender.domRoot = appender;
-        appender.keyRef = root;
     }
 
     let depth = im.GetInline(c, imRootBegin) ?? im.Set(c, im.getNumParents(c));
@@ -343,7 +355,8 @@ function imRootBegin(c: ImCache, root: ValidElement) {
 
 function imRootEnd(c: ImCache, root: ValidElement) {
     const appender = getCurrentAppender(c);
-    assert(appender.keyRef === root);
+    im.assertBeginIsCorrect
+    assert(appender.root === root);
 
     // By finalizing at the very end, we get two things:
     // - Opportunity to make a 'global key' - a component that can be instantiated anywhere but reuses the same cache entries. 
@@ -425,6 +438,7 @@ export interface Stringifyable {
 function imStr(c: ImCache, value: Stringifyable): Text {
     const appender = getCurrentAppender(c);
 
+    // imStr for typeId safety
     let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
         document.createTextNode(""),
@@ -1319,6 +1333,11 @@ function isLetterHeld(keysState: KeyboardState, letter: string): boolean {
     }
     return false;
 }
+
+export const ev = EV;
+export const el = EL;
+export const elsvg = EL_SVG;
+export const key = KEY;
 
 export const imdom = {
     /** Internal methods */

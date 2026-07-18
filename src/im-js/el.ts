@@ -1,5 +1,5 @@
 /** HTML elements */
-export const el = {
+export const EL = {
     A: { val: "a" },
     ABBR: { val: "abbr" },
     ADDRESS: { val: "address" },

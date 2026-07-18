@@ -1,7 +1,7 @@
 import { getNormalizedKey } from "./im-dom";
 
 /** Keyboard keys */
-export const key = {
+export const KEY = {
     // 1 to 9,0 - main numbers
     A1: getNormalizedKey("1"),
     A2: getNormalizedKey("2"),
