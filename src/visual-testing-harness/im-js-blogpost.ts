@@ -54,12 +54,19 @@ function testHasOutput(s: InlineTestState): boolean {
     );
 }
 
+function pushLog(logs: any[], vals: any) {
+    logs.push(vals);
+    if (logs.length > 10) {
+        logs.shift();
+    }
+}
+
 function inlineTestFromCodeBlock(code: string, language: string, userModules: tsc.Module[]): InlineTest {
     const testState = newInlineTestState();
     const consoleStub = {
-        log: (...vals: unknown[]) =>   testState.logs.push(vals),
-        warn: (...vals: unknown[]) =>  testState.warns.push(vals),
-        error: (...vals: unknown[]) => testState.errors.push(vals),
+        log: (...vals: unknown[]) =>   pushLog(testState.logs, vals),
+        warn: (...vals: unknown[]) =>  pushLog(testState.warns, vals),
+        error: (...vals: unknown[]) => pushLog(testState.errors, vals),
     };
 
     const modules: tsc.Module[] = [
@@ -127,6 +134,7 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
                                     imui.Begin(c, BLOCK); {
                                         im.For(c); for (const val of logLine) {
                                             imdom.StrFmt(c, val, JSON.stringify);
+                                            imdom.Str(c, " ");
                                         } im.ForEnd(c);
                                     } imui.End(c);
                                 } im.ForEnd(c);

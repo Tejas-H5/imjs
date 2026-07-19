@@ -910,7 +910,7 @@ function imGlobalEventSystemPoll(c: ImCache): GlobalEventSystem {
         // make sure that if the component threw before reaching 
         // imGlobalEventSystemPoll, the next render of the component
         // will still clear out the event 
-        eventSystem.dontClear = true;
+        eventSystem.dontClear = false;
     }
 
     return eventSystem;
@@ -1288,6 +1288,10 @@ function isKeyReleased(keysState: KeyboardState, key: NormalizedKey): boolean {
 }
 
 function isKeyHeld(keysState: KeyboardState, key: NormalizedKey): boolean {
+    if (isKeyPressed(keysState, key)) {
+        return true;
+    }
+
     const keys = keysState.keys.keys;
     for (let i = 0; i < keys.held.length; i++) {
         if (keys.held[i] === key) return true;

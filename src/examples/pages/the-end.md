@@ -39,8 +39,8 @@ There are some things that I have specifically planned never work on:
 - Making `c` an object. I designed the API the way I did because I am very much a functions+data 
     kind of programmer - thinking of problems that way has made a lot of things much easier for me.
     It also makes porting the framework to Odin, should I ever want to do this, much easier.
-    (this is my favourite language. It has been for 3 years before Primeagen started 
-        raising awareness of it. I was using it _before_ it was cool, nyeahhh).
+    (This is my favourite language since 2022. This UI framework has a similar goal of making 
+    web programming enjoyable again).
 - There will never be an imJS dev-tools. 
     Most things can just be done using the existing browser devtools, and this is especially the case with this framework.
 - I also plan to never introduce a mechanism by which you can manually render just a 

@@ -67,7 +67,7 @@ export function imVisualTestInstallation(
             const center = !!(flags & TEST_CENTERED);
 
             const split = im.GetInline(c, imVisualTestInstallation) ?? 
-                im.Set(c, { vSplit: 0.4, dragging: false });
+                im.Set(c, { vSplit: 0.3, dragging: false });
 
             // Test Component
             imui.Begin(c, COL); imui.Flex(c, split.vSplit); imui.ScrollOverflow(c); {
@@ -98,7 +98,7 @@ export function imVisualTestInstallation(
             } imui.End(c);
 
             // Code
-            imui.Begin(c, BLOCK); imui.PreWrap(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
+            imui.Begin(c, BLOCK); imui.Pre(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
                 if (im.isFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
                 if (im.isFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
                 imui.Fg(c, cssVars.fg2);

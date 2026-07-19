@@ -1,4 +1,4 @@
-import { el, ev, im, ImCache, imdom } from "im-js";
+import { el, ev, im, ImCache, imdom, key } from "im-js";
 import { COL, cssVars, imui, PX } from "im-js/im-ui";
 import { imVisualTestHarness, newVisualTestFromBlogLang, VisualTest } from "visual-testing-harness";
 
@@ -8,6 +8,7 @@ import page7 from "./pages/the-end.md";
 
 // Not sure where it should go yet
 import tutorial1 from "./pages/tutorial-1-todo-list.md";
+import tutorial2 from "./pages/tutorial-2.md";
 
 import { assert } from "assert";
 
@@ -35,6 +36,7 @@ const modules = [
     { namespace: "imdom",   env: imdom },
     { namespace: "el",      env: el },
     { namespace: "ev",      env: ev },
+    { namespace: "key",     env: key },
     { namespace: "imui",    env: imui },
     { namespace: "cssVars", env: cssVars },
     { env: {
@@ -49,6 +51,7 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(page0, modules),
     newVisualTestFromBlogLang(page1, modules),
     newVisualTestFromBlogLang(tutorial1, modules),
+    newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
 

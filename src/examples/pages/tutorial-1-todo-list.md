@@ -1549,3 +1549,6 @@ The time has come for you to start building that idea you've had bouncing around
 inside your head!
 Right now actually - delete this silly todo list app, spend the next 5 minutes on your 
 idea and see how far you get.
+
+Still not sure what to do? Check out the next tutorial. 
+It introduces a couple of ideas that we haven't seen in this one yet.
