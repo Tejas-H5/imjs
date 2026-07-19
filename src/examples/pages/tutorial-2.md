@@ -818,7 +818,6 @@ const PLAYER = 0;
 const BULLET = 1;
 const ENEMY  = 2;
 function typeToSymbol(t: number): string {
-    // It also occurs to me that our player could look way cooler than 'P'
     switch(t) {
         case PLAYER: return "^";
         case BULLET: return "|";
@@ -830,8 +829,8 @@ function newGameState(): GameState {
     const state: GameState = {
         objects: [], player: null,
         shootTimer: 0, 
-        // A new timer that we can use to periodically spawn in enemies.
         enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
     };
     state.player = newGameObject(state, PLAYER);
     return state;
@@ -874,6 +873,23 @@ function imGame(c: ImCache) {
 
                 const player = game.player;
 
+                // We'll want to show something to the user if the player is dead
+                if (im.If(c) && player.dead) {
+                    imDivBegin(c); imSetPosition(c, 0, 0); {
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+                        imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+                        // The key-binding can be self-evident by colocating it with the UI
+                        const keyboard = imdom.getKeyboard();
+                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                            player.dead = false;
+                            game.playerInvincibleTimer = 1;
+                        }
+                    } imDivEnd(c);
+                } im.IfEnd(c);
+
                 // Handle input
                 {
                     if (player) {
@@ -900,7 +916,7 @@ function imGame(c: ImCache) {
 
                 // Periodically spawn in enemies
                 {
-                    if (game.enemySpawnTimer <= 0) {
+                    if (player && !player.dead && game.enemySpawnTimer <= 0) {
                         const enemy = newGameObject(game, ENEMY);
                         const enemySpeed = 200;
                         enemy.velY = enemySpeed; // Make sure it's always moving fown
@@ -917,38 +933,57 @@ function imGame(c: ImCache) {
                 {
                     const dt = im.getDeltaTimeSeconds(c);
 
-                    if (game.shootTimer > 0)      {game.shootTimer -= dt;}
-                    if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+                    // Only update the timers if the player is alive
+                    if (player &&  !player.dead) {
+                        if (game.shootTimer > 0) {game.shootTimer -= dt;}
+                        if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+                        if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+                    }
 
                     const playerRadius = 10;
                     const enemyRadius = 10;
-                    // check if the player died
-                    for (let i = 0; i < game.objects.length; i++) {
-                        const obj = game.objects[i];
-                        if (obj.type === PLAYER) continue;
-                        if (obj.type === BULLET) { 
-                            // We'll want to handle this too later though.
-                            // this code does get me thinking though - why can't a bullet 
-                            // just be another kind of enemy?
-                            continue;
-                        }
-                        if (obj.type === ENEMY) {
-                            
+
+                    if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+                        // check if the player died
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (obj.type === PLAYER) continue;
+                            if (obj.type === BULLET) { 
+                                // We'll want to handle this too later though.
+                                // this code does get me thinking though - why can't a bullet 
+                                // just be another kind of enemy?
+                                continue;
+                            }
+                            if (obj.type === ENEMY) {
+                                // The vector from point a -> point b is just b - a.
+                                // Then we can use pythagoras to get x*x + y*y = z*z.
+                                // We know x + y < z if x*x + y*y < z*z.
+                                const dX = player.posX - obj.posX;
+                                const dY = player.posY - obj.posY;
+                                const radius = playerRadius + enemyRadius;
+                                const areColliding = dX * dX + dY * dY < radius * radius;
+                                if (areColliding) {
+                                    player.dead = true;
+                                }
+                            }
                         }
                     }
 
-                    for (let i = 0; i < game.objects.length; i++) {
-                        const obj = game.objects[i];
-                        obj.posX += obj.velX * dt; 
-                        obj.posY += obj.velY * dt;
+                    // Only update the physics if the player is alive
+                    if (player && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            obj.posX += obj.velX * dt; 
+                            obj.posY += obj.velY * dt;
 
-                        const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
-                        if (objIsOffscreen) {
-                            if (obj.type === PLAYER) {
-                                obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
-                                obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
-                            } else {
-                                unorderedRemove(game.objects, i); i--;
+                            const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                            if (objIsOffscreen) {
+                                if (obj.type === PLAYER) {
+                                    obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                                    obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                                } else {
+                                    unorderedRemove(game.objects, i); i--;
+                                }
                             }
                         }
                     }
@@ -996,3 +1031,1207 @@ function unorderedRemove(arr, i) {
     arr.length--;
 }
 ```
+
+How about making the enemies shoot at the player?
+Also, it seems like BULLET and ENEMY are very similar. 
+For now, I'll keep them seperate, as I can't see how to 
+split/merge them, or if it's worth doing so. 
+It also kinda makes sense for a player bullet to be different
+from an enemy bullet.
+
+
+```ts - Enemies to start shooting back
+const PLAYER = 0; const BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+function typeToSymbol(t: number): string {
+    switch(t) {
+        case PLAYER: return "^"; case BULLET: return "|"; case ENEMY: return "v";
+        case ENEMY_BULLET: return "*";
+    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
+        posX: 0, posY: 0,
+        velX: 0, velY: 0,
+        type: type,
+        dead: false,
+        canShootBullets: false,
+        shootBulletsTimer: 0,
+    };
+    state.objects.push(obj);
+    return obj;
+}
+
+function imGame(c: ImCache) {
+    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+
+    const game = im.State(c, newGameState);
+
+    const root = imDivBegin(c).root; {
+        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+
+        const rect = root.getBoundingClientRect();
+        const halfWidth = rect.width / 2;
+        const halfHeight = rect.height / 2;
+
+        const visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && visible) {
+            imDivBegin(c); {
+                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+
+                const player = game.player;
+
+                if (im.If(c) && player.dead) {
+                    imDivBegin(c); imSetPosition(c, 0, 0); {
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+                        imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+                        const keyboard = imdom.getKeyboard();
+                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                            player.dead = false;
+                            game.playerInvincibleTimer = 1;
+                        }
+                    } imDivEnd(c);
+                } im.IfEnd(c);
+
+                // Handle input
+                {
+                    if (player) {
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        // HTML y is down
+                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        const movementSpeed = 500;
+
+                        player.velX = xAxis * movementSpeed;
+                        player.velY = yAxis * movementSpeed;
+
+                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                            const bullet = newGameObject(game, BULLET);
+                            bullet.posX = player.posX;
+                            bullet.posY = player.posY;
+                            bullet.velY = -1000;
+                            const machineGunTimeout = 0.025;
+                            game.shootTimer = machineGunTimeout; 
+                        }
+                    }
+                }
+
+                // Periodically spawn in enemies
+                {
+                    if (player && !player.dead && game.enemySpawnTimer <= 0) {
+                        const enemy = newGameObject(game, ENEMY);
+                        const enemySpeed = 200;
+                        enemy.velY = enemySpeed;
+                        enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
+                        enemy.posX = 0;
+                        enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
+                        enemy.canShootBullets = true;
+
+                        const enemiesPerSecond = 3;
+                        game.enemySpawnTimer = 1 / enemiesPerSecond;
+                    }
+                }
+
+                // Update objects
+                {
+                    const dt = im.getDeltaTimeSeconds(c);
+
+                    if (player &&  !player.dead) {
+                        if (game.shootTimer > 0) {game.shootTimer -= dt;}
+                        if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+                        if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+                    }
+
+                    // spawn bullets as needed, only if the player is alive
+                    if (player && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (!obj.canShootBullets) continue;
+
+                            if (obj.shootBulletsTimer > 0) {
+                                obj.shootBulletsTimer -= dt;
+                                continue;
+                            }
+
+                            obj.shootBulletsTimer = 0.5;
+
+                            const bulletSpeed = 300;
+                            let dX = player.posX - obj.posX;
+                            let dY = player.posY - obj.posY;
+                            const mag = Math.sqrt(dX*dX + dY*dY);
+                            dX /= mag; dY /= mag;
+
+                            const bullet = newGameObject(game, ENEMY_BULLET);
+                            bullet.posX = obj.posX;
+                            bullet.posY = obj.posY;
+                            bullet.velX = dX * bulletSpeed;
+                            bullet.velY = dY * bulletSpeed;
+                        }
+                    }
+
+                    // Only update the physics if the player is alive
+                    if (player && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            obj.posX += obj.velX * dt; 
+                            obj.posY += obj.velY * dt;
+
+                            const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                            if (objIsOffscreen) {
+                                if (obj.type === PLAYER) {
+                                    obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                                    obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                                } else {
+                                    unorderedRemove(game.objects, i); i--;
+                                }
+                            }
+                        }
+                    }
+
+                    // Probably this death check should actually come last
+                    const playerRadius = 5;
+                    const enemyRadius = 5;
+                    if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+                        // check if the player died
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (obj.type === PLAYER) continue;
+                            if (obj.type === BULLET) continue;
+
+                            const dX = player.posX - obj.posX;
+                            const dY = player.posY - obj.posY;
+                            const radius = playerRadius + enemyRadius;
+                            const areColliding = dX * dX + dY * dY < radius * radius;
+                            if (areColliding) {
+                                player.dead = true;
+                            }
+                        }
+                    }
+
+                }
+
+                // We simply render every object in a loop now.
+                im.For(c); for (const obj of game.objects) {
+                    imDivBegin(c); imSetPosition(c, obj.posX, obj.posY); {
+                        imdom.StrFmt(c, obj.type, typeToSymbol);
+                    } imDivEnd(c);
+                } im.ForEnd(c);
+            } imDivEnd(c);
+        } im.IfEnd(c);
+    } imDivEnd(c);
+}
+
+function imSetPosition(c: ImCache, x: number, y: number) {
+    if (im.isFirstRender(c)) {
+        imdom.setStyle(c, "position", "absolute");
+        imdom.setStyle(c, "transform", "translate(-50%, -50%)");
+    }
+
+    if (im.Memo(c, x)) imdom.setStyle(c, "left", x + "px");
+    if (im.Memo(c, y)) imdom.setStyle(c, "top", y + "px");
+}
+
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+function clamp(val: number, lo: number, hi: number): number {
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+function unorderedRemove(arr, i) {
+    if (arr.length === 0) return;
+    arr[i] = arr[arr.length - 1];
+    arr.length--;
+}
+```
+
+I think we're really getting somewhere now! 
+But the player's bullets don't seem to work on enemies. 
+We'll need to do an n^2 loop to collide the player's bullets
+with the enemies bullets. 
+We could also limit the number of bullets a player can shoot, which
+would put an upper bound on the runtime of the algorithm.
+But I don't really care to do that yet.
+
+```ts - Player bullets to start working
+const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+function objToSymbol(obj: GameObject): string {
+    switch(obj.type) {
+        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
+        case ENEMY_BULLET: return "*";
+        case ENEMY: {
+            if (obj.dead) {
+                if (obj.deathAnimationTimer > 0.4) return "@";
+                if (obj.deathAnimationTimer > 0.3) return "#";
+                if (obj.deathAnimationTimer > 0.2) return "*";
+                if (obj.deathAnimationTimer > 0.1) return "+";
+                if (obj.deathAnimationTimer > 0.0) return ".";
+                if (obj.deathAnimationTimer)       return " ";
+            }
+            return "v";
+        }
+    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
+        posX: 0, posY: 0,
+        velX: 0, velY: 0,
+        type: type,
+        dead: false,
+        canShootBullets: false,
+        shootBulletsTimer: 0,
+        deathAnimationTimer: 0,
+    };
+    state.objects.push(obj);
+    return obj;
+}
+
+function imGame(c: ImCache) {
+    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+
+    const game = im.State(c, newGameState);
+
+    const root = imDivBegin(c).root; {
+        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+
+        const rect = root.getBoundingClientRect();
+        const halfWidth = rect.width / 2;
+        const halfHeight = rect.height / 2;
+
+        const visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && visible) {
+            imDivBegin(c); {
+                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+
+                const player = game.player;
+
+                if (im.If(c) && player.dead) {
+                    imDivBegin(c); imSetPosition(c, 0, 0); {
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+                        imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+                        const keyboard = imdom.getKeyboard();
+                        if (imdom.isKeyPressed(keyboard, key.C)) {
+                            player.dead = false;
+                            game.playerInvincibleTimer = 1;
+                        }
+                    } imDivEnd(c);
+                } im.IfEnd(c);
+
+                // Handle input
+                {
+                    if (player) {
+                        const keyboard = imdom.getKeyboard();
+                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+                        // HTML y is down
+                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+                        const movementSpeed = 500;
+
+                        player.velX = xAxis * movementSpeed;
+                        player.velY = yAxis * movementSpeed;
+
+                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                            const bullet = newGameObject(game, PLAYER_BULLET);
+                            bullet.posX = player.posX;
+                            bullet.posY = player.posY;
+                            bullet.velY = -1000;
+                            const machineGunTimeout = 0.025;
+                            game.shootTimer = machineGunTimeout; 
+                        }
+                    }
+                }
+
+                // Periodically spawn in enemies
+                {
+                    if (player && !player.dead && game.enemySpawnTimer <= 0) {
+                        const enemy = newGameObject(game, ENEMY);
+                        const enemySpeed = 200;
+                        enemy.velY = enemySpeed;
+                        enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
+                        enemy.posX = 0;
+                        enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
+                        enemy.canShootBullets = true;
+
+                        const enemiesPerSecond = 3;
+                        game.enemySpawnTimer = 1 / enemiesPerSecond;
+                    }
+                }
+
+                // Update objects
+                {
+                    const dt = im.getDeltaTimeSeconds(c);
+
+                    if (player &&  !player.dead) {
+                        if (game.shootTimer > 0) {game.shootTimer -= dt;}
+                        if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+                        if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+                    }
+
+                    // spawn bullets as needed, only if the player is alive
+                    if (player && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (!obj.canShootBullets) continue;
+
+                            if (obj.shootBulletsTimer > 0) {
+                                obj.shootBulletsTimer -= dt;
+                                continue;
+                            }
+
+                            obj.shootBulletsTimer = 0.5;
+
+                            const bulletSpeed = 300;
+                            let dX = player.posX - obj.posX;
+                            let dY = player.posY - obj.posY;
+                            const mag = Math.sqrt(dX*dX + dY*dY);
+                            dX /= mag; dY /= mag;
+
+                            const bullet = newGameObject(game, ENEMY_BULLET);
+                            bullet.posX = obj.posX;
+                            bullet.posY = obj.posY;
+                            bullet.velX = dX * bulletSpeed;
+                            bullet.velY = dY * bulletSpeed;
+                        }
+                    }
+
+                    if (player && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            obj.posX += obj.velX * dt; 
+                            obj.posY += obj.velY * dt;
+
+                            const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                            if (objIsOffscreen) {
+                                if (obj.type === PLAYER) {
+                                    obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                                    obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                                } else {
+                                    unorderedRemove(game.objects, i); i--;
+                                }
+                            }
+                        }
+                    }
+
+                    // Collide player with enemies and their bullets
+                    const playerRadius = 10;
+                    const enemyRadius = 10;
+                    const playerBulletRadius = 10;
+                    if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (obj.type === PLAYER) continue;
+                            if (obj.type === PLAYER_BULLET) continue;
+                            if (obj.dead) continue;
+                            if (areCirclesColliding(
+                                player.posX, player.posY,
+                                obj.posX, obj.posY,
+                                playerRadius, enemyRadius
+                            )) {
+                                player.dead = true;
+                            }
+                        }
+                    }
+
+                    // Collide enemies with player bullets
+                    for (let i = 0; i < game.objects.length; i++) {
+                        const playerBullet = game.objects[i];
+                        if (playerBullet.type !== PLAYER_BULLET) continue;
+                        for (let j = 0; j < game.objects.length; j++) {
+                            const enemy = game.objects[j];
+                            if (enemy.type !== ENEMY) continue;
+                            if (enemy.dead) continue;
+
+                            if (areCirclesColliding(
+                                playerBullet.posX, playerBullet.posY,
+                                enemy.posX, enemy.posY,
+                                playerBulletRadius, enemyRadius
+                            )) {
+                                enemy.dead = true;
+                                enemy.deathAnimationTimer = 0.5;
+                            }
+                        }
+                    }
+
+                    // Animate and remove dead objects (apart from the player).
+                    // NOTE: we may want to animate them later
+                    for (let i = 0; i < game.objects.length; i++) {
+                        const obj = game.objects[i];
+                        if (obj.type === PLAYER) continue;
+                        if (!obj.dead) continue; 
+                        if (obj.deathAnimationTimer > 0) {
+                            obj.deathAnimationTimer -= dt;
+                            continue;
+                        }
+                        unorderedRemove(game.objects, i); i--;
+                    }
+                }
+
+                // We simply render every object in a loop now.
+                im.For(c); for (const obj of game.objects) {
+                    imDivBegin(c); imSetPosition(c, obj.posX, obj.posY); {
+                        imStr(c, objToSymbol(obj));
+                    } imDivEnd(c);
+                } im.ForEnd(c);
+            } imDivEnd(c);
+        } im.IfEnd(c);
+    } imDivEnd(c);
+}
+
+function areCirclesColliding(
+    x1: number, y1: number, 
+    x2: number, y2: number, 
+    r1: number, r2: number
+) {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    const r = r1 + r2;
+
+    return dx*dx + dy*dy < r*r;
+}
+
+function imSetPosition(c: ImCache, x: number, y: number) {
+    if (im.isFirstRender(c)) {
+        imdom.setStyle(c, "position", "absolute");
+        imdom.setStyle(c, "transform", "translate(-50%, -50%)");
+    }
+
+    if (im.Memo(c, x)) imdom.setStyle(c, "left", x + "px");
+    if (im.Memo(c, y)) imdom.setStyle(c, "top", y + "px");
+}
+
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+function clamp(val: number, lo: number, hi: number): number {
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+function unorderedRemove(arr, i) {
+    if (arr.length === 0) return;
+    arr[i] = arr[arr.length - 1];
+    arr.length--;
+}
+```
+
+## Some code cleanups
+
+We've done all this stuff, and at no point were we forced by the framework to 
+    split our UI into a bunch of tiny components.
+We can do that now, all by ourselves. 
+I haven't gotten a chance to talk about the framework very much, because it has
+    largely stayed out of our way.
+
+Let's say that we want to be able to reuse the playfield for another game.
+The typical way to do this in other frameworks, is to extract out the game as a function,
+    then make the playfield accept a function that it can call. 
+This is a perfectly fine way of doing things:
+
+```ts - Refactor approach 1: extract imPlayfield(c, fn)
+const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+function objToSymbol(obj: GameObject): string {
+    switch(obj.type) {
+        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
+        case ENEMY_BULLET: return "*";
+        case ENEMY: {
+            if (obj.dead) {
+                if (obj.deathAnimationTimer > 0.4) return "@";
+                if (obj.deathAnimationTimer > 0.3) return "#";
+                if (obj.deathAnimationTimer > 0.2) return "*";
+                if (obj.deathAnimationTimer > 0.1) return "+";
+                if (obj.deathAnimationTimer > 0.0) return ".";
+                if (obj.deathAnimationTimer)       return " ";
+            }
+            return "v";
+        }
+    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
+        posX: 0, posY: 0,
+        velX: 0, velY: 0,
+        type: type,
+        dead: false,
+        canShootBullets: false,
+        shootBulletsTimer: 0,
+        deathAnimationTimer: 0,
+    };
+    state.objects.push(obj);
+    return obj;
+}
+
+function imGame(c: ImCache) {
+    imPlayfield(c, imGameFn);
+}
+
+function imPlayfield(c: ImCache, imFn: GameRenderFn) {
+    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+
+    const root = imDivBegin(c).root; {
+        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+
+        const visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && visible) {
+            imDivBegin(c); {
+                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+
+                imFn(c, root);
+            } imDivEnd(c);
+        } im.IfEnd(c);
+    } imDivEnd(c);
+}
+
+function imGameFn(c: ImCache, root: HTMLElement) {
+    const rect = root.getBoundingClientRect();
+    const halfWidth = rect.width / 2;
+    const halfHeight = rect.height / 2;
+
+    const game = im.State(c, newGameState);
+
+    const player = game.player;
+
+    if (im.If(c) && player.dead) {
+        imDivBegin(c); imSetPosition(c, 0, 0); {
+            if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
+            if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+            imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+            imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+            const keyboard = imdom.getKeyboard();
+            if (imdom.isKeyPressed(keyboard, key.C)) {
+                player.dead = false;
+                game.playerInvincibleTimer = 1;
+            }
+        } imDivEnd(c);
+    } im.IfEnd(c);
+
+    // Handle input
+    {
+        if (player) {
+            const keyboard = imdom.getKeyboard();
+            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+            const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+            // HTML y is down
+            const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+            const movementSpeed = 500;
+
+            player.velX = xAxis * movementSpeed;
+            player.velY = yAxis * movementSpeed;
+
+            if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                const bullet = newGameObject(game, PLAYER_BULLET);
+                bullet.posX = player.posX;
+                bullet.posY = player.posY;
+                bullet.velY = -1000;
+                const machineGunTimeout = 0.025;
+                game.shootTimer = machineGunTimeout; 
+            }
+        }
+    }
+
+    // Periodically spawn in enemies
+    {
+        if (player && !player.dead && game.enemySpawnTimer <= 0) {
+            const enemy = newGameObject(game, ENEMY);
+            const enemySpeed = 200;
+            enemy.velY = enemySpeed;
+            enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
+            enemy.posX = 0;
+            enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
+            enemy.canShootBullets = true;
+
+            const enemiesPerSecond = 3;
+            game.enemySpawnTimer = 1 / enemiesPerSecond;
+        }
+    }
+
+    // Update objects
+    {
+        const dt = im.getDeltaTimeSeconds(c);
+
+        if (player &&  !player.dead) {
+            if (game.shootTimer > 0) {game.shootTimer -= dt;}
+            if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+            if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+        }
+
+        // spawn bullets as needed, only if the player is alive
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (!obj.canShootBullets) continue;
+
+                if (obj.shootBulletsTimer > 0) {
+                    obj.shootBulletsTimer -= dt;
+                    continue;
+                }
+
+                obj.shootBulletsTimer = 0.5;
+
+                const bulletSpeed = 300;
+                let dX = player.posX - obj.posX;
+                let dY = player.posY - obj.posY;
+                const mag = Math.sqrt(dX*dX + dY*dY);
+                dX /= mag; dY /= mag;
+
+                const bullet = newGameObject(game, ENEMY_BULLET);
+                bullet.posX = obj.posX;
+                bullet.posY = obj.posY;
+                bullet.velX = dX * bulletSpeed;
+                bullet.velY = dY * bulletSpeed;
+            }
+        }
+
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                obj.posX += obj.velX * dt; 
+                obj.posY += obj.velY * dt;
+
+                const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                if (objIsOffscreen) {
+                    if (obj.type === PLAYER) {
+                        obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                        obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                    } else {
+                        unorderedRemove(game.objects, i); i--;
+                    }
+                }
+            }
+        }
+
+        // Collide player with enemies and their bullets
+        const playerRadius = 10;
+        const enemyRadius = 10;
+        const playerBulletRadius = 10;
+        if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (obj.type === PLAYER) continue;
+                if (obj.type === PLAYER_BULLET) continue;
+                if (obj.dead) continue;
+                if (areCirclesColliding(
+                    player.posX, player.posY,
+                    obj.posX, obj.posY,
+                    playerRadius, enemyRadius
+                )) {
+                    player.dead = true;
+                }
+            }
+        }
+
+        // Collide enemies with player bullets
+        for (let i = 0; i < game.objects.length; i++) {
+            const playerBullet = game.objects[i];
+            if (playerBullet.type !== PLAYER_BULLET) continue;
+            for (let j = 0; j < game.objects.length; j++) {
+                const enemy = game.objects[j];
+                if (enemy.type !== ENEMY) continue;
+                if (enemy.dead) continue;
+
+                if (areCirclesColliding(
+                    playerBullet.posX, playerBullet.posY,
+                    enemy.posX, enemy.posY,
+                    playerBulletRadius, enemyRadius
+                )) {
+                    enemy.dead = true;
+                    enemy.deathAnimationTimer = 0.5;
+                }
+            }
+        }
+
+        // Animate and remove dead objects (apart from the player).
+        // NOTE: we may want to animate them later
+        for (let i = 0; i < game.objects.length; i++) {
+            const obj = game.objects[i];
+            if (obj.type === PLAYER) continue;
+            if (!obj.dead) continue; 
+            if (obj.deathAnimationTimer > 0) {
+                obj.deathAnimationTimer -= dt;
+                continue;
+            }
+            unorderedRemove(game.objects, i); i--;
+        }
+    }
+
+    // We simply render every object in a loop now.
+    im.For(c); for (const obj of game.objects) {
+        imDivBegin(c); imSetPosition(c, obj.posX, obj.posY); {
+            imStr(c, objToSymbol(obj));
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function areCirclesColliding(
+    x1: number, y1: number, 
+    x2: number, y2: number, 
+    r1: number, r2: number
+) {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    const r = r1 + r2;
+
+    return dx*dx + dy*dy < r*r;
+}
+
+function imSetPosition(c: ImCache, x: number, y: number) {
+    if (im.isFirstRender(c)) {
+        imdom.setStyle(c, "position", "absolute");
+        imdom.setStyle(c, "transform", "translate(-50%, -50%)");
+    }
+
+    if (im.Memo(c, x)) imdom.setStyle(c, "left", x + "px");
+    if (im.Memo(c, y)) imdom.setStyle(c, "top", y + "px");
+}
+
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+function clamp(val: number, lo: number, hi: number): number {
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+function unorderedRemove(arr, i) {
+    if (arr.length === 0) return;
+    arr[i] = arr[arr.length - 1];
+    arr.length--;
+}
+```
+
+The approach that I prefer in most cases however, is that of imXBegin/imXEnd pairs,
+which we were able to do for `imDivBegin/imDivEnd`.
+The main reason for this, is that the usage code won't need to extract
+    out their own function to try out the component.
+The two don't need to be mutually exclusive:
+
+```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd
+const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+function objToSymbol(obj: GameObject): string {
+    switch(obj.type) {
+        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
+        case ENEMY_BULLET: return "*";
+        case ENEMY: {
+            if (obj.dead) {
+                if (obj.deathAnimationTimer > 0.4) return "@";
+                if (obj.deathAnimationTimer > 0.3) return "#";
+                if (obj.deathAnimationTimer > 0.2) return "*";
+                if (obj.deathAnimationTimer > 0.1) return "+";
+                if (obj.deathAnimationTimer > 0.0) return ".";
+                if (obj.deathAnimationTimer)       return " ";
+            }
+            return "v";
+        }
+    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
+        posX: 0, posY: 0,
+        velX: 0, velY: 0,
+        type: type,
+        dead: false,
+        canShootBullets: false,
+        shootBulletsTimer: 0,
+        deathAnimationTimer: 0,
+    };
+    state.objects.push(obj);
+    return obj;
+}
+
+function imGame(c: ImCache) {
+    const playfield = imPlayfieldBegin(c); 
+    if (playfield.visible) {
+        imGameFn(c, playfield.root);
+    } imPlayfieldEnd(c, playfield);
+}
+
+function imPlayfieldBegin(c: ImCache) {
+    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+
+    const root = imDivBegin(c).root; 
+    const state = im.Get(c, imPlayfieldBegin) ??
+        im.Set(c, { root, visible: false, });
+    {
+        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+
+        state.visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && state.visible) {
+            imDivBegin(c); {
+                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+            } 
+        }
+    }
+
+    return state;
+}
+
+function imPlayfieldEnd(c: ImCache, playfield: PlayfieldState) {
+    {
+        if (playfield.visible) {
+            {
+            } imDivEnd(c);
+        } im.IfEnd(c);
+    } imDivEnd(c);
+}
+
+function imGameFn(c: ImCache, root: HTMLElement) {
+    const rect = root.getBoundingClientRect();
+    const halfWidth = rect.width / 2;
+    const halfHeight = rect.height / 2;
+
+    const game = im.State(c, newGameState);
+
+    const player = game.player;
+
+    if (im.If(c) && player.dead) {
+        imDivBegin(c); imSetPosition(c, 0, 0); {
+            if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
+            if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+            imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+            imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+            const keyboard = imdom.getKeyboard();
+            if (imdom.isKeyPressed(keyboard, key.C)) {
+                player.dead = false;
+                game.playerInvincibleTimer = 1;
+            }
+        } imDivEnd(c);
+    } im.IfEnd(c);
+
+    // Handle input
+    {
+        if (player) {
+            const keyboard = imdom.getKeyboard();
+            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+            const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+            // HTML y is down
+            const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+            const movementSpeed = 500;
+
+            player.velX = xAxis * movementSpeed;
+            player.velY = yAxis * movementSpeed;
+
+            if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                const bullet = newGameObject(game, PLAYER_BULLET);
+                bullet.posX = player.posX;
+                bullet.posY = player.posY;
+                bullet.velY = -1000;
+                const machineGunTimeout = 0.025;
+                game.shootTimer = machineGunTimeout; 
+            }
+        }
+    }
+
+    // Periodically spawn in enemies
+    {
+        if (player && !player.dead && game.enemySpawnTimer <= 0) {
+            const enemy = newGameObject(game, ENEMY);
+            const enemySpeed = 200;
+            enemy.velY = enemySpeed;
+            enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
+            enemy.posX = 0;
+            enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
+            enemy.canShootBullets = true;
+
+            const enemiesPerSecond = 3;
+            game.enemySpawnTimer = 1 / enemiesPerSecond;
+        }
+    }
+
+    // Update objects
+    {
+        const dt = im.getDeltaTimeSeconds(c);
+
+        if (player &&  !player.dead) {
+            if (game.shootTimer > 0) {game.shootTimer -= dt;}
+            if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+            if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+        }
+
+        // spawn bullets as needed, only if the player is alive
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (!obj.canShootBullets) continue;
+
+                if (obj.shootBulletsTimer > 0) {
+                    obj.shootBulletsTimer -= dt;
+                    continue;
+                }
+
+                obj.shootBulletsTimer = 0.5;
+
+                const bulletSpeed = 300;
+                let dX = player.posX - obj.posX;
+                let dY = player.posY - obj.posY;
+                const mag = Math.sqrt(dX*dX + dY*dY);
+                dX /= mag; dY /= mag;
+
+                const bullet = newGameObject(game, ENEMY_BULLET);
+                bullet.posX = obj.posX;
+                bullet.posY = obj.posY;
+                bullet.velX = dX * bulletSpeed;
+                bullet.velY = dY * bulletSpeed;
+            }
+        }
+
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                obj.posX += obj.velX * dt; 
+                obj.posY += obj.velY * dt;
+
+                const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                if (objIsOffscreen) {
+                    if (obj.type === PLAYER) {
+                        obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                        obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                    } else {
+                        unorderedRemove(game.objects, i); i--;
+                    }
+                }
+            }
+        }
+
+        // Collide player with enemies and their bullets
+        const playerRadius = 10;
+        const enemyRadius = 10;
+        const playerBulletRadius = 10;
+        if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (obj.type === PLAYER) continue;
+                if (obj.type === PLAYER_BULLET) continue;
+                if (obj.dead) continue;
+                if (areCirclesColliding(
+                    player.posX, player.posY,
+                    obj.posX, obj.posY,
+                    playerRadius, enemyRadius
+                )) {
+                    player.dead = true;
+                }
+            }
+        }
+
+        // Collide enemies with player bullets
+        for (let i = 0; i < game.objects.length; i++) {
+            const playerBullet = game.objects[i];
+            if (playerBullet.type !== PLAYER_BULLET) continue;
+            for (let j = 0; j < game.objects.length; j++) {
+                const enemy = game.objects[j];
+                if (enemy.type !== ENEMY) continue;
+                if (enemy.dead) continue;
+
+                if (areCirclesColliding(
+                    playerBullet.posX, playerBullet.posY,
+                    enemy.posX, enemy.posY,
+                    playerBulletRadius, enemyRadius
+                )) {
+                    enemy.dead = true;
+                    enemy.deathAnimationTimer = 0.5;
+                }
+            }
+        }
+
+        // Animate and remove dead objects (apart from the player).
+        // NOTE: we may want to animate them later
+        for (let i = 0; i < game.objects.length; i++) {
+            const obj = game.objects[i];
+            if (obj.type === PLAYER) continue;
+            if (!obj.dead) continue; 
+            if (obj.deathAnimationTimer > 0) {
+                obj.deathAnimationTimer -= dt;
+                continue;
+            }
+            unorderedRemove(game.objects, i); i--;
+        }
+    }
+
+    // We simply render every object in a loop now.
+    im.For(c); for (const obj of game.objects) {
+        imDivBegin(c); imSetPosition(c, obj.posX, obj.posY); {
+            imStr(c, objToSymbol(obj));
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function areCirclesColliding(
+    x1: number, y1: number, 
+    x2: number, y2: number, 
+    r1: number, r2: number
+) {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    const r = r1 + r2;
+
+    return dx*dx + dy*dy < r*r;
+}
+
+function imSetPosition(c: ImCache, x: number, y: number) {
+    if (im.isFirstRender(c)) {
+        imdom.setStyle(c, "position", "absolute");
+        imdom.setStyle(c, "transform", "translate(-50%, -50%)");
+    }
+
+    if (im.Memo(c, x)) imdom.setStyle(c, "left", x + "px");
+    if (im.Memo(c, y)) imdom.setStyle(c, "top", y + "px");
+}
+
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+function clamp(val: number, lo: number, hi: number): number {
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+function unorderedRemove(arr, i) {
+    if (arr.length === 0) return;
+    arr[i] = arr[arr.length - 1];
+    arr.length--;
+}
+```
+
+However in some cases, like in this one, begin/end pairs are a bunch more work, 
+    so you may be better off with approach 1. 
+For this decision in particular, neither is wrong or right - it comes down to preference.
+
+## End of the road
+
+I think that's as far as I'd like to go with this.
+The game still has a few issues that can be worked through:
+#list[
+- Quite hard to track the player
+- No score mechanism
+- No environment
+]
+It could also be given more features, more levels, proper art, etc. 
+You could even stop working on it in this framework, and port it to native.
+The code would be very similar.
+I'll leave that as an exercise for the reader (you).
+
+In this tutorial, you learned how the framework can for the most part, 
+    stay out of the way, and how the immediate-mode API makes controlling DOM 
+    nodes relatively easy and frictionless.
+
+You also saw some new ways to abstract code:
+#list[
+- `imSetPosition` is an immediate-mode helper function that you can use to 
+    abstract out a piece of immediate-mode functionality.
+- `imPlayfieldBegin`/`imPlayfieldEnd` is a way that you can extract out 
+    functionality in a slightly more flexible way.
+    Begin-end pairs are especially useful for simpler components.
+]
+
+

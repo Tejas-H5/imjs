@@ -124,22 +124,21 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
                     } else { 
                         im.Else(c);
                         firstMethod(c);
-
-                        if (im.If(c) && testState.logs.length > 0) {
-                            imui.Begin(c, BLOCK); {
-                                imdom.Str(c, "Logs");
-                            } imui.End(c);
-                            imui.Begin(c, BLOCK); {
-                                im.For(c); for (const logLine of testState.logs) {
-                                    imui.Begin(c, BLOCK); {
-                                        im.For(c); for (const val of logLine) {
-                                            imdom.StrFmt(c, val, JSON.stringify);
-                                            imdom.Str(c, " ");
-                                        } im.ForEnd(c);
-                                    } imui.End(c);
-                                } im.ForEnd(c);
-                            } imui.End(c);
-                        } im.IfEnd(c);
+                    } im.IfEnd(c);
+                    if (im.If(c) && testState.logs.length > 0) {
+                        imui.Begin(c, BLOCK); {
+                            imdom.Str(c, "Logs");
+                        } imui.End(c);
+                        imui.Begin(c, BLOCK); {
+                            im.For(c); for (const logLine of testState.logs) {
+                                imui.Begin(c, BLOCK); {
+                                    im.For(c); for (const val of logLine) {
+                                        imdom.StrFmt(c, val, JSON.stringify);
+                                        imdom.Str(c, " ");
+                                    } im.ForEnd(c);
+                                } imui.End(c);
+                            } im.ForEnd(c);
+                        } imui.End(c);
                     } im.IfEnd(c);
                 } catch(err) {
                     im.Catch(c, tryState, err);
