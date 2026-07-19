@@ -2223,7 +2223,8 @@ I'll leave that as an exercise for the reader (you).
 
 In this tutorial, you learned how the framework can for the most part, 
     stay out of the way, and how the immediate-mode API makes controlling DOM 
-    nodes relatively easy and frictionless.
+    nodes relatively easy and frictionless (as the guy that created the framework 
+    and uses it all the time, I may be a bit biased though).
 
 You also saw some new ways to abstract code:
 #list[
@@ -2233,5 +2234,4 @@ You also saw some new ways to abstract code:
     functionality in a slightly more flexible way.
     Begin-end pairs are especially useful for simpler components.
 ]
-
 

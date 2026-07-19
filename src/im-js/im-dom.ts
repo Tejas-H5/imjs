@@ -355,7 +355,6 @@ function imRootBegin(c: ImCache, root: ValidElement) {
 
 function imRootEnd(c: ImCache, root: ValidElement) {
     const appender = getCurrentAppender(c);
-    im.assertBeginIsCorrect
     assert(appender.root === root);
 
     // By finalizing at the very end, we get two things:
