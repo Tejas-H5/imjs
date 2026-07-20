@@ -1309,7 +1309,7 @@ export const im = {
      * Executing code just once. Should behave identically to imMemo(c, true), but will be more performant since
      * under the hood, it just increments a number rather than pushes entries to the entry list
      */
-    isFirstRender: imIsFirstRender,
+    IsFirstRender: imIsFirstRender,
 
     /** Animation */
     getDeltaTimeSeconds, // Gets the _seconds_ elapsed between the previous frame and the current frame

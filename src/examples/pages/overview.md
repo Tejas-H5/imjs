@@ -51,7 +51,7 @@ You will also need to make good use code blocks, and put related constructs onto
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        if (im.isFirstRender(c)) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "width", "100%");
         }
 
@@ -127,7 +127,7 @@ If you don't have motion sickness, tap the example below to un-pause it:
 const subliminalMessage = "you will try imjs"
 
 function imGalaxyOfDivs(c: ImCache) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "overflow", "hidden");
     }
 
@@ -147,14 +147,14 @@ function imGalaxyOfDivs(c: ImCache) {
         imdom.ElBegin(c, el.DIV); {
             const numArms    = 5;
 
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setStyle(c, "position", "relative");
                 imdom.setStyle(c, "width", "100%");
                 imdom.setStyle(c, "height", "100%");
             }
 
             imdom.ElBegin(c, el.DIV); {
-                if (im.isFirstRender(c)) {
+                if (im.IsFirstRender(c)) {
                     imdom.setStyle(c, "zIndex", "100");
                     imdom.setStyle(c, "backgroundColor", "black");
                     imdom.setStyle(c, "color", "white");
@@ -171,7 +171,7 @@ function imGalaxyOfDivs(c: ImCache) {
             } imdom.ElEnd(c, el.DIV);
 
             imdom.ElBegin(c, el.DIV); {
-                if (im.isFirstRender(c)) {
+                if (im.IsFirstRender(c)) {
                     imdom.setStyle(c, "backgroundColor", "transparent");
                     imdom.setStyle(c, "height", "100%");
                     imdom.setStyle(c, "transform", "translate(50%, 50%)");
@@ -266,7 +266,7 @@ function imSquareLetter(
 
     if (im.If(c) && opacity > 0.01) {
         imdom.ElBegin(c, el.DIV); {
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setStyle(c, "position", "absolute");
                 imdom.setStyle(c, "transform", "translate(50%, 50%)")
                 imdom.setStyle(c, "fontWeight", "bold")

@@ -77,7 +77,7 @@ export function imDropZoneForPrototyping(c: ImCache, dnd: DragAndDropState, idx:
 }
 
 export function imDragHandle(c: ImCache, dnd: DragAndDropState, idx: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "userSelect", "none");
         imdom.setStyle(c, "cursor", "move");
     }

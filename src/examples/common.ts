@@ -11,8 +11,8 @@ export function imHeadingEnd(c: ImCache) {
 
 export function imParaBegin(c: ImCache) {
     imui.Begin(c, BLOCK);
-    if (im.isFirstRender(c)) imdom.setStyle(c, "paddingTop", "10px");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "paddingBottom", "10px");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "paddingTop", "10px");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "paddingBottom", "10px");
 }
 export function imParaEnd(c: ImCache) {
     return imui.End(c);

@@ -23,7 +23,7 @@ type InlineTest = {
 
 function imCodeBlock(c: ImCache, code: string) {
     imui.Begin(c, BLOCK); {
-        if (im.isFirstRender(c)) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "fontFamily", "monospace");
             imdom.setStyle(c, "whiteSpace", "pre-wrap");
         }

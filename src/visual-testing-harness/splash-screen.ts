@@ -20,39 +20,39 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     im.Switch(c, a.introToUse); switch(a.introToUse) {
         case 0: { // Not sure what this is. im / JS. I have since scrapped the line
             const target = 0.2;
-            a.scaleFactor = lerp01(a.scaleFactor, target, 10 * im.getDeltaTimeSeconds(c));
-            animationComplete = Math.abs(a.scaleFactor - target) < 0.0001;
+            a.t = lerp01(target, a.t, Math.exp(-15 * im.getDeltaTimeSeconds(c)));
+            animationComplete = Math.abs(a.t - target) < 0.0001;
 
             imui.Begin(c, BLOCK); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
                 imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * a.scaleFactor, PX, height * a.scaleFactor, PX);
+                    imui.AbsoluteXY(c, width * a.t, PX, height * a.t, PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
                     imdom.Str(c, "im");
                 } imui.End(c);
 
                 imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); {
-                    imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateZ(-${(70 - 45 * a.scaleFactor)}deg)`);
+                    imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateZ(-${(70 - 45 * a.t)}deg)`);
 
-                    imui.Size(c, 100 * a.scaleFactor, PERCENT, 5 * a.scaleFactor, PERCENT);
+                    imui.Size(c, 100 * a.t, PERCENT, 5 * a.t, PERCENT);
                     imui.AbsoluteXY(c, width / 2, PX, height / 2, PX);
                 } imui.End(c);
 
                 imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * (1 - a.scaleFactor), PX, height * (1 - a.scaleFactor), PX);
+                    imui.AbsoluteXY(c, width * (1 - a.t), PX, height * (1 - a.t), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
 
-                    if (im.isFirstRender(c)) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
+                    if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
 
                     imdom.Str(c, "JS");
                 } imui.End(c);
 
                 imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * 0.5, PX, height * (1 - a.scaleFactor * 0.5), PX);
+                    imui.AbsoluteXY(c, width * 0.5, PX, height * (1 - a.t * 0.5), PX);
                     if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                    if (im.isFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
+                    if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                     imdom.Str(c, "Visual testing harness");
                 } imui.End(c);
@@ -99,7 +99,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                             const text = rendered ? "Rendered" : "Rendering";
 
                             imui.Begin(c, ROW); imui.Bg(c, bg); imui.Fg(c, fg); imui.Align(c); imui.Justify(c); {
-                                if (im.isFirstRender(c)) {
+                                if (im.IsFirstRender(c)) {
                                     imdom.setStyle(c, "transform", `rotateZ(${isOddColumn ? "" : "-"}45deg)`);
                                 }
 
@@ -172,7 +172,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
             imui.Begin(c, BLOCK); {
                 imui.AbsoluteXY(c, width * 0.5, PX, height * 0.8, PX);
                 if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
 
                 imdom.Str(c, "Visual testing harness");
             } imui.End(c);

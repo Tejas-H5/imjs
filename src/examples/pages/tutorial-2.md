@@ -32,7 +32,7 @@ function imGame(c: ImCache) {
     // If you're not careful, setting styles like this can leak 
     // into the parent component. In many cases, like this one, it's 
     // fine (what we want, even) - just be conscious of what you're doing.
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         // Don't let the DOM nodes appear outside the example viewport
         imdom.setStyle(c, "overflow", "hidden");
         imdom.setStyle(c, "position", "relative");
@@ -41,7 +41,7 @@ function imGame(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
         // This div is the background, we may or may not need it.
 
-        if (im.isFirstRender(c)) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "position", "absolute");
             imdom.setStyle(c, "height", "100%");
             imdom.setStyle(c, "width", "100%");
@@ -61,7 +61,7 @@ function imGame(c: ImCache) {
             imdom.ElBegin(c, el.DIV); {
                 // This DIV is the play area. I've translated it 50%, 50% so that
                 // 0, 0 is the center
-                if (im.isFirstRender(c)) {
+                if (im.IsFirstRender(c)) {
                     imdom.setStyle(c, "backgroundColor", "transparent");
                     imdom.setStyle(c, "height", "100%");
                     imdom.setStyle(c, "width", "100%");
@@ -71,7 +71,7 @@ function imGame(c: ImCache) {
 
                 // This is our player
                 imdom.ElBegin(c, el.DIV); {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         imdom.setStyle(c, "display", "inline");
 
                         // I've put this in so you can see it is
@@ -96,14 +96,14 @@ I've already provided a global event system with `imdom`, because
 ```ts - Moving the player around
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -112,11 +112,11 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = im.GetInline(c, imGame) 
                     ?? im.Set(c, { x: 0, y: 0 });
@@ -160,7 +160,7 @@ function imGame(c: ImCache) {
                 }
 
                 imDivBegin(c); {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         imdom.setStyle(c, "display", "inline");
                         imdom.setStyle(c, "position", "absolute");
                         // I'd prefer if the player was actually centered.
@@ -202,14 +202,14 @@ Let's make that `imSetPosition` abstraction:
 ```ts - imSetPosition abstraction
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -218,11 +218,11 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = im.GetInline(c, imGame) 
                     ?? im.Set(c, { x: 0, y: 0 });
@@ -262,7 +262,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         // Turns out we didn't need this after all, because of `position: absolute`
         // imdom.setStyle(c, "display", "inline");
         imdom.setStyle(c, "position", "absolute");
@@ -315,16 +315,16 @@ function newBullet(c: ImCache) {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -333,11 +333,11 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
                 const dt = im.getDeltaTimeSeconds(c);
@@ -381,7 +381,11 @@ function imGame(c: ImCache) {
                         b.posY += b.velY * dt;
                         // Remove bullets that aren't in the playfield anymore
                         if ((Math.abs(b.posX) > halfWidth) || (Math.abs(b.posY) > halfHeight)) {
+                            // By using unorderedRemove, we can filter our array without making any allocations!!
+                            // This is way faster than doing game.bullets.filter
                             unorderedRemove(game.bullets, i);
+                            // Our for-loop will increment i, so we need to decrement i to compensate. 
+                            // Yeah its slop code no LLM required. whatever, don't care - today we are game devs
                             i--;
                         }
                     }
@@ -402,7 +406,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -513,16 +517,16 @@ function newObject(state: GameState, type: number): Object {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -531,11 +535,11 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
 
@@ -581,8 +585,8 @@ function imGame(c: ImCache) {
                         const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
                         if (objIsOffscreen) {
                             if (obj.type === PLAYER) {
-                                obj.posX = clamp(obj.x, -halfWidth, halfWidth);
-                                obj.posY = clamp(obj.y, -halfHeight, halfHeight);
+                                obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                                obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
                             } else {
                                 // Remove non-player objects that aren't in the playfield anymore
                                 unorderedRemove(game.objects, i);
@@ -604,7 +608,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -675,16 +679,16 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -693,11 +697,11 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
 
@@ -776,7 +780,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -847,16 +851,16 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -865,19 +869,19 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
 
                 // We'll want to show something to the user if the player is dead
                 if (im.If(c) && player.dead) {
                     imDivBegin(c); imSetPosition(c, 0, 0); {
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
                         imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
                         imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
@@ -1001,7 +1005,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -1073,16 +1077,16 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -1091,18 +1095,18 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
 
                 if (im.If(c) && player.dead) {
                     imDivBegin(c); imSetPosition(c, 0, 0); {
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
                         imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
                         imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
@@ -1244,7 +1248,7 @@ function imGame(c: ImCache) {
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -1328,16 +1332,16 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -1346,18 +1350,18 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 const player = game.player;
 
                 if (im.If(c) && player.dead) {
                     imDivBegin(c); imSetPosition(c, 0, 0); {
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
                         imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
                         imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
@@ -1542,7 +1546,7 @@ function areCirclesColliding(
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -1635,23 +1639,23 @@ function imGame(c: ImCache) {
 }
 
 function imPlayfield(c: ImCache, imFn: GameRenderFn) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const root = imDivBegin(c).root; {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 imFn(c, root);
             } imDivEnd(c);
@@ -1670,8 +1674,8 @@ function imGameFn(c: ImCache, root: HTMLElement) {
 
     if (im.If(c) && player.dead) {
         imDivBegin(c); imSetPosition(c, 0, 0); {
-            if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
-            if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
             imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
             imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
@@ -1853,7 +1857,7 @@ function areCirclesColliding(
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -1935,6 +1939,19 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
+    // This is the begin/end pair approach.
+    // In this case, it's a bit more finicky - 
+    // the callsite needs to know about the 
+    // presence of the im.If inside imPlayfieldBegin,
+    // and render itself accordingly. 
+    // imPlayfieldEnd must also seperately check playfield.visible
+    // and then switch itself on this. 
+    // Seems pretty bad, however, it does mean that I can somewhat trivially 
+    // define other things in this scope, and make use of them
+    // between imPlayfieldBegin/imPlayfieldEnd. I don't even
+    // need to define a seperate game function untill later.
+    // imGameFn if needed. So it is still a tradeoff at the
+    // end of the day.
     const playfield = imPlayfieldBegin(c); 
     if (playfield.visible) {
         imGameFn(c, playfield.root);
@@ -1942,26 +1959,26 @@ function imGame(c: ImCache) {
 }
 
 function imPlayfieldBegin(c: ImCache) {
-    if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.isFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
     const root = imDivBegin(c).root; 
     const state = im.Get(c, imPlayfieldBegin) ??
         im.Set(c, { root, visible: false, });
     {
-        if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.isFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
         state.visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && state.visible) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
             } 
         }
     }
@@ -1989,8 +2006,8 @@ function imGameFn(c: ImCache, root: HTMLElement) {
 
     if (im.If(c) && player.dead) {
         imDivBegin(c); imSetPosition(c, 0, 0); {
-            if (im.isFirstRender(c)) imdom.setStyle(c, "color", "red");
-            if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
             imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
 
             imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
@@ -2172,7 +2189,7 @@ function areCirclesColliding(
 }
 
 function imSetPosition(c: ImCache, x: number, y: number) {
-    if (im.isFirstRender(c)) {
+    if (im.IsFirstRender(c)) {
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -2202,7 +2219,6 @@ function unorderedRemove(arr, i) {
     arr.length--;
 }
 ```
-
 However in some cases, like in this one, begin/end pairs are a bunch more work, 
     so you may be better off with approach 1. 
 For this decision in particular, neither is wrong or right - it comes down to preference.
@@ -2215,13 +2231,22 @@ The game still has a few issues that can be worked through:
 - Quite hard to track the player
 - No score mechanism
 - No environment
+- No variation in enemies. (Which is a shame - the object system we've set up here allows
+    for a large variety in behaviour. Bullets that spawn 5 more bullets after some period of time,
+    bullets that spawn other enemies, 
+    multiple copies of the player active at once, etc.)
 ]
 It could also be given more features, more levels, proper art, etc. 
+
+Another thing to notice, is that everything is just function calls. 
+You could replace the function calls with draw-calls on a canvas,
+    and completely remove all the DOM nodes if you really wanted,
+    that is, if you knew how to re-implement block, inline and flex layouts.
+
 You could even stop working on it in this framework, and port it to native.
 The code would be very similar.
-I'll leave that as an exercise for the reader (you).
 
-In this tutorial, you learned how the framework can for the most part, 
+To sum it all up - you learned how the framework can for the most part, 
     stay out of the way, and how the immediate-mode API makes controlling DOM 
     nodes relatively easy and frictionless (as the guy that created the framework 
     and uses it all the time, I may be a bit biased though).

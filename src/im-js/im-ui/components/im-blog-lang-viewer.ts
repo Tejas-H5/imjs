@@ -87,19 +87,17 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 					} break;
 					case bl.S_HEADING1: {
 						imdom.ElBegin(c, el.H1); {
-							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
+							if (im.IsFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H1);
 					} break;
 					case bl.S_HEADING2: {
 						imdom.ElBegin(c, el.H2); {
-							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H2);
 					} break;
 					case bl.S_HEADING3: {
 						imdom.ElBegin(c, el.H3); {
-							if (im.isFirstRender(c)) imdom.setStyle(c, "textAlign", "center");
 							imRenderBlogpostBlockItems(c, block.inlineItems, options);
 						} imdom.ElEnd(c, el.H3);
 					} break;
@@ -110,13 +108,13 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 			case bl.B_CODE: {
 				const padding = 10;
 				imBegin(c); imui.Relative(c); {
-					if (im.isFirstRender(c)) {
+					if (im.IsFirstRender(c)) {
 						imdom.setStyle(c, "backgroundColor", cssVars.bg2);
 						imdom.setStyle(c, "padding", padding + "px");
 						imdom.setStyle(c, "borderRadius", 0.5 * padding + "px");
 					}
 					imBegin(c); imui.Absolute(c, padding, PX, padding, PX, 0, NA, 0, NA); {
-						if (im.isFirstRender(c)) {
+						if (im.IsFirstRender(c)) {
 							imdom.setStyle(c, "fontSize", "0.7em");
 							imdom.setStyle(c, "fontStyle", "italic");
 							imdom.setStyle(c, "whiteSpace", "pre-wrap");
@@ -125,7 +123,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 						imStr(c, block.language);
 					} imEnd(c);
 					imBegin(c); {
-						if (im.isFirstRender(c)) {
+						if (im.IsFirstRender(c)) {
 							imdom.setStyle(c, "fontFamily", "monospace");
 							imdom.setStyle(c, "whiteSpace", "pre-wrap");
 						}
@@ -148,7 +146,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 			case bl.B_TABLE: {
 				const edgeWidth = 1;
 
-				if (im.isFirstRender(c)) {
+				if (im.IsFirstRender(c)) {
 					imdom.setStyle(c, "border", "1px solid " + cssVars.fg);
 				}
 
@@ -186,7 +184,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 
 				im.For(c); for (const row of block.rows) { for (let colIdx = 0; colIdx < row.cells.length; colIdx++) {
 					imBegin(c, BLOCK); {
-						if (im.isFirstRender(c)) {
+						if (im.IsFirstRender(c)) {
 							imdom.setStyle(c, "padding", "5px");
 							imdom.setStyle(c, "backgroundColor", cssVars.bg);
 						}
@@ -203,7 +201,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: Blog
 }
 
 export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[], options: BlogLangRenderOptions) {
-	if (im.isFirstRender(c)) {
+	if (im.IsFirstRender(c)) {
 		imdom.setStyle(c, "lineHeight", "1.4");
 	}
 	
@@ -223,7 +221,7 @@ export function imRenderBlogLangBlockItem(c: ImCache, item: bl.InlineItem, optio
 
 export function imRenderItemText(c: ImCache, item: bl.InlineText, options: BlogLangRenderOptions) {
 	imBegin(c, INLINE); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "fontStyle", (item.styleFlags & bl.V_ITALIC) ? "italic" : "");
 			imdom.setStyle(c, "fontWeight", (item.styleFlags & bl.V_BOLD) ? "bold" : "");
 			imdom.setStyle(c, "textDecoration", (item.styleFlags & bl.V_STRIKETHROUGH) ? "line-through" : "");
@@ -234,7 +232,7 @@ export function imRenderItemText(c: ImCache, item: bl.InlineText, options: BlogL
 
 export function imRenderItemCode(c: ImCache, item: bl.InlineCode, options: BlogLangRenderOptions) {
 	imBegin(c, INLINE); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "backgroundColor", cssVars.bg2);
 			imdom.setStyle(c, "color", cssVars.fg2);
 			imdom.setStyle(c, "fontFamily", "monospace");
@@ -316,7 +314,7 @@ export function imBegin(c: ImCache, type: DisplayType = BLOCK, align = LEFT, jus
 
 export function imHSpace(c: ImCache, col: string = cssVars.bg) {
 	imBegin(c, BLOCK); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "width", "10px")
 			imdom.setStyle(c, "backgroundColor", col);
 		}
@@ -325,7 +323,7 @@ export function imHSpace(c: ImCache, col: string = cssVars.bg) {
 
 export function imHSpaceSmall(c: ImCache, col: string = cssVars.bg) {
 	imBegin(c, BLOCK); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "width", "4px")
 			imdom.setStyle(c, "backgroundColor", col);
 		}
@@ -334,7 +332,7 @@ export function imHSpaceSmall(c: ImCache, col: string = cssVars.bg) {
 
 export function imVSpace(c: ImCache, col: string = cssVars.bg) {
 	imBegin(c, BLOCK); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "height", "10px")
 			imdom.setStyle(c, "backgroundColor", col);
 		}
@@ -343,7 +341,7 @@ export function imVSpace(c: ImCache, col: string = cssVars.bg) {
 
 export function imVSpaceSmall(c: ImCache, col: string = cssVars.bg) {
 	imBegin(c, BLOCK); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "height", "4px")
 			imdom.setStyle(c, "backgroundColor", col);
 		}
@@ -352,7 +350,7 @@ export function imVSpaceSmall(c: ImCache, col: string = cssVars.bg) {
 
 export function imVDivider(c: ImCache) {
 	imBegin(c, BLOCK); {
-		if (im.isFirstRender(c)) {
+		if (im.IsFirstRender(c)) {
 			imdom.setStyle(c, "minHeight", "10px")
 		}
 	} imEnd(c);
@@ -365,7 +363,7 @@ export const imStrFmt = imdom.StrFmt;
 
 export function imCodeBegin(c: ImCache) {
 	const result = imBegin(c, BLOCK); // Prevent style leaking out
-	if (im.isFirstRender(c)) {
+	if (im.IsFirstRender(c)) {
 		imdom.setStyle(c, "fontFamily", "monospace")
 		imdom.setStyle(c, "whiteSpace", "pre")
 		imdom.setStyle(c, "tabSize", "4")
@@ -381,7 +379,7 @@ export function imCodeEnd(c: ImCache) {
 export function imCodeSpanBegin(c: ImCache) {
 	const result = imBegin(c, INLINE); { // Prevent style leaking out
 		imBegin(c, INLINE); {
-			if (im.isFirstRender(c)) {
+			if (im.IsFirstRender(c)) {
 				imdom.setStyle(c, "fontFamily", "monospace")
 				imdom.setStyle(c, "whiteSpace", "pre")
 				imdom.setStyle(c, "tabSize", "4")
@@ -394,19 +392,19 @@ export function imCodeSpanBegin(c: ImCache) {
 }
 
 export function imPre(c: ImCache) {
-	if (im.isFirstRender(c)) {
+	if (im.IsFirstRender(c)) {
 		imdom.setStyle(c, "whiteSpace", "pre")
 	}
 }
 
 export function imPreWrap(c: ImCache) {
-	if (im.isFirstRender(c)) {
+	if (im.IsFirstRender(c)) {
 		imdom.setStyle(c, "whiteSpace", "pre-wrap")
 	}
 }
 
 export function imB(c: ImCache) {
-	if (im.isFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+	if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
 }
 
 export function imCodeSpanEnd(c: ImCache) {

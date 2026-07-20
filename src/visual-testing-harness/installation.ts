@@ -60,7 +60,7 @@ export function imVisualTestInstallation(
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setStyle(c, "maxHeight", "80vh");
             }
 
@@ -87,9 +87,9 @@ export function imVisualTestInstallation(
                 if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
 
-                if (im.isFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
 
                 if (im.Memo(c, mouse.X) && split.dragging) {
                     const rect = root.getBoundingClientRect();
@@ -99,8 +99,8 @@ export function imVisualTestInstallation(
 
             // Code
             imui.Begin(c, BLOCK); imui.Pre(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
                 imui.Fg(c, cssVars.fg2);
                 imui.Bg(c, cssVars.bg2);
 
@@ -109,7 +109,7 @@ export function imVisualTestInstallation(
                     const line = s.code[lineIdx];
                     // Line numbers. Exclude them from the user selection
                     imui.Begin(c, INLINE); {
-                        if (im.isFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+                        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
                         imdom.Str(c, " ");
                         imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
                         imdom.Str(c, " | ");

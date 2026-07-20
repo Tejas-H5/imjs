@@ -50,7 +50,6 @@ export type VisualTestHarnessState = {
     currentVisibleInstallation: VisualTestHarnessInstallationState | undefined;
     animations: {
         introToUse: number;
-        scaleFactor: number;
         t: number;
         rightSidebar: SidebarState;
         leftSidebar: SidebarState;
@@ -90,7 +89,6 @@ function newState(): VisualTestHarnessState {
         currentVisibleInstallation: undefined,
         animations: {
             introToUse: 0,
-            scaleFactor: 0,
             t: 0,
             rightSidebar: newSidebarState(false),
             leftSidebar: newSidebarState(true),
@@ -185,7 +183,7 @@ export function imVisualTestHarness(
                     imui.PaddingRL(c, paddingPx, PX, paddingPx, PX);
 
                     imui.Begin(c, BLOCK); { 
-                        if (im.isFirstRender(c)) {
+                        if (im.IsFirstRender(c)) {
                             imdom.setAttr(c, "id", "top");
                         }
                     } imui.End(c);

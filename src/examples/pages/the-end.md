@@ -127,17 +127,17 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
 
         if (isRoot) {
             imDivBegin(c); {
-                if (im.isFirstRender(c)) imdom.setStyle(c, "position", "fixed");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "bottom", "10px");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "left", "10px");
-                if (im.isFirstRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "fixed");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "bottom", "10px");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "left", "10px");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", cssVars.bg);
 
                 imdom.Str(c, "Devtool enabled. 😭😭🥀");
 
                 imdom.Str(c, lastDomNode?.root ?? "[Object object]");
 
                 imdom.ElBegin(c, el.STYLE); {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         imdom.setTextUnsafe(c, `.${cnHighlight} { outline: 10px solid #FF00FF; }`);
                     }
                 } imdom.ElEnd(c, el.STYLE);
@@ -145,8 +145,8 @@ function imJsDevToolsFinalRelease(c: ImCache, entries = im.getRootEntries(c), in
         }
 
         imDivBegin(c); {
-            if (im.isFirstRender(c)) imdom.setStyle(c, "flex", "1");
-            if (im.isFirstRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "flex", "1");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "paddingLeft", "20px");
 
             im.For(c); im.ForEachCacheEntryItem(entries, (t, v) => {
                 if (t === imdom.newDomAppender) {

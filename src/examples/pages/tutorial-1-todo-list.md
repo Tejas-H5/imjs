@@ -420,6 +420,8 @@ function imIfStatementDemo(c: ImCache) {
 
         imdom.ElBegin(c, el.DIV); {
             imdom.Str(c, "Soon, that will be fixed. ");
+        } imdom.ElEnd(c, el.DIV);
+        imdom.ElBegin(c, el.DIV); {
             imdom.Str(c, "Circle of life and all.");
         } imdom.ElEnd(c, el.DIV);
     } im.IfEnd(c);
@@ -452,6 +454,8 @@ function imSwitchStatementDemo(c: ImCache) {
         case 2: {
             imdom.ElBegin(c, el.DIV); {
                 imdom.Str(c, "Soon, that will be fixed. ");
+            } imdom.ElEnd(c, el.DIV);
+            imdom.ElBegin(c, el.DIV); {
                 imdom.Str(c, "Circle of life and all.");
             } imdom.ElEnd(c, el.DIV);
         } break;
@@ -462,7 +466,11 @@ function imSwitchStatementDemo(c: ImCache) {
 
 A switch stores a `Map<ValidKey, ImCacheEntries>`, and retrieves the one
     corresponding to the key on demand.
-Every different key is assumed to be a totally different component.
+Every unique key is assumed to map to it's own component/state.
+Unlike if-branches, switches will actually invoke destructors on their
+    elements and free up memory when a branch is not being taken.
+This makes them less performant than if-statements, but also less memory-hungry.
+The same thing holds true for `im.KeyedBegin` / `im.KeyedEnd`, which we will encounter later.
 
 We also have control-flow annotationsfor try/catch. 
 They are a bit more involved, but you'll need them to implement error 
@@ -524,8 +532,8 @@ function imTodoList(c: ImCache) {
             const item = items[itemIdx];
             imdom.ElBegin(c, el.DIV); {
                 const input = imdom.ElBegin(c, el.INPUT).root; {
-                    // Use im.isFirstRender to run expensive initialisation logic.
-                    if (im.isFirstRender(c)) {
+                    // Use im.IsFirstRender to run expensive initialisation logic.
+                    if (im.IsFirstRender(c)) {
                         input.value = item;
                     }
 
@@ -577,7 +585,7 @@ function imTodoList(c: ImCache) {
             const item = items[itemIdx];
             imdom.ElBegin(c, el.DIV); {
                 const input = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         input.value = item;
                     }
 
@@ -639,7 +647,7 @@ function imButtonIsClicked(c: ImCache, text: string): boolean {
 It doesn't seem to work. 
 Our debug view shows that the items are being moved up and down correctly,
     but the inputs themselves never change. 
-It's probably the `im.isFirstRender` thing that makes the text input
+It's probably the `im.IsFirstRender` thing that makes the text input
     only sync values on the first render.
 Let's just drop that:
 
@@ -832,7 +840,7 @@ function imTodoList(c: ImCache) {
                 // This is the new checkbox we added.
                 // It responds to input events, and toggles the checked state.
                 const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         imdom.setAttr(c, "type", "checkbox");
                     }
 
@@ -958,7 +966,7 @@ function imTodoList(c: ImCache) {
             const item = items[itemIdx];
             imdom.ElBegin(c, el.DIV); {
                 const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-                    if (im.isFirstRender(c)) {
+                    if (im.IsFirstRender(c)) {
                         imdom.setAttr(c, "type", "checkbox");
                     }
 
@@ -1059,6 +1067,8 @@ It's not perfect, but it's pretty close and it was super quick and easy to imple
 Also, the fact that I can write my list component _inline_ without a mandated
 refactoring made it easier to try out the idea.
 
+## Part 4 - code cleanup
+
 I think we've been putting it off long enough - let's extract out the list item, 
 so that it's easier to work with:
 
@@ -1115,7 +1125,7 @@ function imTodoListItem(
 ) {
     imdom.ElBegin(c, el.DIV); {
         const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setAttr(c, "type", "checkbox");
             }
 
@@ -1205,7 +1215,8 @@ function imButtonIsClicked(c: ImCache, text: string): boolean {
 Another thing I've been brushing over, is what happens when you move an item in the list.
 Rather than moving the DOM nodes around, only the state moves, and each item component 
     simply rerenders to reflect the state of that index.
-We can do much better, with something called 'keyed' rendering:
+We can do much better, with something called 'keyed' rendering.
+If you have used any other web framework at all, you already know what this is:
 
 ```ts - Basic skeleton - Keyed rendering
 import { ImCache, im, imdom, el, ev } from "im-js";
@@ -1250,6 +1261,9 @@ function imTodoList(c: ImCache) {
                 // list that we reuse specifically for the key we passed in.
                 // Anything can be used as a key, including strings, numbers, and 
                 // in this case, object references.
+                // Be careful using object references though - if they are stable, you'll be fine.
+                // If they're unstable, i.e you're refetching them from the server every 
+                // n seconds, you'll want to key on an id field instead.
                 imTodoListItem(c, item, itemIdx, state);
             } im.KeyedEnd(c);
         } im.ForEnd(c);
@@ -1271,7 +1285,7 @@ function imTodoListItem(
 ) {
     imdom.ElBegin(c, el.DIV); {
         const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setAttr(c, "type", "checkbox");
             }
 
@@ -1467,7 +1481,7 @@ function imTodoListItem(
 ) {
     imdom.ElBegin(c, el.DIV); {
         const checkbox = imdom.ElBegin(c, el.INPUT).root; {
-            if (im.isFirstRender(c)) imdom.setAttr(c, "type", "checkbox");
+            if (im.IsFirstRender(c)) imdom.setAttr(c, "type", "checkbox");
 
             if (im.Memo(c, item.done)) checkbox.checked = item.done;
 

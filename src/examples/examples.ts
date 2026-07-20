@@ -9,6 +9,7 @@ import page7 from "./pages/the-end.md";
 // Not sure where it should go yet
 import tutorial1 from "./pages/tutorial-1-todo-list.md";
 import tutorial2 from "./pages/tutorial-2.md";
+import stillNotSure from "./pages/still-not-sure.md";
 
 import { assert } from "assert";
 
@@ -52,6 +53,7 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(page1, modules),
     newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(tutorial2, modules),
+    newVisualTestFromBlogLang(stillNotSure, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
 

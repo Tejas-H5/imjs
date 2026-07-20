@@ -28,7 +28,7 @@ export function imSliderInput(
     const sliderBody = imui.Begin(c, BLOCK); {
         const { size } = imdom.TrackSize(c);
 
-        if (im.isFirstRender(c)) {
+        if (im.IsFirstRender(c)) {
             imdom.setStyle(c, "display", "flex");
             imdom.setStyle(c, "flex", "1");
             imdom.setStyle(c, "position", "relative");
@@ -49,7 +49,7 @@ export function imSliderInput(
                     const sliderPos = lerp(0, size.width - sliderHandleSize, t);
 
                     imui.Begin(c, BLOCK); {
-                        if (im.isFirstRender(c)) {
+                        if (im.IsFirstRender(c)) {
                             imdom.setStyle(c, "position", "absolute");
                             imdom.setStyle(c, "aspectRatio", "1 / 1");
                             imdom.setStyle(c, "height", "100%");
@@ -66,7 +66,7 @@ export function imSliderInput(
 
         // slider handle
         imui.Begin(c, BLOCK); {
-            if (im.isFirstRender(c)) {
+            if (im.IsFirstRender(c)) {
                 imdom.setStyle(c, "position", "absolute");
                 imdom.setStyle(c, "backgroundColor", cssVars.fg);
                 imdom.setStyle(c, "borderRadius", "1000px");

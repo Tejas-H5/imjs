@@ -32,7 +32,7 @@ export function imButtonBegin(c: ImCache, toggled: boolean = false) {
 }
 
 export function imButtonStyle(c: ImCache, toggled: boolean) {
-    if (im.isFirstRender(c)) imdom.setClass(c, cnButton);
+    if (im.IsFirstRender(c)) imdom.setClass(c, cnButton);
     if (im.Memo(c, toggled)) imdom.setClass(c, cnToggled, toggled);
 }
 
