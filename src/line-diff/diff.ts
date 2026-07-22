@@ -172,6 +172,13 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         type:  INSERT,
                     };
                     result.push(insertion);
+                    if (result.length > 1 && result[result.length - 2].type === REMOVE) {
+                        // A lot of diffs look nicer when the removal appears _after_
+                        // the insertion.
+                        const tmp = result[result.length - 2];
+                        result[result.length - 2] = result[result.length - 1];
+                        result[result.length - 1] = tmp;
+                    }
                 }
                 bIdxLast = bIdx;
 
