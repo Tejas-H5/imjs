@@ -43,6 +43,8 @@ export function toString(diff: Block[], insertChar="+", removeChar="-", editChar
     return sb.join("");
 }
 
+// Turns out that this is actually a pretty good algorithm! nice.
+// If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
 export function computeLines(aLines: string[], bLines: string[]): Block[] {
     let aIdx = 0; 
     let bIdx = 0;
@@ -54,7 +56,35 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
     const S_ADDING   = 1;
     const S_REMOVING = 2;
 
+    let aStopLine = 0, bStopLine = 0;
+
     let state = S_NONE;
+
+    // Any lines that occur multiple times in either set shouldn't be used to know when a particular section
+    // in line a or line b has begun/end. This is because when we find them, we can't tell _which_ one we've hit, 
+    // so we may end or start a diff far earlier than we actually should have, causing in a diff that's way more
+    // bloated than it needs to be.
+    const badDiffAnchors = new Set<string>();
+
+    const seenLines = new Set<string>();
+    for (const line of aLines) {
+        if (!seenLines.has(line)) {
+            seenLines.add(line);
+            continue;
+        }
+
+        badDiffAnchors.add(line);
+    }
+
+    seenLines.clear();
+    for (const line of bLines) {
+        if (!seenLines.has(line)) {
+            seenLines.add(line);
+            continue;
+        }
+
+        badDiffAnchors.add(line);
+    }
 
     const result: Block[] = [];
 
@@ -74,56 +104,58 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                     break;
                 }
 
-                const bLine = bLines[bIdx];
-                const aLine = aLines[aIdx];
+                let found = false;
 
-                let aMatchIdx = aIdx + 1;
-                let aFound = false;
-                while (aMatchIdx < aLines.length) {
-                    if (aLines[aMatchIdx] === bLine) {
-                        aFound = true;
-                        break;
+                // We need to find the next line they both have in common.
+                // The stuff in between would have been removed from a and
+                // added to b.
+                for (let a2 = aIdx; a2 < aLines.length; a2++) {
+                    const a2Line = aLines[a2];
+                    for (let b2 = bIdx; b2 < bLines.length; b2++) {
+                        const b2Line = bLines[b2];
+
+                        if (badDiffAnchors.has(a2Line) || badDiffAnchors.has(b2Line)) {
+                            continue
+                        }
+
+                        if (a2Line === b2Line) {
+                            if (
+                                a2 < aStopLine || 
+                                b2 < bStopLine ||
+                                !found
+                            ) {
+                                aStopLine = a2;
+                                bStopLine = b2;
+                                found = true;
+                            }
+                        }
                     }
-                    aMatchIdx++;
                 }
 
-                let bMatchIdx = bIdx + 1;
-                let bFound = false;
-                while (bMatchIdx < bLines.length) {
-                    if (bLines[bMatchIdx] === aLine) {
-                        bFound = true;
-                        break;
-                    }
-                    bMatchIdx++;
+                if (!found) {
+                    // Remove left, add the right. ez.
+                    aStopLine = aLines.length;
+                    bStopLine = bLines.length;
                 }
 
-                if (aFound && bFound) {
-                    if (aMatchIdx < bMatchIdx) {
-                        // if aMatchIdx is less, we need to remove less than we 
-                        // need to add in order to reach another equal line.
-                        state = S_REMOVING;
-                    } else {
-                        state = S_ADDING;
-                    }
-                } else if (bFound) {
-                    state = S_ADDING;
-                } else {
-                    state = S_REMOVING;
+                // huge brain - if nothing was removed, we push nothing, and transiton to adding.
+                state = S_REMOVING;
+
+                if (aIdxLast !== aIdx) {
+                    const equalBlock: Block = {
+                        // All of these lines are equal. It could have just as well have been
+                        // lines: bLines.slice(bIdxLast, bIdx),
+                        lines: aLines.slice(aIdxLast, aIdx),
+                        type:  NONE,
+                    };
+                    result.push(equalBlock);
                 }
 
-                const block: Block = {
-                    // All of these lines are equal. It could have just as well have been
-                    // lines: bLines.slice(bIdxLast, bIdx),
-                    lines: aLines.slice(aIdxLast, aIdx),
-                    type:  NONE,
-                };
                 aIdxLast = aIdx;
                 bIdxLast = bIdx;
-
-                pushBlock(result, block);
             } break;
             case S_ADDING: {
-                while (aIdx < aLines.length && bIdx < bLines.length) {
+                while (aIdx < aLines.length && bIdx < bLines.length && bIdx < bStopLine) {
                     const aLine = aLines[aIdx];
                     const bLine = bLines[bIdx];
                     if (aLine !== bLine) {
@@ -134,17 +166,19 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                     break;
                 }
 
-                const block: Block = {
-                    lines: bLines.slice(bIdxLast, bIdx),
-                    type:  INSERT,
-                };
+                if (bIdxLast !== bIdx) {
+                    const insertion: Block = {
+                        lines: bLines.slice(bIdxLast, bIdx),
+                        type:  INSERT,
+                    };
+                    result.push(insertion);
+                }
                 bIdxLast = bIdx;
 
-                pushBlock(result, block);
                 state = S_NONE;
             } break;
             case S_REMOVING: {
-                while (aIdx < aLines.length && bIdx < bLines.length) {
+                while (aIdx < aLines.length && bIdx < bLines.length && aIdx < aStopLine) {
                     const aLine = aLines[aIdx];
                     const bLine = bLines[bIdx];
                     if (aLine !== bLine) {
@@ -155,43 +189,38 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                     break;
                 }
 
-                const block: Block = {
-                    lines: aLines.slice(aIdxLast, aIdx),
-                    type:  REMOVE,
-                };
+                if (aIdxLast !== aIdx) {
+                    const removal: Block = {
+                        lines: aLines.slice(aIdxLast, aIdx),
+                        type:  REMOVE,
+                    };
+                    result.push(removal);
+                }
                 aIdxLast = aIdx;
-
-                pushBlock(result, block);
-                state = S_NONE;
+                state = S_ADDING;
             } break;
         }
 
         if (aIdx === aLines.length && bIdx === bLines.length) {
             break;
         }
-        if (aIdx === aLines.length) {
-            const inserted: Block = {
+        if (aIdx === aLines.length && bIdxLast !== bLines.length) {
+            const insertion: Block = {
                 lines: bLines.slice(bIdxLast),
                 type:  INSERT,
             };
-            pushBlock(result, inserted);
+            result.push(insertion);
             break
         }
-        if (bIdx === bLines.length) {
-            const removed: Block = {
+        if (bIdx === bLines.length && aIdxLast !== aLines.length) {
+            const removal: Block = {
                 lines: aLines.slice(aIdxLast),
                 type:  REMOVE,
             };
-            pushBlock(result, removed);
+            result.push(removal);
             break
         }
     }
 
     return result;
-}
-
-function pushBlock(blocks: Block[], block: Block) {
-    if (block.lines.length > 0) {
-        blocks.push(block);
-    }
 }

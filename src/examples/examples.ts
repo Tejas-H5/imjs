@@ -55,7 +55,7 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(tutorial1, modules),
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
-    // newVisualTestFromBlogLang(diffTest, modules),
+    newVisualTestFromBlogLang(diffTest, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
 

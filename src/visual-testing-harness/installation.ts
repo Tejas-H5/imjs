@@ -145,9 +145,7 @@ export function imVisualTestInstallation(
                                 }
                                 imui.Bg(c, currentBg);
 
-                                if (im.If(c) && block.type !== ld.REMOVE) {
-                                    imLineNumber(c, lineIdx, maxLineNumberSize);
-                                } im.IfEnd(c);
+                                imLineNumber(c, lineIdx, maxLineNumberSize);
 
                                 imui.Begin(c, INLINE); {
                                     let currentBg = "";

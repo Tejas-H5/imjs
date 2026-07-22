@@ -32,24 +32,20 @@ function imGame(c: ImCache) {
     // If you're not careful, setting styles like this can leak 
     // into the parent component. In many cases, like this one, it's 
     // fine (what we want, even) - just be conscious of what you're doing.
-    if (im.IsFirstRender(c)) {
-        // Don't let the DOM nodes appear outside the example viewport
-        imdom.setStyle(c, "overflow", "hidden");
-        imdom.setStyle(c, "position", "relative");
-    }
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+    // Don't let the DOM nodes appear outside the example viewport
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
 
-    imdom.ElBegin(c, el.DIV); {
+    imDivBegin(c); {
         // This div is the background, we may or may not need it.
 
-        if (im.IsFirstRender(c)) {
-            imdom.setStyle(c, "position", "absolute");
-            imdom.setStyle(c, "height", "100%");
-            imdom.setStyle(c, "width", "100%");
-            imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
 
-            // I've put this in so you can see it is
-            imdom.setStyle(c, "backgroundColor", "blue");
-        }
+        // I've put this in so you can see it is
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "blue");
 
         // The imdom.TrackVisibility utility uses an IntersectionObserver under 
         // the hood to check if the component is visible on the screen at this moment. 
@@ -58,19 +54,17 @@ function imGame(c: ImCache) {
         // should be recieving the current keyboard input.
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
-            imdom.ElBegin(c, el.DIV); {
+            imDivBegin(c); {
                 // This DIV is the play area. I've translated it 50%, 50% so that
                 // 0, 0 is the center
-                if (im.IsFirstRender(c)) {
-                    imdom.setStyle(c, "backgroundColor", "transparent");
-                    imdom.setStyle(c, "height", "100%");
-                    imdom.setStyle(c, "width", "100%");
-                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                    imdom.setStyle(c, "position", "absolute");
-                }
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
 
                 // This is our player
-                imdom.ElBegin(c, el.DIV); {
+                imDivBegin(c); {
                     if (im.IsFirstRender(c)) {
                         imdom.setStyle(c, "display", "inline");
 
@@ -78,11 +72,21 @@ function imGame(c: ImCache) {
                         imdom.setStyle(c, "backgroundColor", "red");
                     }
 
-                    imdom.Str(c, "P");
-                } imdom.ElEnd(c, el.DIV);
-            } imdom.ElEnd(c, el.DIV);
+                    imStr(c, "P");
+                } imDivEnd(c);
+            } imDivEnd(c);
         } im.IfEnd(c);
-    } imdom.ElEnd(c, el.DIV);
+    } imDivEnd(c);
+}
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
 }
 
 ```
@@ -159,6 +163,7 @@ function imGame(c: ImCache) {
                     player.y = clamp(player.y, -halfHeight, halfHeight);
                 }
 
+                // This is our player
                 imDivBegin(c); {
                     if (im.IsFirstRender(c)) {
                         imdom.setStyle(c, "display", "inline");
