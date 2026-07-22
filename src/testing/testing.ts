@@ -1,6 +1,8 @@
 import { deepEquals } from "./deep-equals.ts";
 
-export type TestResult = {
+// testing.ts v0.0.0
+
+export type Result = {
 	name:   string;
 	fails:  string[] | undefined;
 
@@ -11,15 +13,15 @@ export type TestResult = {
 	checks: number; 
 	time: number;
 
-	fn: ((r: TestResult) => void);
+	fn: ((r: Result) => void);
 }
 
-export type TestGroup = {
+export type Group = {
 	name:	   string;
 
 	// Only one of the two will ever be set.
-	subgroups: TestGroup[] | undefined;
-	tests:     TestResult[] | undefined;
+	subgroups: Group[] | undefined;
+	tests:     Result[] | undefined;
 
 	_fails:  number;
 	_checks: number;
@@ -27,57 +29,61 @@ export type TestGroup = {
 	_debugging: number;
 }
 
-export type TestContext = {
-	groups: TestGroup[];
+export type Context = {
+	groups: Group[];
 }
 
-export function newTestingContext(): TestContext {
+export function newTestingContext(): Context {
 	return {
 		groups: [],
 	};
 }
 
-export function test(r: TestResult, outcome: boolean, message = ""): boolean {
+export function check(r: Result, outcome: boolean, message = ""): boolean {
 	r.checks += 1;
 	if (!outcome) {
 		if (!message) {
 			message = "check " + r.checks;
 		}
 
-		testFailure(r, "Test failed - " + message);
+		failure(r, "Check failed - " + message);
 	}
 	return outcome;
 }
 
-export function testEqual(r: TestResult, a: unknown, b: unknown, message = ""): boolean {
-	if (!test(r, a === b, message)) {
-		testFailure(r, `\ngot   : ${JSON.stringify(a)},\nwanted: ${JSON.stringify(b)}\n`);
+export function checkEqual(r: Result, a: unknown, b: unknown, message = ""): boolean {
+	if (!check(r, a === b, message)) {
+		failure(r, `\ngot   : ${JSON.stringify(a)},\nwanted: ${JSON.stringify(b)}\n`);
 		return false;
 	}
 	return true;
 }
 
-// The main use of testAssert comes from asserting the outcome in typescript,
-// so you can use it to narrow type unions.
-export function testAssert(r: TestResult, outcome: boolean, message: string = ""): asserts outcome {
-	if (!test(r, outcome, message)) {
+export function assert(r: Result, outcome: boolean, message: string = ""): asserts outcome {
+	if (!check(r, outcome, message)) {
 		throw new Error("Test assertion failed");
 	}
 }
 
-export function testDeepEqual(r: TestResult, a: unknown, b: unknown) {
+export function assertEqual<T>(r: Result, actual: unknown, expected: T, message: string = ""): asserts actual is T {
+	if (!checkEqual(r, actual, expected, message)) {
+		throw new Error("Test assertion failed");
+	}
+}
+
+export function checkDeepEqual(r: Result, a: unknown, b: unknown) {
 	const result = deepEquals(a, b);
 
-	if (!test(r, result.mismatches.length === 0)) {
+	if (!check(r, result.mismatches.length === 0)) {
 		const message = [`got: ${JSON.stringify(a)} !== expected: ${JSON.stringify(b)}`];
 		for (const mismatch of result.mismatches) {
 			message.push(`${mismatch.path} - ${mismatch.expected} !== ${mismatch.got}`)
 		}
-		testFailure(r, message.join("\n"));
+		failure(r, message.join("\n"));
 	}
 }
 
-export function testFailure(r: TestResult, message: string) {
+export function failure(r: Result, message: string) {
 	if (!r.fails) {
 		r.fails = [];
 	}
@@ -85,34 +91,34 @@ export function testFailure(r: TestResult, message: string) {
 	r.fails.push(message);
 }
 
-export function addTest(name: string, fn: ((r: TestResult) => void), g?: TestGroup) {
+export function add(name: string, fn: ((r: Result) => void), g?: Group) {
 	if (!g) g = groups[groups.length - 1];
 
 	if (!g.tests) {
 		g.tests = [];
 	}
 
-	const test: TestResult = {
+	const test: Result = {
 		name,
 		fails: undefined,
 		checks: 0,
 		time: 0,
 		fn,
-		// easier to grep than a boolean flag, and it works well with table-driven testing too since 
-		// I can add [debug] to the name directly. this allows me to build abstractions like
+		// easier to grep than a boolean flag, and it works well with table-driven testing too since I can add [deb
+		// ug] to the name directly. this allows me to build abstractions like
 		// addAllTestCases(r, [ 
-		//		{ name: "blah", case: ..., expected: ... },
+		//		{ name: "[deb" + "ug] blah", case: ..., expected: ... },
 		// ])
-		// And if I just want to run a single test, I add [debug] to the name itself.
 		// Importantly, we don't run any other tests when you've selected some tests for debug.
-		// That way, you know your console-logs and breakpoints are actually valid
-		isDebugging: name.startsWith("[debug]"), 
+		// That way, console-logs and breakpoints are guaranteed to be useful.
+		// We do a bit of obfuscation here, so that your grep doesn't hit this implementation.
+		isDebugging: name.startsWith("[de" + "bug]"), 
 	};
 
 	g.tests.push(test);
 }
 
-function newTestGroup(name: string): TestGroup {
+function newGroup(name: string): Group {
 	return {
 		name:      name,
 		subgroups: undefined,
@@ -126,7 +132,7 @@ function newTestGroup(name: string): TestGroup {
 }
 
 function pushGroup(name: string) {
-	const subgroup = newTestGroup(name);
+	const subgroup = newGroup(name);
 
 	if (groups.length > 0) {
 		const currentGroup = groups[groups.length - 1];
@@ -147,7 +153,7 @@ function pushGroup(name: string) {
 // Rather than typing the name via a string, inserting the symbol allows the LSP to automatically keep names in sync,
 // and notify us when those things get removed from the codebase.
 // You can just leave it empty most of the time, but sometimes it's useful to make some symbols easier to navigate to.
-export function addTestGroup(name: string, _tryingToCover: unknown[], registerFn: () => void) {
+export function group(name: string, _tryingToCover: unknown[], registerFn: () => void) {
 	pushGroup(name);
 
 	try {
@@ -160,17 +166,17 @@ export function addTestGroup(name: string, _tryingToCover: unknown[], registerFn
 }
 
 const t = newTestingContext();
-const groups: TestGroup[] = [];
+const groups: Group[] = [];
 
-export function setCurrentTestFile(name: string, _coveringSymbols: any = null) {
+export function file(name: string, _coveringSymbols: any = null) {
 	groups.length = 0;
 	pushGroup(name);
 }
 
-export function runAllTests(): TestContext {
+export function runAll(): Context {
 	let hasDebugTests = false;
 	{
-		const recomputePreRunAggregateStats = (g: TestGroup) => {
+		const recomputePreRunAggregateStats = (g: Group) => {
 			if (g.tests) {
 				for (const test of g.tests) {
 					if (test.isDebugging) {
@@ -193,10 +199,10 @@ export function runAllTests(): TestContext {
 		}
 	}
 
-	const result = runAllTestsInternal(t.groups, hasDebugTests);
+	const result = runAllInternal(t.groups, hasDebugTests);
 
 	{
-		const recomputeResultAggregateStats = (g: TestGroup) => {
+		const recomputeResultAggregateStats = (g: Group) => {
 			if (g.tests) {
 				for (const test of g.tests) {
 					if (test.fails) {
@@ -223,11 +229,11 @@ export function runAllTests(): TestContext {
 	return result;
 }
 
-function runAllTestsInternal(groups: TestGroup[], debugOnly: boolean) {
+function runAllInternal(groups: Group[], debugOnly: boolean) {
 	for (const group of groups) {
 		if (!group.tests && !group.subgroups) {
-			addTest("This group didn't have any tests", r => {
-				test(r, false, "");
+			add("This group didn't have any tests", r => {
+				check(r, false, "");
 			}, group);
 		} 
 
@@ -244,18 +250,18 @@ function runAllTestsInternal(groups: TestGroup[], debugOnly: boolean) {
 				try {
 					test.fn(test);
 				} catch(e) {
-					testFailure(test, "Runtime error: " + e);
+					failure(test, "Runtime error: " + e);
 				}
 				test.time = performance.now() - t0;
 
 				if (test.checks === 0) {
-					testFailure(test, "This test didn't test anything");
+					failure(test, "This test didn't test anything");
 				}
 			}
 		}
 
 		if (group.subgroups) {
-			runAllTestsInternal(group.subgroups, debugOnly);
+			runAllInternal(group.subgroups, debugOnly);
 		}
 	}
 
@@ -267,7 +273,7 @@ function getDisplayableName(name: string): string {
 	return name.replace(/\s+/g, " ");
 }
 
-export function printTestResult(test: TestResult, depth: number, mode: number) {
+export function printResult(test: Result, depth: number, mode: number) {
 	if (test.fails) {
 		console.log("  ".repeat(depth + 1), "FAIL", getDisplayableName(test.name));
 		if (mode !== MODE_FAILING_SUMMARY) {
@@ -286,7 +292,7 @@ const MODE_DEBUGGING       = 2;
 const MODE_FAILING_SUMMARY = 3;
 const MODE_ALL_PASSING     = 4;
 
-export function printResultsInternal(g: TestGroup, depth: number, mode: number) {
+export function printResultsInternal(g: Group, depth: number, mode: number) {
 	if ((mode === MODE_FAILING || mode === MODE_FAILING_SUMMARY) && g._fails === 0) {
 		return;
 	}
@@ -312,7 +318,7 @@ export function printResultsInternal(g: TestGroup, depth: number, mode: number) 
 		if (g.tests) {
 			for (const test of g.tests) {
 				if (test.fails) {
-					printTestResult(test, depth, mode);
+					printResult(test, depth, mode);
 				}
 			}
 		}
@@ -328,7 +334,7 @@ export function printResultsInternal(g: TestGroup, depth: number, mode: number) 
 		if (g.tests) {
 			for (const test of g.tests) {
 				if (test.isDebugging) {
-					printTestResult(test, depth, mode);
+					printResult(test, depth, mode);
 				}
 			}
 		}
@@ -339,7 +345,7 @@ type Accumulator = {
 	failingTests: number;
 }
 
-export function printResults(results: TestContext) {
+export function printResults(results: Context) {
 	let mode = MODE_ALL_PASSING;
 	let numFails = 0;
 	for (const g of results.groups) {
@@ -362,7 +368,8 @@ export function printResults(results: TestContext) {
 	} else if (mode === MODE_FAILING) {
 		console.log("Some tests are failing:");
 	} else if (mode === MODE_FAILING_SUMMARY) {
-		console.log(`A LOT of tests are failing (${numFails}) - islotate a test for debug by naming it "[debug] ..."`);
+		// We do a bit of obfuscation here, so that your grep for de+bug doesn't hit this implementation.
+		console.log(`A LOT of tests are failing (${numFails}) - islotate a test for debug by naming it "[${"deb" + "ug"}] ..."`);
 	} else if (mode === MODE_ALL_PASSING) {
 		console.log("All passing");
 	}

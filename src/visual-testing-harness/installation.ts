@@ -3,6 +3,7 @@ import { inverseLerp } from "im-js/im-ui/components/math-utils";
 import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "im-js/im-ui";
 import { VisualTestHarnessState } from "./harness";
 import { imButtonIsClicked } from "im-js/im-ui/components/button";
+import * as ld from "line-diff";
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -10,14 +11,21 @@ export const TEST_SCROLLABLE = (2 << 0);
 export type VisualTestHarnessInstallationState = {
     test: ImCacheRerenderFn;
     code: string[];
+    codeToDiffWith: string[] | undefined;
     hash: string;
     title: string;
 };
 
-function newVisualTestHarnessInstallationState(test: ImCacheRerenderFn, title: string, code?: string): VisualTestHarnessInstallationState {
+function newVisualTestHarnessInstallationState(
+    test: ImCacheRerenderFn,
+    title: string,
+    code: string | undefined,
+    diff: string | undefined,
+): VisualTestHarnessInstallationState {
     return {
         test: test,
         code: formatCode(code ?? test.toString(), code ? 4 : 2),
+        codeToDiffWith: diff ? formatCode(diff, diff ? 4 : 2) : undefined,
         hash: title,
         title: "",
     };
@@ -30,13 +38,14 @@ export function imVisualTestInstallation(
     test: ImCacheRerenderFn,
     flags = 0,
     code?: string,
+    diff?: string,
 ) {
     const testChanged = im.Memo(c, test);
     const codeChanged = im.Memo(c, code);
 
     let s; s = im.GetInline(c, imVisualTestInstallation); 
     if (!s || testChanged || codeChanged) {
-        s = im.Set(c, newVisualTestHarnessInstallationState(test, title, code));
+        s = im.Set(c, newVisualTestHarnessInstallationState(test, title, code, diff));
     }
 
     harness.installations.push(s);
@@ -97,28 +106,77 @@ export function imVisualTestInstallation(
                 }
             } imui.End(c);
 
-            // Code
-            imui.Begin(c, BLOCK); imui.Pre(c); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
-                imui.Fg(c, cssVars.fg2);
-                imui.Bg(c, cssVars.bg2);
+            const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
 
-                const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
-                im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
-                    const line = s.code[lineIdx];
-                    // Line numbers. Exclude them from the user selection
-                    imui.Begin(c, INLINE); {
-                        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
-                        imdom.Str(c, " ");
-                        imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
-                        imdom.Str(c, " | ");
-                    } imui.End(c);
+            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); imCodeStyle(c); {
+                if (im.If(c) && s.codeToDiffWith) {
+                    let diffBlocks = im.Get(c, ld.computeLines)
+                    if (!diffBlocks) {
+                        diffBlocks = im.Set(c, ld.computeLines(s.codeToDiffWith, s.code));
+                    }
 
-                    imdom.Str(c, line);
-                    imdom.ElBegin(c, el.BR); imdom.ElEnd(c, el.BR);
-                } im.ForEnd(c);
+                    // Code diff view
+                    imdom.Str(c, diffBlocks.length);
 
+                    let lineIdx = 0;
+                    im.For(c); for (const block of diffBlocks) {
+                        im.For(c); for (const line of block.lines) {
+                            switch (block.type) {
+                                case ld.NONE:   lineIdx++; break;
+                                case ld.EDIT:   lineIdx++; break;
+                                case ld.INSERT: lineIdx++; break;
+                                case ld.REMOVE: break;
+                            }
+
+                            imui.Begin(c, BLOCK); {
+                                const addBg = "#449944"
+                                const rmBg  = "#994444";
+                                const editBg  = "#444499";
+                                const addCharBg = "#55FF55"
+                                const rmCharBg  = "#FF5555";
+                                const editCharBg  = "#4444FF";
+
+                                let currentBg = "";
+                                switch (block.type) {
+                                    case ld.NONE:   currentBg = "";     break;
+                                    case ld.EDIT:   currentBg = editBg; break;
+                                    case ld.INSERT: currentBg = addBg;  break;
+                                    case ld.REMOVE: currentBg = rmBg;   break;
+                                }
+                                imui.Bg(c, currentBg);
+
+                                if (im.If(c) && block.type !== ld.REMOVE) {
+                                    imLineNumber(c, lineIdx, maxLineNumberSize);
+                                } im.IfEnd(c);
+
+                                imui.Begin(c, INLINE); {
+                                    let currentBg = "";
+                                    switch (block.type) {
+                                        case ld.NONE:   currentBg = "";     break;
+                                        case ld.EDIT:   currentBg = editCharBg; break;
+                                        case ld.INSERT: currentBg = addCharBg;  break;
+                                        case ld.REMOVE: currentBg = rmCharBg;   break;
+                                    }
+                                    imui.Bg(c, currentBg);
+                                    imdom.Str(c, line);
+                                } imui.End(c);
+                            } imui.End(c);
+                        } im.ForEnd(c);
+                    } im.ForEnd(c);
+
+                } else {
+                    im.Else(c);
+
+                    // Regular code view
+
+                    im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
+                        const line = s.code[lineIdx];
+
+                        imLineNumber(c, lineIdx, maxLineNumberSize);
+                        imdom.Str(c, line);
+                        imdom.ElBegin(c, el.BR); imdom.ElEnd(c, el.BR);
+                    } im.ForEnd(c);
+                } im.IfEnd(c);
             } imui.End(c);
         } imui.End(c);
     } imui.End(c);
@@ -149,6 +207,7 @@ function formatCode(fnSource: string, srcTabSize: number): string[] {
     // It's fine to reformat the example snippets to be more like the idiomatic format.
     // TODO: Typescript version? more curated examples?
     const lines = fnSource
+        .trim()
         .replace(/im\.Switch\(c\);\s+for/g, "im.Switch(c); switch")
         .replace(/im\.For\(c\);\s+for/g, "im.For(c); for")
         .replace(/im\.Try\(c\);\s+try/g, "im.Try(c); try")
@@ -210,4 +269,21 @@ function imRenderWithErrorBoundary2(
             im.Catch(c, tryState, err);
         } im.TryEnd(c, tryState);
     } im.SwitchEnd(c);
+}
+
+function imCodeStyle(c: ImCache) {
+    imui.Pre(c); 
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
+    if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
+    imui.Fg(c, cssVars.fg2);
+    imui.Bg(c, cssVars.bg2);
+}
+
+function imLineNumber(c: ImCache, lineIdx: number, maxLineNumberSize: number) {
+    imui.Begin(c, INLINE); {
+        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
+        imdom.Str(c, " ");
+        imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
+        imdom.Str(c, " | ");
+    } imui.End(c);
 }

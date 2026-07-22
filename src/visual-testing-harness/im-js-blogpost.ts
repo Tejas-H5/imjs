@@ -15,7 +15,8 @@ import { imVisualTestInstallation, setCurrentTest, TEST_CENTERED, VisualTestHarn
 import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";
 
 type InlineTest = {
-    originalTypescript:  string;
+    typescriptOriginal: string;
+    typescriptToDiffAgainst: string | undefined;
     compiledJavascript: string;
     renderFn:           ImCacheRerenderFn;
     name: string;
@@ -61,7 +62,7 @@ function pushLog(logs: any[], vals: any) {
     }
 }
 
-function inlineTestFromCodeBlock(code: string, language: string, userModules: tsc.Module[]): InlineTest {
+function inlineTestFromCodeBlock(code: string, language: string, userModules: tsc.Module[], diff?: string): InlineTest {
     const testState = newInlineTestState();
     const consoleStub = {
         log: (...vals: unknown[]) =>   pushLog(testState.logs, vals),
@@ -81,7 +82,8 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
 
     return {
         name: language.substring("ts - ".length),
-        originalTypescript: code,
+        typescriptOriginal: code,
+        typescriptToDiffAgainst: diff,
         compiledJavascript: transformResult.javaScript,
         renderFn: (c) => {
             if (im.If(c) && transformResult.error) {
@@ -156,7 +158,12 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
 
             let test = im.Get(c, inlineTestFromCodeBlock);
             if (!test || modulesChanged || blockChanged) {
-                test = im.Set(c, inlineTestFromCodeBlock(block.code, block.language, modules));
+                test = im.Set(c, inlineTestFromCodeBlock(
+                    block.code,
+                    block.language,
+                    modules,
+                    block.diffWith
+                ));
             }
 
             imVisualTestInstallation(
@@ -165,7 +172,8 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
                 options.userPtr as VisualTestHarnessState,
                 test.renderFn,
                 TEST_CENTERED,
-                test.originalTypescript,
+                test.typescriptOriginal,
+                test.typescriptToDiffAgainst,
             );
         } imui.End(c);
     } else {

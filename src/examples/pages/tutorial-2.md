@@ -93,7 +93,7 @@ The typical thing to do is to respond to global key events.
 I've already provided a global event system with `imdom`, because
     of just how common this use-case actually is in all the stuff I make.
 
-```ts - Moving the player around
+```ts - Moving the player around #diff[-1]
 
 function imGame(c: ImCache) {
     if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
@@ -199,7 +199,7 @@ Setting something's position and making sure it is centered over that position s
 something I'd want for a lot of things in this game. 
 Let's make that `imSetPosition` abstraction:
 
-```ts - imSetPosition abstraction
+```ts - imSetPosition abstraction #diff[-1]
 
 function imGame(c: ImCache) {
     if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
@@ -296,7 +296,7 @@ and then we just translate it.
 It might be easier to reason about the state if we put it all in one place. 
 Let's do this now:
 
-```ts - projectiles
+```ts - projectiles #diff[-1]
 
 // Going to store all the game state in the game state object from now on
 function newGameState() {
@@ -479,7 +479,7 @@ We can make the player, bullets, and enemies objects, and implement
 This is the approach I'm going to go with.
 Before we add enemies, let's do this refactor first:
 
-```ts - Player/Bullet/Enemy -> Object merge
+```ts - Player/Bullet/Enemy -> Object merge #diff[-1]
 // I want the type of the object to be decoupled from the 
 // symbol, so that we dont ever get code like `const isPlayer = obj.symbol === 'P'`.
 const PLAYER = 0;
@@ -645,7 +645,7 @@ Let's keep it simple - just make the enemy go in some random direction downwards
     doesn't even need to look like that Touhou scene.
 We don't even need to introduce shooting yet:
 
-```ts - Enemies
+```ts - Enemies #diff[-1]
 const PLAYER = 0;
 const BULLET = 1;
 const ENEMY = 2;
@@ -817,7 +817,7 @@ The easiest way to check collisions is to give both of them a
     circular hitbox, and then check that the distance between the player and the enemy
     is less than the distance from the player to it's radius, and the enemy to it's radius.
 
-```ts - Lose condition
+```ts - Lose condition #diff[-1]
 const PLAYER = 0;
 const BULLET = 1;
 const ENEMY  = 2;
@@ -1044,7 +1044,7 @@ It also kinda makes sense for a player bullet to be different
 from an enemy bullet.
 
 
-```ts - Enemies to start shooting back
+```ts - Enemies to start shooting back #diff[-1]
 const PLAYER = 0; const BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
 function typeToSymbol(t: number): string {
     switch(t) {
@@ -1287,11 +1287,12 @@ We could also limit the number of bullets a player can shoot, which
 would put an upper bound on the runtime of the algorithm.
 But I don't really care to do that yet.
 
-```ts - Player bullets to start working
+```ts - Player bullets to start working #diff[-1]
 const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
-        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
+        case PLAYER: return "^"; 
+        case PLAYER_BULLET: return "|"; 
         case ENEMY_BULLET: return "*";
         case ENEMY: {
             if (obj.dead) {
@@ -1484,6 +1485,8 @@ function imGame(c: ImCache) {
                                 playerRadius, enemyRadius
                             )) {
                                 player.dead = true;
+                                obj.dead = true;
+                                obj.deathAnimationTimer = 0.5;
                             }
                         }
                     }
@@ -1590,7 +1593,7 @@ The typical way to do this in other frameworks, is to extract out the game as a 
     then make the playfield accept a function that it can call. 
 This is a perfectly fine way of doing things:
 
-```ts - Refactor approach 1: extract imPlayfield(c, fn)
+```ts - Refactor approach 1: extract imPlayfield(c, fn) #diff[-1]
 const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
@@ -1894,7 +1897,7 @@ The main reason for this, is that the usage code won't need to extract
     out their own function to try out the component.
 The two don't need to be mutually exclusive:
 
-```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd
+```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd #diff[-2]
 const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
