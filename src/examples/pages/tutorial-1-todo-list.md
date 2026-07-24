@@ -127,11 +127,11 @@ const items = [
     "item 1",
     "item 2",
     "item 3",
-]
+];
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.H3); {
-        imdom.Str(c, "TODO List");
+        imdom.Str(c, "TODO List"); 
     } imdom.ElEnd(c, el.H3); 
 
     // NOTE: there is a bug here - we'll fix it later
@@ -145,17 +145,25 @@ function imTodoList(c: ImCache) {
 
 Nice! The next thing I want to implement, is adding more items:
 
-```ts - Basic skeleton - adding items - attempt one
+```ts - Basic skeleton - adding items - attempt one #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
-const items = [ "item 1", "item 2", "item 3" ];
+const items = [
+    "item 1",
+    "item 2",
+    "item 3",
+];
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); {
+        imdom.Str(c, "TODO List"); 
+    } imdom.ElEnd(c, el.H3); 
 
-    // NOTE: there is still a bug here - we'll fix it later
+    // NOTE: there is a bug here - we'll fix it later
     for (const item of items) {
-        imdom.ElBegin(c, el.DIV); imdom.Str(c, item); imdom.ElEnd(c, el.DIV);
+        imdom.ElBegin(c, el.DIV); {
+            imdom.Str(c, item); 
+        } imdom.ElEnd(c, el.DIV);
     }
 
     imdom.ElBegin(c, el.BUTTON); {
@@ -295,19 +303,27 @@ Rather rendering n items, we're rendering 1 list, where each loop iteration rend
 This is exactly what we achieve with the `im.For` / `im.ForEnd` control-flow annotation.
 Let's try adding multiple items again:
 
-```ts - Basic skeleton - adding more items - working
+```ts - Basic skeleton - adding more items - working #diff[-3]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
-const items = [ "item 1", "item 2", "item 3" ];
+const items = [
+    "item 1",
+    "item 2",
+    "item 3",
+];
 
 function imTodoList(c: ImCache) {
-    imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+    imdom.ElBegin(c, el.H3); {
+        imdom.Str(c, "TODO List"); 
+    } imdom.ElEnd(c, el.H3); 
 
     // We have now added im.For(c); here. 
     // I typically write it on the same line as `for` because
     // I think it looks nicer.
     im.For(c); for (const item of items) {
-        imdom.ElBegin(c, el.DIV); imdom.Str(c, item); imdom.ElEnd(c, el.DIV);
+        imdom.ElBegin(c, el.DIV); {
+            imdom.Str(c, item); 
+        } imdom.ElEnd(c, el.DIV);
     } im.ForEnd(c);
     // im.For must be closed off with im.ForEnd. 
 
@@ -519,14 +535,20 @@ To make sure that they're actually updating, let's render
     a second copy of the list just below our inputs that should update
     in realtime.
 
-```ts - Basic skeleton - adding more items - editing
+```ts - Basic skeleton - adding more items - editing #diff[-5]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
-const items = [ "item 1", "item 2", "item 3" ];
+const items = [
+    "item 1",
+    "item 2",
+    "item 3",
+];
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
             const item = items[itemIdx];
@@ -572,14 +594,20 @@ Seems like it's working! But I want a way to prioritize my TODO list.
 Let's try adding a way to move things around. 
 We'll probably want to make our button component reuseable:
 
-```ts - Basic skeleton - moving around, attempt 1
+```ts - Basic skeleton - moving around, attempt 1 #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
-const items = [ "item 1", "item 2", "item 3" ];
+const items = [
+    "item 1",
+    "item 2",
+    "item 3",
+];
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
             const item = items[itemIdx];
@@ -651,14 +679,20 @@ It's probably the `im.IsFirstRender` thing that makes the text input
     only sync values on the first render.
 Let's just drop that:
 
-```ts - Basic skeleton - still not working
+```ts - Basic skeleton - still not working #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
-const items = [ "item 1", "item 2", "item 3" ];
+const items = [
+    "item 1",
+    "item 2",
+    "item 3",
+];
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
             const item = items[itemIdx];
@@ -728,14 +762,16 @@ The input value is being updated so frequently, that we can no longer type our o
 We need to only update the input's text when the item's text has actually changed.
 We can use `im.Memo` for this:
 
-```ts - Basic skeleton - 'working'!
+```ts - Basic skeleton - 'working'! #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [ "item 1", "item 2", "item 3" ];
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
             const item = items[itemIdx];
@@ -812,7 +848,7 @@ a task or not. We need to make a couple changes:
 ]
 
 
-```ts - Basic skeleton - let's add some checkboxes to toggle a DONE state
+```ts - Basic skeleton - let's add some checkboxes to toggle a DONE state #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 function newTodoListItem(name: string) {
@@ -832,7 +868,9 @@ const items = [
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         im.For(c); for (let itemIdx = 0; itemIdx < items.length; itemIdx++) {
             const item = items[itemIdx];
@@ -932,7 +970,7 @@ Pretty cool! I'm sure other people (including myself) have had
     a library for this". 
 Not the case here - we're already in an animation loop, so let's just implement it:
 
-```ts - Basic skeleton - drag + toggle checkboxes
+```ts - Basic skeleton - drag + toggle checkboxes #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -948,10 +986,11 @@ function newTodoListItem(name: string) {
     };
 }
 
-
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         // We'll need to store whether we have started a glissando or not.
         // When prototyping, we can just use GetInline with any method we have lying around.
@@ -1072,7 +1111,7 @@ refactoring made it easier to try out the idea.
 I think we've been putting it off long enough - let's extract out the list item, 
 so that it's easier to work with:
 
-```ts - Basic skeleton - code cleanup
+```ts - Basic skeleton - code cleanup #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -1094,7 +1133,9 @@ function newTodoListState() {
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         // It's typical for GetInline to eventually be cleaned up to
         // be im.State, or im.Get/im.Set when the constructor takes in arguments.
@@ -1218,7 +1259,7 @@ Rather than moving the DOM nodes around, only the state moves, and each item com
 We can do much better, with something called 'keyed' rendering.
 If you have used any other web framework at all, you already know what this is:
 
-```ts - Basic skeleton - Keyed rendering
+```ts - Basic skeleton - Keyed rendering #diff[-1]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -1240,7 +1281,9 @@ function newTodoListState() {
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         const state = im.State(c, newTodoListState);
 
@@ -1415,7 +1458,7 @@ I've found that the simplest and most controlable way to defer this mutation,
     is by adding a 'deferred event' to your main UI's state.
 We should just do this for all mutations on the state we're rendering:
 
-```ts - Basic skeleton - Keyed rendering, and moving works
+```ts - Basic skeleton - Keyed rendering, and moving works #diff[-4]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -1440,7 +1483,9 @@ function newTodoListState() {
 
 function imTodoList(c: ImCache) {
     imdom.ElBegin(c, el.DIV); {
-        imdom.ElBegin(c, el.H3); imdom.Str(c, "TODO List"); imdom.ElEnd(c, el.H3); 
+        imdom.ElBegin(c, el.H3); {
+            imdom.Str(c, "TODO List"); 
+        } imdom.ElEnd(c, el.H3); 
 
         const state = im.State(c, newTodoListState);
 

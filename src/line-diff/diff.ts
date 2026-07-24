@@ -124,7 +124,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                     const aLine = aLines[aIdx];
                     const bLine = bLines[bIdx];
 
-                    if (aLine === bLine) {
+                    if (linesEqual(aLine, bLine)) {
                         aIdx++;
                         bIdx++;
                         continue
@@ -150,7 +150,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                             continue
                         }
 
-                        if (a2Line === b2Line) {
+                        if (linesEqual(a2Line, b2Line)) {
                             if (
                                 a2 < aStopLine || 
                                 b2 < bStopLine ||
@@ -193,7 +193,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 while (aIdx < aLines.length && bIdx < bLines.length && bIdx < bStopLine) {
                     const aLine = aLines[aIdx];
                     const bLine = bLines[bIdx];
-                    if (aLine !== bLine) {
+                    if (!linesEqual(aLine, bLine)) {
                         bIdx++;
                         continue
                     }
@@ -216,7 +216,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 while (aIdx < aLines.length && bIdx < bLines.length && aIdx < aStopLine) {
                     const aLine = aLines[aIdx];
                     const bLine = bLines[bIdx];
-                    if (aLine !== bLine) {
+                    if (!linesEqual(aLine, bLine)) {
                         aIdx++;
                         continue
                     }
@@ -364,4 +364,8 @@ function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
         if (predicate(arr[i], i)) arr[i2++] = arr[i];
     }
     arr.length = i2;
+}
+
+function linesEqual(lineA: string, lineB: string): boolean {
+    return lineA === lineB;
 }

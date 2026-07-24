@@ -52,7 +52,7 @@ export function imVisualTestInstallation(
     s.title = title;
 
     imui.Begin(c, BLOCK); {
-        const visibility = imdom.TrackVisibility(c, 0.9);
+        const visibility = imdom.TrackVisibility(c, 1);
 
         imui.Begin(c, ROW); imui.Align(c); imui.Justify(c); {
             if (im.Memo(c, s.hash)) {
@@ -113,28 +113,29 @@ export function imVisualTestInstallation(
                         diffBlocks = im.Set(c, ld.computeLines(s.codeToDiffWith, s.code));
                     }
 
-                    // Code diff view
-                    imdom.Str(c, diffBlocks.length);
-
                     let lineIdx = 0;
                     im.For(c); for (const block of diffBlocks) {
                         im.For(c); for (const line of block.lines) {
                             switch (block.type) {
                                 case ld.NONE:   lineIdx++; break;
-                                case ld.EDIT:   lineIdx++; break;
                                 case ld.INSERT: lineIdx++; break;
                                 case ld.REMOVE: break;
                             }
 
                             imui.Begin(c, BLOCK); {
+                                let sign = "   ";
+                                switch (block.type) {
+                                    case ld.INSERT: sign = " + "; break;
+                                    case ld.REMOVE: sign = " - "; break;
+                                }
+                                imdom.Str(c, sign);
+
                                 const addCharBg = "#55FF55"
                                 const rmCharBg  = "#FF9999";
-                                const editCharBg  = "#4444FF";
 
                                 let currentBg = "";
                                 switch (block.type) {
                                     case ld.NONE:   currentBg = "";     break;
-                                    case ld.EDIT:   currentBg = editCharBg; break;
                                     case ld.INSERT: currentBg = addCharBg;  break;
                                     case ld.REMOVE: currentBg = rmCharBg;   break;
                                 }
@@ -146,7 +147,6 @@ export function imVisualTestInstallation(
                                     let currentBg = "";
                                     switch (block.type) {
                                         case ld.NONE:   currentBg = "";     break;
-                                        case ld.EDIT:   currentBg = editCharBg; break;
                                         case ld.INSERT: currentBg = addCharBg;  break;
                                         case ld.REMOVE: currentBg = rmCharBg;   break;
                                     }
