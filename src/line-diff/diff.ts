@@ -6,7 +6,6 @@
 export const NONE   = 0;
 export const INSERT = 1;
 export const REMOVE = 2;
-export const EDIT   = 3;
 
 export type Block = {
     lines: string[];
@@ -17,7 +16,7 @@ export function compute(a: string, b: string): Block[] {
     return computeLines(a.split("\n"), b.split("\n"));
 }
 
-export function toString(diff: Block[], insertChar="+", removeChar="-", editChar = "~"): string {
+export function toString(diff: Block[], insertChar="+", removeChar="-"): string {
     const sb: string[] = [];
     for (let blockIdx = 0; blockIdx < diff.length; blockIdx++) {
         const block = diff[blockIdx];
@@ -32,7 +31,6 @@ export function toString(diff: Block[], insertChar="+", removeChar="-", editChar
             }
 
             switch (block.type) {
-                case EDIT:   sb.push(editChar);   break;
                 case INSERT: sb.push(insertChar); break;
                 case REMOVE: sb.push(removeChar); break;
                 case NONE:   sb.push(""); break;
@@ -43,9 +41,44 @@ export function toString(diff: Block[], insertChar="+", removeChar="-", editChar
     return sb.join("");
 }
 
+// This is why I write all my stuff from scratch when I can instead of importing libraries.
+// The diff completely makes or breaks how hard it is to comprehend a code change.
+// A diff library needs to be 100% general, and cannot include carve-outs that
+// are useful to you, as they are 'incorrect' in a more general sense.
+const knownBadDiffAnchors = [
+    "return", "return;",
+    "continue", "continue;",
+    "break", "break;",
+    "}", "};",
+    ")", ");",
+    "})", "});",
+    "",
+];
+
+function isBadDiffAnchor(repeatedLines: Set<string>, line: string): boolean {
+    if (repeatedLines.has(line)) {
+        // Any lines that occur multiple times in either set shouldn't be used to know when a particular section
+        // in line a or line b has begun/end. This is because when we find them, we can't tell _which_ one we've hit, 
+        // so we may end or start a diff far earlier than we actually should have, causing in a diff that's way more
+        // bloated than it needs to be.
+        return true;
+    }
+
+    const trimmed = line.trim();
+    if (knownBadDiffAnchors.includes(trimmed)) {
+        return true;
+    }
+
+    return false;
+}
+
+// NOTE: It turns out, we have independently re-derived the 'patience' diff.
 // Turns out that this is actually a pretty good algorithm! nice.
 // If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
 export function computeLines(aLines: string[], bLines: string[]): Block[] {
+    aLines = aLines.map(l => l.trimEnd());
+    bLines = bLines.map(l => l.trimEnd());
+
     let aIdx = 0; 
     let bIdx = 0;
 
@@ -60,11 +93,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
 
     let state = S_NONE;
 
-    // Any lines that occur multiple times in either set shouldn't be used to know when a particular section
-    // in line a or line b has begun/end. This is because when we find them, we can't tell _which_ one we've hit, 
-    // so we may end or start a diff far earlier than we actually should have, causing in a diff that's way more
-    // bloated than it needs to be.
-    const badDiffAnchors = new Set<string>();
+    const repeatedLines = new Set<string>();
 
     const seenLines = new Set<string>();
     for (const line of aLines) {
@@ -73,7 +102,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
             continue;
         }
 
-        badDiffAnchors.add(line);
+        repeatedLines.add(line);
     }
 
     seenLines.clear();
@@ -83,10 +112,10 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
             continue;
         }
 
-        badDiffAnchors.add(line);
+        repeatedLines.add(line);
     }
 
-    const result: Block[] = [];
+    const diff: Block[] = [];
 
     while (aIdx < aLines.length || bIdx < bLines.length) {
         switch (state) {
@@ -110,11 +139,14 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 // The stuff in between would have been removed from a and
                 // added to b.
                 for (let a2 = aIdx; a2 < aLines.length; a2++) {
-                    const a2Line = aLines[a2];
                     for (let b2 = bIdx; b2 < bLines.length; b2++) {
+                        const a2Line = aLines[a2];
                         const b2Line = bLines[b2];
 
-                        if (badDiffAnchors.has(a2Line) || badDiffAnchors.has(b2Line)) {
+                        if (
+                            isBadDiffAnchor(repeatedLines, a2Line) || 
+                            isBadDiffAnchor(repeatedLines, b2Line)
+                        ) {
                             continue
                         }
 
@@ -127,6 +159,9 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                                 aStopLine = a2;
                                 bStopLine = b2;
                                 found = true;
+                                // The only reason this break works, is because we've
+                                // culled all the bad diff anchors.
+                                break;
                             }
                         }
                     }
@@ -148,7 +183,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         lines: aLines.slice(aIdxLast, aIdx),
                         type:  NONE,
                     };
-                    result.push(equalBlock);
+                    diff.push(equalBlock);
                 }
 
                 aIdxLast = aIdx;
@@ -171,14 +206,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         lines: bLines.slice(bIdxLast, bIdx),
                         type:  INSERT,
                     };
-                    result.push(insertion);
-                    if (result.length > 1 && result[result.length - 2].type === REMOVE) {
-                        // A lot of diffs look nicer when the removal appears _after_
-                        // the insertion.
-                        const tmp = result[result.length - 2];
-                        result[result.length - 2] = result[result.length - 1];
-                        result[result.length - 1] = tmp;
-                    }
+                    diff.push(insertion);
                 }
                 bIdxLast = bIdx;
 
@@ -201,7 +229,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         lines: aLines.slice(aIdxLast, aIdx),
                         type:  REMOVE,
                     };
-                    result.push(removal);
+                    diff.push(removal);
                 }
                 aIdxLast = aIdx;
                 state = S_ADDING;
@@ -216,7 +244,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 lines: bLines.slice(bIdxLast),
                 type:  INSERT,
             };
-            result.push(insertion);
+            diff.push(insertion);
             break
         }
         if (bIdx === bLines.length && aIdxLast !== aLines.length) {
@@ -224,10 +252,116 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 lines: aLines.slice(aIdxLast),
                 type:  REMOVE,
             };
-            result.push(removal);
+            diff.push(removal);
             break
         }
     }
 
-    return result;
+    // Trim the end of diffs.
+    // We skip over 'bad anchors'. This does however, mean that 
+    // each will end with the bad anchors.
+    {
+        for (let i = 1; i < diff.length; i++) {
+            const curr = diff[i];
+            const prev = diff[i - 1];
+
+            if (curr.type === INSERT && prev.type === REMOVE) {
+                const equalLines: string[] = [];
+
+                while (prev.lines.length > 0 && curr.lines.length > 0) {
+                    const line = prev.lines[prev.lines.length - 1];
+                    if (line !== curr.lines[curr.lines.length - 1]) {
+                        break;
+                    }
+
+                    prev.lines.pop();
+                    curr.lines.pop();
+                    equalLines.push(line);
+                }
+
+                equalLines.reverse();
+                if (equalLines.length > 0) {
+                    let next = {lines: equalLines, type: NONE};
+                    diff.splice(i + 1, 0, next);
+                }
+            }
+        }
+
+        filterInPlace(diff, d => d.lines.length > 0);
+    }
+
+    // improve diff order
+    {
+        for (let i = 1; i < diff.length; i++) {
+            const curr = diff[i];
+            const prev = diff[i - 1];
+
+            if (curr.type === INSERT && prev.type === REMOVE) {
+                // I'd like any insertion that is closing off a code block that comes before it
+                // to appear before a removal. That way, if we added code above and
+                // below a code block, the code that was inserted remains visually intact. 
+                // The removals are far less importan than the insertions usually, and
+                // if you have an easier time understanding the insertions, it'll
+                // give you additional context that makes understanding the removals easier too.
+
+                const idx = lineIdxWhereCodeBlockEnds(prev, "({[", ")}]");
+                if (idx !== -1) {
+                    // Huge brain move - split this insertion and removal into two blocks, such
+                    // that the closing block can still appear before the removal,
+                    // BUT the next insertion still appears where it is supposed to appear.
+
+                    const tmp = diff[i - 1];
+                    diff[i - 1] = diff[i];
+                    diff[i] = tmp;
+                }
+            }
+        }
+    }
+
+    return diff;
+}
+
+function lineIdxWhereCodeBlockEnds(
+    block: Block,
+    openingComponents: string,
+    closingComponents: string,
+): number {
+    let numOpen = 0;
+
+    for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
+        const line = block.lines[lineIdx];
+        for (let cLineIdx = 0; cLineIdx < line.length; cLineIdx++) {
+            const cLine = line[cLineIdx];
+
+            for (let cIdx = 0; cIdx < openingComponents.length; cIdx++) {
+                const c = openingComponents[cIdx];
+                if (c === cLine) {
+                    numOpen++;
+                    break;
+                }
+            }
+
+            for (let cIdx = 0; cIdx < closingComponents.length; cIdx++) {
+                const c = closingComponents[cIdx];
+                if (c === cLine) {
+                    numOpen--;
+                    break;
+                }
+            }
+
+            if (numOpen < 0) {
+                return lineIdx;
+            }
+        }
+    }
+
+    return -1;
+}
+
+function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
+    let i2 = 0;
+    for (let i = 0; i < arr.length; i++) {
+        if (predicate(arr[i], i)) arr[i2++] = arr[i];
+    }
+    arr.length = i2;
 }

@@ -32,20 +32,24 @@ function imGame(c: ImCache) {
     // If you're not careful, setting styles like this can leak 
     // into the parent component. In many cases, like this one, it's 
     // fine (what we want, even) - just be conscious of what you're doing.
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    // Don't let the DOM nodes appear outside the example viewport
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        // Don't let the DOM nodes appear outside the example viewport
+        imdom.setStyle(c, "position", "relative");
+    }
 
-    imDivBegin(c); {
+    imdom.ElBegin(c, el.DIV); {
         // This div is the background, we may or may not need it.
 
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
 
-        // I've put this in so you can see it is
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "blue");
+            // I've put this in so you can see it is
+            imdom.setStyle(c, "backgroundColor", "blue");
+        }
 
         // The imdom.TrackVisibility utility uses an IntersectionObserver under 
         // the hood to check if the component is visible on the screen at this moment. 
@@ -54,20 +58,72 @@ function imGame(c: ImCache) {
         // should be recieving the current keyboard input.
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
-            imDivBegin(c); {
-                // This DIV is the play area. I've translated it 50%, 50% so that
-                // 0, 0 is the center
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+            imdom.ElBegin(c, el.DIV); {
+                // This DIV is the play area. I've translated it 50%, 50% so that 0, 0 is the center
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 // This is our player
+                imdom.ElBegin(c, el.DIV); {
+                    if (im.IsFirstRender(c)) {
+                        imdom.setStyle(c, "display", "inline");
+                        // I've put this in so you can see it is
+                        imdom.setStyle(c, "backgroundColor", "red");
+                    }
+
+                    imdom.Str(c, "P");
+                } imdom.ElEnd(c, el.DIV);
+            } imdom.ElEnd(c, el.DIV);
+        } im.IfEnd(c);
+    } imdom.ElEnd(c, el.DIV);
+}
+
+```
+
+Before we go any further, let's notice that `imdom.ElBegin(c, el.DIV)` and
+    `imdom.ElEnd(c, el.DIV)` are being called quite a lot. 
+It's quite verbose, so I'll refactor this out to be `imDivBegin`/`imDivEnd`.
+Making `imBeginX`/`imEndX` begin/end pairs is a common refactoring technique,
+    and it's what I would recommend for the majority of custom components.
+
+```ts - imDivBegin/imDivEnd #diff[-1]
+
+function imGame(c: ImCache) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
+
+    imDivBegin(c); {
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+
+            // I've put this in so you can see it is
+            imdom.setStyle(c, "backgroundColor", "blue");
+        }
+
+        const visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && visible) {
+            imDivBegin(c); {
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
+
                 imDivBegin(c); {
                     if (im.IsFirstRender(c)) {
                         imdom.setStyle(c, "display", "inline");
-
                         // I've put this in so you can see it is
                         imdom.setStyle(c, "backgroundColor", "red");
                     }
@@ -78,10 +134,10 @@ function imGame(c: ImCache) {
         } im.IfEnd(c);
     } imDivEnd(c);
 }
+
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -91,8 +147,8 @@ function imDivEnd(c: ImCache) {
 
 ```
 
-We now need to make it move around. 
-Let's also make sure it can't move outside the playfield.
+We now need to add controls that let us move the player around.
+Let's also make sure we can't move outside the playfield.
 The typical thing to do is to respond to global key events.
 I've already provided a global event system with `imdom`, because
     of just how common this use-case actually is in all the stuff I make.
@@ -100,14 +156,18 @@ I've already provided a global event system with `imdom`, because
 ```ts - Moving the player around #diff[-1]
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -116,11 +176,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = im.GetInline(c, imGame) 
                     ?? im.Set(c, { x: 0, y: 0 });
@@ -132,26 +194,18 @@ function imGame(c: ImCache) {
                     // It's very useful to have.
                     const keyboard = imdom.getKeyboard();
 
-                    let xAxis = 0, yAxis = 0;
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
 
-                    // I've added this to prevent up/down arrows from scrolling the webpage.
-                    if (keyboard.keyDown) {
-                        keyboard.keyDown.preventDefault();
-                    }
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
 
-                    // Horizontal movement
-                    if (imdom.isKeyHeld(keyboard, key.ARROW_LEFT)) {
-                        xAxis = -1;
-                    } else if (imdom.isKeyHeld(keyboard, key.ARROW_RIGHT)) {
-                        xAxis = 1;
-                    }
-
-                    // Vertical movement
-                    if (imdom.isKeyHeld(keyboard, key.ARROW_DOWN)) {
-                        // HTML y is down
-                        yAxis = 1;
-                    } else if (imdom.isKeyHeld(keyboard, key.ARROW_UP)) {
-                        yAxis = -1;
+                    // I've added this to prevent up/down arrows from scrolling the webpage,
+                    // but other hotkeys still need to work.
+                    if (xAxis || yAxis) {
+                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
                     }
 
                     // Let's apply the movement in a framerate-independent way with delta-time.
@@ -163,10 +217,8 @@ function imGame(c: ImCache) {
                     player.y = clamp(player.y, -halfHeight, halfHeight);
                 }
 
-                // This is our player
                 imDivBegin(c); {
                     if (im.IsFirstRender(c)) {
-                        imdom.setStyle(c, "display", "inline");
                         imdom.setStyle(c, "position", "absolute");
                         // I'd prefer if the player was actually centered.
                         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
@@ -186,7 +238,6 @@ function imGame(c: ImCache) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -207,14 +258,18 @@ Let's make that `imSetPosition` abstraction:
 ```ts - imSetPosition abstraction #diff[-1]
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -223,11 +278,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = im.GetInline(c, imGame) 
                     ?? im.Set(c, { x: 0, y: 0 });
@@ -235,17 +292,20 @@ function imGame(c: ImCache) {
                 // Player movement
                 {
                     const keyboard = imdom.getKeyboard();
-                    if (keyboard.keyDown) keyboard.keyDown.preventDefault();
 
                     const xAxis = 
                         imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
                         imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
 
-                    // HTML y is down
                     const yAxis = 
-                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 :
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
                         imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
 
+                    if (xAxis || yAxis) {
+                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                    }
+
+                    // Let's apply the movement in a framerate-independent way with delta-time.
                     const movementSpeed = 1000;
                     player.x += xAxis * im.getDeltaTimeSeconds(c) * movementSpeed;
                     player.y += yAxis * im.getDeltaTimeSeconds(c) * movementSpeed;
@@ -268,8 +328,6 @@ function imGame(c: ImCache) {
 
 function imSetPosition(c: ImCache, x: number, y: number) {
     if (im.IsFirstRender(c)) {
-        // Turns out we didn't need this after all, because of `position: absolute`
-        // imdom.setStyle(c, "display", "inline");
         imdom.setStyle(c, "position", "absolute");
         imdom.setStyle(c, "transform", "translate(-50%, -50%)");
     }
@@ -281,7 +339,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -320,16 +377,20 @@ function newBullet(c: ImCache) {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -338,11 +399,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
                 const dt = im.getDeltaTimeSeconds(c);
@@ -350,14 +413,23 @@ function imGame(c: ImCache) {
                 // Player movement
                 {
                     const keyboard = imdom.getKeyboard();
-                    if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                    const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                    // HTML y is down
-                    const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                    const movementSpeed = 500;
 
-                    player.x += xAxis * dt * movementSpeed;
-                    player.y += yAxis * dt * movementSpeed;
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
+                        if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+                    }
+
+                    // Let's apply the movement in a framerate-independent way with delta-time.
+                    const movementSpeed = 1000;
+                    player.x += xAxis * im.getDeltaTimeSeconds(c) * movementSpeed;
+                    player.y += yAxis * im.getDeltaTimeSeconds(c) * movementSpeed;
 
                     player.x = clamp(player.x, -halfWidth, halfWidth);
                     player.y = clamp(player.y, -halfHeight, halfHeight);
@@ -372,7 +444,8 @@ function imGame(c: ImCache) {
 
                         // We don't want the bullets to be added too quickly,
                         // so I've introduced this tiemout.
-                        game.shootTimer = 0.025; // MACHINE GUN
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout;
                     }
                 }
 
@@ -423,7 +496,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -484,7 +556,7 @@ We can make the player, bullets, and enemies objects, and implement
 This is the approach I'm going to go with.
 Before we add enemies, let's do this refactor first:
 
-```ts - Player/Bullet/Enemy -> Object merge #diff[-1]
+```ts - Player/Bullet/Enemy -> Object merge #diff[-2]
 // I want the type of the object to be decoupled from the 
 // symbol, so that we dont ever get code like `const isPlayer = obj.symbol === 'P'`.
 const PLAYER = 0;
@@ -499,19 +571,19 @@ function typeToSymbol(t: number): string {
 function newGameState(): GameState {
     const state: GameState = {
         objects: [],
-        shootTimer: 0,
         // Player is now nullable. 
         // Which is actually reasonable - maybe your scene doesn't have a player!
         // If we HAD to have a player at all times, I would add a mustGetPlayer function
         // to assert it's presence before I get it.
         player: null,
+        shootTimer: 0,
     };
     // Let's pre-initialize the state with 1 player.
-    state.player = newObject(state, PLAYER);
+    state.player = newGameObject(state, PLAYER);
     return state;
 }
-function newObject(state: GameState, type: number): Object {
-    const obj: Object = {
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
         // Players, bullets AND enemies can have a position/velocity
         posX: 0, posY: 0,
         velX: 0, velY: 0,
@@ -522,16 +594,20 @@ function newObject(state: GameState, type: number): Object {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -540,39 +616,48 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
 
-                // Handle input
+                // Player movement
                 {
-                    if (player) {
-                        const keyboard = imdom.getKeyboard();
+                    const keyboard = imdom.getKeyboard();
+
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                        // HTML y is down
-                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                        const movementSpeed = 500;
+                    }
 
-                        // Instead of incrementing player position directly, we can 
-                        // just drive it's velocity, and let the update take care of this.
-                        player.velX = xAxis * movementSpeed;
-                        player.velY = yAxis * movementSpeed;
-                        // The offscreen behaviour is also something
-                        // that bullets have, so this logic can be centralised as well.
+                    // Instead of incrementing player position directly, we can 
+                    // just drive it's velocity, and let the update take care of this.
+                    const movementSpeed = 1000;
+                    player.velX = xAxis * movementSpeed;
+                    player.velY = yAxis * movementSpeed;
 
-                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                            const bullet = newObject(game, BULLET);
-                            bullet.posX = player.posX;
-                            bullet.posY = player.posY;
-                            bullet.velY = -1000;
-                            const machineGunTimeout = 0.025;
-                            game.shootTimer = machineGunTimeout; 
-                        }
+                    // The offscreen behaviour is also something
+                    // that bullets have, so this logic can be centralised as well.
+
+                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                        const bullet = newGameObject(game, BULLET);
+                        bullet.posX = player.posX;
+                        bullet.posY = player.posY;
+                        bullet.velY = -1000;
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout;
                     }
                 }
 
@@ -584,7 +669,8 @@ function imGame(c: ImCache) {
 
                     for (let i = 0; i < game.objects.length; i++) {
                         const obj = game.objects[i];
-                        obj.posX += obj.velX * dt; obj.posY += obj.velY * dt;
+                        obj.posX += obj.velX * dt; 
+                        obj.posY += obj.velY * dt;
 
                         // Handling things going offscreen is now centralized
                         const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
@@ -594,8 +680,7 @@ function imGame(c: ImCache) {
                                 obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
                             } else {
                                 // Remove non-player objects that aren't in the playfield anymore
-                                unorderedRemove(game.objects, i);
-                                i--;
+                                unorderedRemove(game.objects, i); i--;
                             }
                         }
                     }
@@ -625,7 +710,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -665,7 +749,8 @@ function typeToSymbol(t: number): string {
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         // A new timer that we can use to periodically spawn in enemies.
         enemySpawnTimer: 0,
@@ -684,16 +769,20 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -702,35 +791,43 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
 
-                // Handle input
-                {
-                    if (player) {
-                        const keyboard = imdom.getKeyboard();
+                // Player movement
+                if (player) {
+                    const keyboard = imdom.getKeyboard();
+
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 :
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                        // HTML y is down
-                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                        const movementSpeed = 500;
+                    }
 
-                        player.velX = xAxis * movementSpeed;
-                        player.velY = yAxis * movementSpeed;
+                    const movementSpeed = 1000;
+                    player.velX = xAxis * movementSpeed;
+                    player.velY = yAxis * movementSpeed;
 
-                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                            const bullet = newGameObject(game, BULLET);
-                            bullet.posX = player.posX;
-                            bullet.posY = player.posY;
-                            bullet.velY = -1000;
-                            const machineGunTimeout = 0.025;
-                            game.shootTimer = machineGunTimeout; 
-                        }
+                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                        const bullet = newGameObject(game, BULLET);
+                        bullet.posX = player.posX;
+                        bullet.posY = player.posY;
+                        bullet.velY = -1000;
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout;
                     }
                 }
 
@@ -739,7 +836,7 @@ function imGame(c: ImCache) {
                     if (game.enemySpawnTimer <= 0) {
                         const enemy = newGameObject(game, ENEMY);
                         const enemySpeed = 200;
-                        enemy.velY = enemySpeed; // Make sure it's always moving fown
+                        enemy.velY = enemySpeed; // Make sure it's always moving down
                         enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
                         enemy.posX = 0;
                         enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
@@ -797,7 +894,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -825,7 +921,7 @@ The easiest way to check collisions is to give both of them a
 ```ts - Lose condition #diff[-1]
 const PLAYER = 0;
 const BULLET = 1;
-const ENEMY  = 2;
+const ENEMY = 2;
 function typeToSymbol(t: number): string {
     switch(t) {
         case PLAYER: return "^";
@@ -836,7 +932,8 @@ function typeToSymbol(t: number): string {
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         enemySpawnTimer: 0,
         playerInvincibleTimer: 0,
@@ -856,16 +953,20 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -874,11 +975,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
 
@@ -899,27 +1002,33 @@ function imGame(c: ImCache) {
                     } imDivEnd(c);
                 } im.IfEnd(c);
 
-                // Handle input
-                {
-                    if (player) {
-                        const keyboard = imdom.getKeyboard();
+                // Player movement
+                if (player) {
+                    const keyboard = imdom.getKeyboard();
+
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                        // HTML y is down
-                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                        const movementSpeed = 500;
+                    }
 
-                        player.velX = xAxis * movementSpeed;
-                        player.velY = yAxis * movementSpeed;
+                    const movementSpeed = 1000;
+                    player.velX = xAxis * movementSpeed;
+                    player.velY = yAxis * movementSpeed;
 
-                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                            const bullet = newGameObject(game, BULLET);
-                            bullet.posX = player.posX;
-                            bullet.posY = player.posY;
-                            bullet.velY = -1000;
-                            const machineGunTimeout = 0.025;
-                            game.shootTimer = machineGunTimeout; 
-                        }
+                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                        const bullet = newGameObject(game, BULLET);
+                        bullet.posX = player.posX;
+                        bullet.posY = player.posY;
+                        bullet.velY = -1000;
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout; 
                     }
                 }
 
@@ -928,7 +1037,7 @@ function imGame(c: ImCache) {
                     if (player && !player.dead && game.enemySpawnTimer <= 0) {
                         const enemy = newGameObject(game, ENEMY);
                         const enemySpeed = 200;
-                        enemy.velY = enemySpeed; // Make sure it's always moving fown
+                        enemy.velY = enemySpeed; // Make sure it's always moving down
                         enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
                         enemy.posX = 0;
                         enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
@@ -949,35 +1058,6 @@ function imGame(c: ImCache) {
                         if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
                     }
 
-                    const playerRadius = 10;
-                    const enemyRadius = 10;
-
-                    if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
-                        // check if the player died
-                        for (let i = 0; i < game.objects.length; i++) {
-                            const obj = game.objects[i];
-                            if (obj.type === PLAYER) continue;
-                            if (obj.type === BULLET) { 
-                                // We'll want to handle this too later though.
-                                // this code does get me thinking though - why can't a bullet 
-                                // just be another kind of enemy?
-                                continue;
-                            }
-                            if (obj.type === ENEMY) {
-                                // The vector from point a -> point b is just b - a.
-                                // Then we can use pythagoras to get x*x + y*y = z*z.
-                                // We know x + y < z if x*x + y*y < z*z.
-                                const dX = player.posX - obj.posX;
-                                const dY = player.posY - obj.posY;
-                                const radius = playerRadius + enemyRadius;
-                                const areColliding = dX * dX + dY * dY < radius * radius;
-                                if (areColliding) {
-                                    player.dead = true;
-                                }
-                            }
-                        }
-                    }
-
                     // Only update the physics if the player is alive
                     if (player && !player.dead) {
                         for (let i = 0; i < game.objects.length; i++) {
@@ -993,6 +1073,31 @@ function imGame(c: ImCache) {
                                 } else {
                                     unorderedRemove(game.objects, i); i--;
                                 }
+                            }
+                        }
+                    }
+
+                    const playerRadius = 5;
+                    const enemyRadius = 5;
+                    if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+                        // check if the player died
+                        for (let i = 0; i < game.objects.length; i++) {
+                            const obj = game.objects[i];
+                            if (obj.type === PLAYER) continue;
+                            // We'll want to handle this too later though.
+                            // this code does get me thinking though - why can't a bullet 
+                            // just be another kind of enemy?
+                            if (obj.type === BULLET) continue;
+
+                            // The vector from point a -> point b is just b - a.
+                            // Then we can use pythagoras to get x*x + y*y = z*z.
+                            // We know x + y < z if x*x + y*y < z*z.
+                            const dX = player.posX - obj.posX;
+                            const dY = player.posY - obj.posY;
+                            const radius = playerRadius + enemyRadius;
+                            const areColliding = dX * dX + dY * dY < radius * radius;
+                            if (areColliding) {
+                                player.dead = true;
                             }
                         }
                     }
@@ -1022,7 +1127,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -1050,17 +1154,23 @@ from an enemy bullet.
 
 
 ```ts - Enemies to start shooting back #diff[-1]
-const PLAYER = 0; const BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+const PLAYER = 0; 
+const BULLET = 1; 
+const ENEMY = 2; 
+const ENEMY_BULLET = 3;
 function typeToSymbol(t: number): string {
     switch(t) {
-        case PLAYER: return "^"; case BULLET: return "|"; case ENEMY: return "v";
+        case PLAYER: return "^"; 
+        case BULLET: return "|"; 
+        case ENEMY:  return "v";
         case ENEMY_BULLET: return "*";
     }
     throw new Error("wtf");
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         enemySpawnTimer: 0,
         playerInvincibleTimer: 0,
@@ -1082,16 +1192,20 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -1100,11 +1214,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
 
@@ -1123,27 +1239,33 @@ function imGame(c: ImCache) {
                     } imDivEnd(c);
                 } im.IfEnd(c);
 
-                // Handle input
-                {
-                    if (player) {
-                        const keyboard = imdom.getKeyboard();
+                // Player movement
+                if (player) {
+                    const keyboard = imdom.getKeyboard();
+
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                        // HTML y is down
-                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                        const movementSpeed = 500;
+                    }
 
-                        player.velX = xAxis * movementSpeed;
-                        player.velY = yAxis * movementSpeed;
+                    const movementSpeed = 1000;
+                    player.velX = xAxis * movementSpeed;
+                    player.velY = yAxis * movementSpeed;
 
-                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                            const bullet = newGameObject(game, BULLET);
-                            bullet.posX = player.posX;
-                            bullet.posY = player.posY;
-                            bullet.velY = -1000;
-                            const machineGunTimeout = 0.025;
-                            game.shootTimer = machineGunTimeout; 
-                        }
+                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                        const bullet = newGameObject(game, BULLET);
+                        bullet.posX = player.posX;
+                        bullet.posY = player.posY;
+                        bullet.velY = -1000;
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout; 
                     }
                 }
 
@@ -1152,7 +1274,7 @@ function imGame(c: ImCache) {
                     if (player && !player.dead && game.enemySpawnTimer <= 0) {
                         const enemy = newGameObject(game, ENEMY);
                         const enemySpeed = 200;
-                        enemy.velY = enemySpeed;
+                        enemy.velY = enemySpeed; // Make sure it's always moving down
                         enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
                         enemy.posX = 0;
                         enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
@@ -1167,6 +1289,7 @@ function imGame(c: ImCache) {
                 {
                     const dt = im.getDeltaTimeSeconds(c);
 
+                    // Only update the timers if the player is alive
                     if (player &&  !player.dead) {
                         if (game.shootTimer > 0) {game.shootTimer -= dt;}
                         if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
@@ -1219,7 +1342,6 @@ function imGame(c: ImCache) {
                         }
                     }
 
-                    // Probably this death check should actually come last
                     const playerRadius = 5;
                     const enemyRadius = 5;
                     if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
@@ -1238,7 +1360,6 @@ function imGame(c: ImCache) {
                             }
                         }
                     }
-
                 }
 
                 // We simply render every object in a loop now.
@@ -1265,7 +1386,6 @@ function imSetPosition(c: ImCache, x: number, y: number) {
 function imStr(c: ImCache, str: string) {
     imdom.Str(c, str);
 }
-
 function imDivBegin(c: ImCache) {
     return imdom.ElBegin(c, el.DIV);
 }
@@ -1293,12 +1413,14 @@ would put an upper bound on the runtime of the algorithm.
 But I don't really care to do that yet.
 
 ```ts - Player bullets to start working #diff[-1]
-const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+const PLAYER = 0; 
+const PLAYER_BULLET = 1; 
+const ENEMY = 2; 
+const ENEMY_BULLET = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
         case PLAYER: return "^"; 
         case PLAYER_BULLET: return "|"; 
-        case ENEMY_BULLET: return "*";
         case ENEMY: {
             if (obj.dead) {
                 if (obj.deathAnimationTimer > 0.4) return "@";
@@ -1310,12 +1432,14 @@ function objToSymbol(obj: GameObject): string {
             }
             return "v";
         }
+        case ENEMY_BULLET: return "*";
     }
     throw new Error("wtf");
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         enemySpawnTimer: 0,
         playerInvincibleTimer: 0,
@@ -1338,16 +1462,20 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const game = im.State(c, newGameState);
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const rect = root.getBoundingClientRect();
         const halfWidth = rect.width / 2;
@@ -1356,11 +1484,13 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
 
                 const player = game.player;
 
@@ -1379,27 +1509,33 @@ function imGame(c: ImCache) {
                     } imDivEnd(c);
                 } im.IfEnd(c);
 
-                // Handle input
-                {
-                    if (player) {
-                        const keyboard = imdom.getKeyboard();
+                // Player movement
+                if (player) {
+                    const keyboard = imdom.getKeyboard();
+
+                    const xAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+                        imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+                    const yAxis = 
+                        imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+                        imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+                    if (xAxis || yAxis) {
                         if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-                        const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-                        // HTML y is down
-                        const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-                        const movementSpeed = 500;
+                    }
 
-                        player.velX = xAxis * movementSpeed;
-                        player.velY = yAxis * movementSpeed;
+                    const movementSpeed = 1000;
+                    player.velX = xAxis * movementSpeed;
+                    player.velY = yAxis * movementSpeed;
 
-                        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                            const bullet = newGameObject(game, PLAYER_BULLET);
-                            bullet.posX = player.posX;
-                            bullet.posY = player.posY;
-                            bullet.velY = -1000;
-                            const machineGunTimeout = 0.025;
-                            game.shootTimer = machineGunTimeout; 
-                        }
+                    if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+                        const bullet = newGameObject(game, PLAYER_BULLET);
+                        bullet.posX = player.posX;
+                        bullet.posY = player.posY;
+                        bullet.velY = -1000;
+                        const machineGunTimeout = 0.025;
+                        game.shootTimer = machineGunTimeout; 
                     }
                 }
 
@@ -1474,19 +1610,19 @@ function imGame(c: ImCache) {
                         }
                     }
 
-                    // Collide player with enemies and their bullets
-                    const playerRadius = 10;
-                    const enemyRadius = 10;
+                    const playerRadius = 5;
+                    const enemyRadius = 5;
                     const playerBulletRadius = 10;
                     if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+                        // check if the player died
                         for (let i = 0; i < game.objects.length; i++) {
                             const obj = game.objects[i];
                             if (obj.type === PLAYER) continue;
                             if (obj.type === PLAYER_BULLET) continue;
                             if (obj.dead) continue;
                             if (areCirclesColliding(
-                                player.posX, player.posY,
-                                obj.posX, obj.posY,
+                                player.posX, player.posY, 
+                                obj.posX, obj.posY, 
                                 playerRadius, enemyRadius
                             )) {
                                 player.dead = true;
@@ -1593,17 +1729,17 @@ We can do that now, all by ourselves.
 I haven't gotten a chance to talk about the framework very much, because it has
     largely stayed out of our way.
 
-Let's say that we want to be able to reuse the playfield for another game.
-The typical way to do this in other frameworks, is to extract out the game as a function,
-    then make the playfield accept a function that it can call. 
-This is a perfectly fine way of doing things:
+The obvious thing to do is to move the game into it's own function:
 
-```ts - Refactor approach 1: extract imPlayfield(c, fn) #diff[-1]
-const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+```ts - Move out the game to it's own function #diff[-1]
+const PLAYER = 0; 
+const PLAYER_BULLET = 1; 
+const ENEMY = 2; 
+const ENEMY_BULLET = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
-        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
-        case ENEMY_BULLET: return "*";
+        case PLAYER: return "^"; 
+        case PLAYER_BULLET: return "|"; 
         case ENEMY: {
             if (obj.dead) {
                 if (obj.deathAnimationTimer > 0.4) return "@";
@@ -1615,12 +1751,14 @@ function objToSymbol(obj: GameObject): string {
             }
             return "v";
         }
+        case ENEMY_BULLET: return "*";
     }
     throw new Error("wtf");
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         enemySpawnTimer: 0,
         playerInvincibleTimer: 0,
@@ -1643,40 +1781,42 @@ function newGameObject(state: GameState, type: number): GameObject {
 }
 
 function imGame(c: ImCache) {
-    imPlayfield(c, imGameFn);
-}
-
-function imPlayfield(c: ImCache, imFn: GameRenderFn) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const root = imDivBegin(c).root; {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-
-                imFn(c, root);
+                imGameInner(c, root);
             } imDivEnd(c);
         } im.IfEnd(c);
     } imDivEnd(c);
 }
 
-function imGameFn(c: ImCache, root: HTMLElement) {
+function imGameInner(c: ImCache, root: HTMLElement) {
     const rect = root.getBoundingClientRect();
     const halfWidth = rect.width / 2;
     const halfHeight = rect.height / 2;
 
     const game = im.State(c, newGameState);
+
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "backgroundColor", "transparent");
+        imdom.setStyle(c, "height", "100%");
+        imdom.setStyle(c, "width", "100%");
+        imdom.setStyle(c, "transform", "translate(50%, 50%)");
+        imdom.setStyle(c, "position", "absolute");
+    }
 
     const player = game.player;
 
@@ -1695,27 +1835,33 @@ function imGameFn(c: ImCache, root: HTMLElement) {
         } imDivEnd(c);
     } im.IfEnd(c);
 
-    // Handle input
-    {
-        if (player) {
-            const keyboard = imdom.getKeyboard();
+    // Player movement
+    if (player) {
+        const keyboard = imdom.getKeyboard();
+
+        const xAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+        const yAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+        if (xAxis || yAxis) {
             if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-            const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-            // HTML y is down
-            const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-            const movementSpeed = 500;
+        }
 
-            player.velX = xAxis * movementSpeed;
-            player.velY = yAxis * movementSpeed;
+        const movementSpeed = 1000;
+        player.velX = xAxis * movementSpeed;
+        player.velY = yAxis * movementSpeed;
 
-            if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                const bullet = newGameObject(game, PLAYER_BULLET);
-                bullet.posX = player.posX;
-                bullet.posY = player.posY;
-                bullet.velY = -1000;
-                const machineGunTimeout = 0.025;
-                game.shootTimer = machineGunTimeout; 
-            }
+        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+            const bullet = newGameObject(game, PLAYER_BULLET);
+            bullet.posX = player.posX;
+            bullet.posY = player.posY;
+            bullet.velY = -1000;
+            const machineGunTimeout = 0.025;
+            game.shootTimer = machineGunTimeout; 
         }
     }
 
@@ -1790,22 +1936,350 @@ function imGameFn(c: ImCache, root: HTMLElement) {
             }
         }
 
-        // Collide player with enemies and their bullets
-        const playerRadius = 10;
-        const enemyRadius = 10;
+        const playerRadius = 5;
+        const enemyRadius = 5;
         const playerBulletRadius = 10;
         if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+            // check if the player died
             for (let i = 0; i < game.objects.length; i++) {
                 const obj = game.objects[i];
                 if (obj.type === PLAYER) continue;
                 if (obj.type === PLAYER_BULLET) continue;
                 if (obj.dead) continue;
                 if (areCirclesColliding(
-                    player.posX, player.posY,
-                    obj.posX, obj.posY,
+                    player.posX, player.posY, 
+                    obj.posX, obj.posY, 
                     playerRadius, enemyRadius
                 )) {
                     player.dead = true;
+                    obj.dead = true;
+                    obj.deathAnimationTimer = 0.5;
+                }
+            }
+        }
+
+        // Collide enemies with player bullets
+        for (let i = 0; i < game.objects.length; i++) {
+            const playerBullet = game.objects[i];
+            if (playerBullet.type !== PLAYER_BULLET) continue;
+            for (let j = 0; j < game.objects.length; j++) {
+                const enemy = game.objects[j];
+                if (enemy.type !== ENEMY) continue;
+                if (enemy.dead) continue;
+
+                if (areCirclesColliding(
+                    playerBullet.posX, playerBullet.posY,
+                    enemy.posX, enemy.posY,
+                    playerBulletRadius, enemyRadius
+                )) {
+                    enemy.dead = true;
+                    enemy.deathAnimationTimer = 0.5;
+                }
+            }
+        }
+
+        // Animate and remove dead objects (apart from the player).
+        // NOTE: we may want to animate them later
+        for (let i = 0; i < game.objects.length; i++) {
+            const obj = game.objects[i];
+            if (obj.type === PLAYER) continue;
+            if (!obj.dead) continue; 
+            if (obj.deathAnimationTimer > 0) {
+                obj.deathAnimationTimer -= dt;
+                continue;
+            }
+            unorderedRemove(game.objects, i); i--;
+        }
+    }
+
+    // We simply render every object in a loop now.
+    im.For(c); for (const obj of game.objects) {
+        imDivBegin(c); imSetPosition(c, obj.posX, obj.posY); {
+            imStr(c, objToSymbol(obj));
+        } imDivEnd(c);
+    } im.ForEnd(c);
+}
+
+function areCirclesColliding(
+    x1: number, y1: number, 
+    x2: number, y2: number, 
+    r1: number, r2: number
+) {
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+    const r = r1 + r2;
+
+    return dx*dx + dy*dy < r*r;
+}
+
+function imSetPosition(c: ImCache, x: number, y: number) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "position", "absolute");
+        imdom.setStyle(c, "transform", "translate(-50%, -50%)");
+    }
+
+    if (im.Memo(c, x)) imdom.setStyle(c, "left", x + "px");
+    if (im.Memo(c, y)) imdom.setStyle(c, "top", y + "px");
+}
+
+function imStr(c: ImCache, str: string) {
+    imdom.Str(c, str);
+}
+
+function imDivBegin(c: ImCache) {
+    return imdom.ElBegin(c, el.DIV);
+}
+function imDivEnd(c: ImCache) {
+    imdom.ElEnd(c, el.DIV);
+}
+function clamp(val: number, lo: number, hi: number): number {
+    if (val < lo) return lo;
+    if (val > hi) return hi;
+    return val;
+}
+function unorderedRemove(arr, i) {
+    if (arr.length === 0) return;
+    arr[i] = arr[arr.length - 1];
+    arr.length--;
+}
+```
+
+Let's say that we want to be able to reuse the playfield for another game.
+The typical way to do this in other frameworks, is to extract out the game as a function,
+    then make the playfield accept a function that it can call. 
+This is a perfectly fine way of doing things:
+
+```ts - Refactor approach 1: extract imPlayfield(c, fn) #diff[-1]
+const PLAYER = 0; 
+const PLAYER_BULLET = 1; 
+const ENEMY = 2; 
+const ENEMY_BULLET = 3;
+function objToSymbol(obj: GameObject): string {
+    switch(obj.type) {
+        case PLAYER: return "^"; 
+        case PLAYER_BULLET: return "|"; 
+        case ENEMY: {
+            if (obj.dead) {
+                if (obj.deathAnimationTimer > 0.4) return "@";
+                if (obj.deathAnimationTimer > 0.3) return "#";
+                if (obj.deathAnimationTimer > 0.2) return "*";
+                if (obj.deathAnimationTimer > 0.1) return "+";
+                if (obj.deathAnimationTimer > 0.0) return ".";
+                if (obj.deathAnimationTimer)       return " ";
+            }
+            return "v";
+        }
+        case ENEMY_BULLET: return "*";
+    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], 
+        player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
+function newGameObject(state: GameState, type: number): GameObject {
+    const obj: GameObject = {
+        posX: 0, posY: 0,
+        velX: 0, velY: 0,
+        type: type,
+        dead: false,
+        canShootBullets: false,
+        shootBulletsTimer: 0,
+        deathAnimationTimer: 0,
+    };
+    state.objects.push(obj);
+    return obj;
+}
+
+function imMain(c: ImCache) {
+    imGameRunner(c, imBulletHellGame);
+}
+
+function imGameRunner(c: ImCache, FN: ImCacheRenderFn) {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
+
+    const root = imDivBegin(c).root; {
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
+
+        const visible = imdom.TrackVisibility(c, 0.5).isVisible;
+        if (im.If(c) && visible) {
+            imDivBegin(c); {
+                // NOTE: FN is assumed to be a constant.
+                // For this to be 100% rock solid, we need 
+                // im.Switch(c, FN); switch (FN) {
+                FN(c, root);
+                // } im.SwitchEnd(c);
+            } imDivEnd(c);
+        } im.IfEnd(c);
+    } imDivEnd(c);
+}
+
+function imBulletHellGame(c: ImCache, root: HTMLElement) {
+    const rect = root.getBoundingClientRect();
+    const halfWidth = rect.width / 2;
+    const halfHeight = rect.height / 2;
+
+    const game = im.State(c, newGameState);
+
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "backgroundColor", "transparent");
+        imdom.setStyle(c, "height", "100%");
+        imdom.setStyle(c, "width", "100%");
+        imdom.setStyle(c, "transform", "translate(50%, 50%)");
+        imdom.setStyle(c, "position", "absolute");
+    }
+
+    const player = game.player;
+
+    if (im.If(c) && player.dead) {
+        imDivBegin(c); imSetPosition(c, 0, 0); {
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "color", "red");
+            if (im.IsFirstRender(c)) imdom.setStyle(c, "fontWeight", "bold");
+            imDivBegin(c); {imStr(c, "You died");} imDivEnd(c);
+
+            imDivBegin(c); {imStr(c, "C to continue");} imDivEnd(c);
+            const keyboard = imdom.getKeyboard();
+            if (imdom.isKeyPressed(keyboard, key.C)) {
+                player.dead = false;
+                game.playerInvincibleTimer = 1;
+            }
+        } imDivEnd(c);
+    } im.IfEnd(c);
+
+    // Player movement
+    if (player) {
+        const keyboard = imdom.getKeyboard();
+
+        const xAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+        const yAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+        if (xAxis || yAxis) {
+            if (keyboard.keyDown) keyboard.keyDown.preventDefault();
+        }
+
+        const movementSpeed = 1000;
+        player.velX = xAxis * movementSpeed;
+        player.velY = yAxis * movementSpeed;
+
+        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+            const bullet = newGameObject(game, PLAYER_BULLET);
+            bullet.posX = player.posX;
+            bullet.posY = player.posY;
+            bullet.velY = -1000;
+            const machineGunTimeout = 0.025;
+            game.shootTimer = machineGunTimeout; 
+        }
+    }
+
+    // Periodically spawn in enemies
+    {
+        if (player && !player.dead && game.enemySpawnTimer <= 0) {
+            const enemy = newGameObject(game, ENEMY);
+            const enemySpeed = 200;
+            enemy.velY = enemySpeed;
+            enemy.velX = enemySpeed * 2 * (Math.random() - 0.5)
+            enemy.posX = 0;
+            enemy.posY = -halfHeight + 1; // + 1 to ensure it's onscreen
+            enemy.canShootBullets = true;
+
+            const enemiesPerSecond = 3;
+            game.enemySpawnTimer = 1 / enemiesPerSecond;
+        }
+    }
+
+    // Update objects
+    {
+        const dt = im.getDeltaTimeSeconds(c);
+
+        if (player &&  !player.dead) {
+            if (game.shootTimer > 0) {game.shootTimer -= dt;}
+            if (game.enemySpawnTimer > 0) {game.enemySpawnTimer -= dt;}
+            if (game.playerInvincibleTimer > 0) {game.playerInvincibleTimer -= dt;}
+        }
+
+        // spawn bullets as needed, only if the player is alive
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (!obj.canShootBullets) continue;
+
+                if (obj.shootBulletsTimer > 0) {
+                    obj.shootBulletsTimer -= dt;
+                    continue;
+                }
+
+                obj.shootBulletsTimer = 0.5;
+
+                const bulletSpeed = 300;
+                let dX = player.posX - obj.posX;
+                let dY = player.posY - obj.posY;
+                const mag = Math.sqrt(dX*dX + dY*dY);
+                dX /= mag; dY /= mag;
+
+                const bullet = newGameObject(game, ENEMY_BULLET);
+                bullet.posX = obj.posX;
+                bullet.posY = obj.posY;
+                bullet.velX = dX * bulletSpeed;
+                bullet.velY = dY * bulletSpeed;
+            }
+        }
+
+        if (player && !player.dead) {
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                obj.posX += obj.velX * dt; 
+                obj.posY += obj.velY * dt;
+
+                const objIsOffscreen = (Math.abs(obj.posX) > halfWidth) || (Math.abs(obj.posY) > halfHeight);
+                if (objIsOffscreen) {
+                    if (obj.type === PLAYER) {
+                        obj.posX = clamp(obj.posX, -halfWidth, halfWidth);
+                        obj.posY = clamp(obj.posY, -halfHeight, halfHeight);
+                    } else {
+                        unorderedRemove(game.objects, i); i--;
+                    }
+                }
+            }
+        }
+
+        const playerRadius = 5;
+        const enemyRadius = 5;
+        const playerBulletRadius = 10;
+        if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+            // check if the player died
+            for (let i = 0; i < game.objects.length; i++) {
+                const obj = game.objects[i];
+                if (obj.type === PLAYER) continue;
+                if (obj.type === PLAYER_BULLET) continue;
+                if (obj.dead) continue;
+                if (areCirclesColliding(
+                    player.posX, player.posY, 
+                    obj.posX, obj.posY, 
+                    playerRadius, enemyRadius
+                )) {
+                    player.dead = true;
+                    obj.dead = true;
+                    obj.deathAnimationTimer = 0.5;
                 }
             }
         }
@@ -1900,14 +2374,18 @@ The approach that I prefer in most cases however, is that of imXBegin/imXEnd pai
 which we were able to do for `imDivBegin/imDivEnd`.
 The main reason for this, is that the usage code won't need to extract
     out their own function to try out the component.
-The two don't need to be mutually exclusive:
+The `imGameRunner` function is usually a stepping-stone to the `imGameRunnerBegin`/`imGameRunnerEnd` 
+    refactor:
 
 ```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd #diff[-2]
-const PLAYER = 0; const PLAYER_BULLET = 1; const ENEMY  = 2; const ENEMY_BULLET  = 3;
+const PLAYER = 0; 
+const PLAYER_BULLET = 1; 
+const ENEMY = 2; 
+const ENEMY_BULLET = 3;
 function objToSymbol(obj: GameObject): string {
     switch(obj.type) {
-        case PLAYER: return "^"; case PLAYER_BULLET: return "|"; 
-        case ENEMY_BULLET: return "*";
+        case PLAYER: return "^"; 
+        case PLAYER_BULLET: return "|"; 
         case ENEMY: {
             if (obj.dead) {
                 if (obj.deathAnimationTimer > 0.4) return "@";
@@ -1919,12 +2397,14 @@ function objToSymbol(obj: GameObject): string {
             }
             return "v";
         }
+        case ENEMY_BULLET: return "*";
     }
     throw new Error("wtf");
 }
 function newGameState(): GameState {
     const state: GameState = {
-        objects: [], player: null,
+        objects: [], 
+        player: null,
         shootTimer: 0, 
         enemySpawnTimer: 0,
         playerInvincibleTimer: 0,
@@ -1946,69 +2426,71 @@ function newGameObject(state: GameState, type: number): GameObject {
     return obj;
 }
 
-function imGame(c: ImCache) {
-    // This is the begin/end pair approach.
-    // In this case, it's a bit more finicky - 
-    // the callsite needs to know about the 
-    // presence of the im.If inside imPlayfieldBegin,
-    // and render itself accordingly. 
-    // imPlayfieldEnd must also seperately check playfield.visible
-    // and then switch itself on this. 
-    // Seems pretty bad, however, it does mean that I can somewhat trivially 
-    // define other things in this scope, and make use of them
-    // between imPlayfieldBegin/imPlayfieldEnd. I don't even
-    // need to define a seperate game function untill later.
-    // imGameFn if needed. So it is still a tradeoff at the
-    // end of the day.
-    const playfield = imPlayfieldBegin(c); 
-    if (playfield.visible) {
-        imGameFn(c, playfield.root);
-    } imPlayfieldEnd(c, playfield);
+function imMain(c: ImCache) {
+    const runner = imGameRunnerBegin(c);
+    if (runner.visible) {
+        imBulletHellGame(c, runner.root);
+    } imGameRunnerEnd(c, runner);
 }
 
-function imPlayfieldBegin(c: ImCache) {
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "relative");
+// While being a bit more finicky to set up, it's more convenient to use
+function imGameRunnerBegin(c: ImCache): GameRunnerState {
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "overflow", "hidden");
+        imdom.setStyle(c, "position", "relative");
+    }
 
     const root = imDivBegin(c).root; 
-    const state = im.Get(c, imPlayfieldBegin) ??
-        im.Set(c, { root, visible: false, });
+    const state = im.GetInline(c, imGameRunnerBegin) ??
+        im.Set(c, { root: root, visible: false });
     {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
+        if (im.IsFirstRender(c)) {
+            imdom.setStyle(c, "position", "absolute");
+            imdom.setStyle(c, "height", "100%");
+            imdom.setStyle(c, "width", "100%");
+            imdom.setStyle(c, "overflow", "hidden");
+        }
 
         state.visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && state.visible) {
             imDivBegin(c); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "backgroundColor", "transparent");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "height", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "width", "100%");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", "translate(50%, 50%)");
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "position", "absolute");
-            } 
-        }
-    }
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
+            } // imDivEnd(c);
+        } // im.IfEnd(c);
+    } // imDivEnd(c);
 
     return state;
 }
 
-function imPlayfieldEnd(c: ImCache, playfield: PlayfieldState) {
+function imGameRunnerEnd(c: ImCache, s: GameRunnerState) {
     {
-        if (playfield.visible) {
+        if (s.visible) {
             {
             } imDivEnd(c);
         } im.IfEnd(c);
     } imDivEnd(c);
 }
 
-function imGameFn(c: ImCache, root: HTMLElement) {
+function imBulletHellGame(c: ImCache, root: HTMLElement) {
     const rect = root.getBoundingClientRect();
     const halfWidth = rect.width / 2;
     const halfHeight = rect.height / 2;
 
     const game = im.State(c, newGameState);
+
+    if (im.IsFirstRender(c)) {
+        imdom.setStyle(c, "backgroundColor", "transparent");
+        imdom.setStyle(c, "height", "100%");
+        imdom.setStyle(c, "width", "100%");
+        imdom.setStyle(c, "transform", "translate(50%, 50%)");
+        imdom.setStyle(c, "position", "absolute");
+    }
 
     const player = game.player;
 
@@ -2027,27 +2509,33 @@ function imGameFn(c: ImCache, root: HTMLElement) {
         } imDivEnd(c);
     } im.IfEnd(c);
 
-    // Handle input
-    {
-        if (player) {
-            const keyboard = imdom.getKeyboard();
+    // Player movement
+    if (player) {
+        const keyboard = imdom.getKeyboard();
+
+        const xAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : 
+            imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
+
+        const yAxis = 
+            imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : // HTML y is down
+            imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
+
+        if (xAxis || yAxis) {
             if (keyboard.keyDown) keyboard.keyDown.preventDefault();
-            const xAxis = imdom.isKeyHeld(keyboard, key.ARROW_LEFT) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_RIGHT) ? 1 : 0;
-            // HTML y is down
-            const yAxis = imdom.isKeyHeld(keyboard, key.ARROW_UP) ? -1 : imdom.isKeyHeld(keyboard, key.ARROW_DOWN) ? 1 : 0;
-            const movementSpeed = 500;
+        }
 
-            player.velX = xAxis * movementSpeed;
-            player.velY = yAxis * movementSpeed;
+        const movementSpeed = 1000;
+        player.velX = xAxis * movementSpeed;
+        player.velY = yAxis * movementSpeed;
 
-            if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
-                const bullet = newGameObject(game, PLAYER_BULLET);
-                bullet.posX = player.posX;
-                bullet.posY = player.posY;
-                bullet.velY = -1000;
-                const machineGunTimeout = 0.025;
-                game.shootTimer = machineGunTimeout; 
-            }
+        if (imdom.isKeyHeld(keyboard, key.Z) && game.shootTimer <= 0) {
+            const bullet = newGameObject(game, PLAYER_BULLET);
+            bullet.posX = player.posX;
+            bullet.posY = player.posY;
+            bullet.velY = -1000;
+            const machineGunTimeout = 0.025;
+            game.shootTimer = machineGunTimeout; 
         }
     }
 
@@ -2122,22 +2610,24 @@ function imGameFn(c: ImCache, root: HTMLElement) {
             }
         }
 
-        // Collide player with enemies and their bullets
-        const playerRadius = 10;
-        const enemyRadius = 10;
+        const playerRadius = 5;
+        const enemyRadius = 5;
         const playerBulletRadius = 10;
         if (player && game.playerInvincibleTimer <= 0 && !player.dead) {
+            // check if the player died
             for (let i = 0; i < game.objects.length; i++) {
                 const obj = game.objects[i];
                 if (obj.type === PLAYER) continue;
                 if (obj.type === PLAYER_BULLET) continue;
                 if (obj.dead) continue;
                 if (areCirclesColliding(
-                    player.posX, player.posY,
-                    obj.posX, obj.posY,
+                    player.posX, player.posY, 
+                    obj.posX, obj.posY, 
                     playerRadius, enemyRadius
                 )) {
                     player.dead = true;
+                    obj.dead = true;
+                    obj.deathAnimationTimer = 0.5;
                 }
             }
         }
@@ -2229,7 +2719,9 @@ function unorderedRemove(arr, i) {
 ```
 However in some cases, like in this one, begin/end pairs are a bunch more work, 
     so you may be better off with approach 1. 
-For this decision in particular, neither is wrong or right - it comes down to preference.
+For this decision in particular, neither is wrong or right (nor do you even need
+    to do the refactor at this point - you could decide to add some more inline) -
+    it comes down to preference.
 
 ## End of the road
 
@@ -2267,4 +2759,3 @@ You also saw some new ways to abstract code:
     functionality in a slightly more flexible way.
     Begin-end pairs are especially useful for simpler components.
 ]
-

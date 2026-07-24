@@ -8,7 +8,12 @@ As far as I know, this is a 'new' approach specifically in the web word.
 Or at least, most other web frameworks that have become widely used in industry
 #url[don't work like this., https://youtu.be/0C-y59betmY]
 
-## Why another JavaScript UI framework?
+<!-- ## Is it still work trying this UI framework now that AI can oneshot any React component? -->
+<!---->
+<!-- Point your AI at this framework, and ask -->
+<!-- Probably no point in this part, because that is what the AI users would do anyway, if they even found this page that is -->
+
+## Why make another JavaScript UI framework?
 
 I decided to start working on my own framework for a few reasons:
 

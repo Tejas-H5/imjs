@@ -52,7 +52,7 @@ export function imVisualTestInstallation(
     s.title = title;
 
     imui.Begin(c, BLOCK); {
-        const visibility = imdom.TrackVisibility(c, 1);
+        const visibility = imdom.TrackVisibility(c, 0.9);
 
         imui.Begin(c, ROW); imui.Align(c); imui.Justify(c); {
             if (im.Memo(c, s.hash)) {
@@ -62,10 +62,8 @@ export function imVisualTestInstallation(
             imdom.ElBegin(c, el.I); imdom.Str(c, title); imdom.ElEnd(c, el.I);
         } imui.End(c);
 
-        if (im.Memo(c, visibility.isVisible) === im.MEMO_CHANGED && visibility.isVisible) {
-            if (!harness.currentVisibleInstallation) {
-                harness.currentVisibleInstallation = s;
-            }
+        if (!harness.currentVisibleInstallation && visibility.isVisible) {
+            harness.currentVisibleInstallation = s;
         }
 
         const root = imui.Begin(c, ROW); imui.Align(c, STRETCH); {
@@ -129,19 +127,16 @@ export function imVisualTestInstallation(
                             }
 
                             imui.Begin(c, BLOCK); {
-                                const addBg = "#449944"
-                                const rmBg  = "#994444";
-                                const editBg  = "#444499";
                                 const addCharBg = "#55FF55"
-                                const rmCharBg  = "#FF5555";
+                                const rmCharBg  = "#FF9999";
                                 const editCharBg  = "#4444FF";
 
                                 let currentBg = "";
                                 switch (block.type) {
                                     case ld.NONE:   currentBg = "";     break;
-                                    case ld.EDIT:   currentBg = editBg; break;
-                                    case ld.INSERT: currentBg = addBg;  break;
-                                    case ld.REMOVE: currentBg = rmBg;   break;
+                                    case ld.EDIT:   currentBg = editCharBg; break;
+                                    case ld.INSERT: currentBg = addCharBg;  break;
+                                    case ld.REMOVE: currentBg = rmCharBg;   break;
                                 }
                                 imui.Bg(c, currentBg);
 

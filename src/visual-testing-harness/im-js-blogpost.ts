@@ -90,10 +90,10 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
                 imui.Begin(c, BLOCK); {
                     imdom.Str(c, "An error has occured during compilation");
                 } imui.End(c);
-                imCodeBlock(c, transformResult.codeGenCode);
                 imui.Begin(c, BLOCK); {
                     imdom.Str(c, transformResult.error);
                 } imui.End(c);
+                imCodeBlock(c, transformResult.codeGenCode);
             } else { 
                 im.Else(c)
                 
