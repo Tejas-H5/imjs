@@ -138,7 +138,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 // We need to find the next line they both have in common.
                 // The stuff in between would have been removed from a and
                 // added to b.
-                for (let a2 = aIdx; a2 < aLines.length; a2++) {
+                outer: for (let a2 = aIdx; a2 < aLines.length; a2++) {
                     for (let b2 = bIdx; b2 < bLines.length; b2++) {
                         const a2Line = aLines[a2];
                         const b2Line = bLines[b2];
@@ -151,18 +151,12 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         }
 
                         if (linesEqual(a2Line, b2Line)) {
-                            if (
-                                a2 < aStopLine || 
-                                b2 < bStopLine ||
-                                !found
-                            ) {
-                                aStopLine = a2;
-                                bStopLine = b2;
-                                found = true;
-                                // The only reason this break works, is because we've
-                                // culled all the bad diff anchors.
-                                break;
-                            }
+                            aStopLine = a2;
+                            bStopLine = b2;
+                            found = true;
+                            // The only reason this break works, is because we've
+                            // culled all the bad diff anchors.
+                            break outer;
                         }
                     }
                 }
@@ -190,17 +184,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 bIdxLast = bIdx;
             } break;
             case S_ADDING: {
-                while (aIdx < aLines.length && bIdx < bLines.length && bIdx < bStopLine) {
-                    const aLine = aLines[aIdx];
-                    const bLine = bLines[bIdx];
-                    if (!linesEqual(aLine, bLine)) {
-                        bIdx++;
-                        continue
-                    }
-
-                    break;
-                }
-
+                bIdx = bStopLine;
                 if (bIdxLast !== bIdx) {
                     const insertion: Block = {
                         lines: bLines.slice(bIdxLast, bIdx),
@@ -213,17 +197,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 state = S_NONE;
             } break;
             case S_REMOVING: {
-                while (aIdx < aLines.length && bIdx < bLines.length && aIdx < aStopLine) {
-                    const aLine = aLines[aIdx];
-                    const bLine = bLines[bIdx];
-                    if (!linesEqual(aLine, bLine)) {
-                        aIdx++;
-                        continue
-                    }
-
-                    break;
-                }
-
+                aIdx = aStopLine;
                 if (aIdxLast !== aIdx) {
                     const removal: Block = {
                         lines: aLines.slice(aIdxLast, aIdx),

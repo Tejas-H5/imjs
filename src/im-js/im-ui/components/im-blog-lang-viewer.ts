@@ -21,14 +21,14 @@ export function newMarkupRendererState(): MarkupRendererState {
 // The component won't work if this isn't the case.
 export type BlogLangRenderOptions = {
 	userPtr?: any;
-	imRenderBlock: (c: ImCache, block: bl.Block, options: BlogLangRenderOptions) => void;
+	imRenderBlock: (c: ImCache, block: bl.Block, otherBlocks: bl.Block[], options: BlogLangRenderOptions) => void;
 	imRenderInlineItem: (c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void;
 };
 
 export const defaultBlogLangRenderOptions = newBlogLangRenderOptions();
 
 export function newBlogLangRenderOptions(
-	imRenderBlock: ((c: ImCache, block: bl.Block, options: BlogLangRenderOptions) => void) = imRenderBlogLangBlock,
+	imRenderBlock: ((c: ImCache, block: bl.Block, otherBlocks: bl.Block[], options: BlogLangRenderOptions) => void) = imRenderBlogLangBlock,
 	imRenderInlineItem: ((c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void) = imRenderBlogLangBlockItem,
 	userPtr?: unknown,
 ): BlogLangRenderOptions {
@@ -70,12 +70,12 @@ export function imRenderBlocksInternal(c: ImCache, blocks: bl.Block[], options: 
 				}
 			}
 
-			options.imRenderBlock(c, block, options);
+			options.imRenderBlock(c, block, blocks, options);
 		} im.ForEnd(c);
 	} imEnd(c);
 }
 
-export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, options: BlogLangRenderOptions) {
+export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, otherBlocks: bl.Block[], options: BlogLangRenderOptions) {
 	imBegin(c); {
 		im.Switch(c, block.type); switch (block.type) {
 			case bl.B_TEXT: {

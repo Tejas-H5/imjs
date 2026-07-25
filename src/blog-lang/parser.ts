@@ -45,7 +45,9 @@ export type CodeBlock = BaseItem & {
 	// Instead, let's just implement highlighting some lines. 
 	// We can specify a kind of character that we use as the highlighter, and then 
 	// that is what we highlight. 
-	diffWith: string | undefined;
+	diffWithBlockIdx: number | undefined;
+	_diffWithIdOrIdx?: string;
+	_id?: string;
 }
 
 export type ListBlock = BaseItem & {
@@ -337,7 +339,7 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 					end:      end,
 					language: language,
 					code:     code,
-					diffWith: undefined,
+					diffWithBlockIdx: undefined,
 				});
 			} break;
 			case B_LIST: {
@@ -453,47 +455,63 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 	}
 
 	// Post-process blocks
-	for (let i = 0; i < blocks.length; i++) {
-		const block = blocks[i];
-		switch (block.type) {
-			case B_CODE: {
-				if (block.language.includes("#")) {
-					const sb: string[] = [];
-					const langParser = newParser(block.language);
-					while (!reachedEnd(langParser)) {
-						if (compare(langParser, "#diff[")) {
-							// Find the specific code we want to diff with. 
-							advanceBy(langParser, "#diff[".length);
-							const arg = parseFunctionArgument(langParser)
-							if (arg) {
-								let num = parseInt(arg.val);
-								if (!isNaN(num) && num !== 0) {
-									let foundBlock: CodeBlock | undefined;
-									const dir = num > 0 ? 1 : -1;
-									let remainingSteps = num;
-									for (let j = i + dir; j >= 0 && j < blocks.length; j += dir) {
-										const block = blocks[j];
-										if (block.type === B_CODE) {
-											remainingSteps -= dir;
-											if (remainingSteps === 0) {
-												foundBlock = block;
-												break;
-											}
-										}
-									}
+	{
+		// Process all code block #directives
+		for (let i = 0; i < blocks.length; i++) {
+			const block = blocks[i];
+			if (block.type === B_CODE && block.language.includes("#")) {
+				const sb: string[] = [];
 
-									if (foundBlock) {
-										block.diffWith = foundBlock.code;
-									}
+				const langParser = newParser(block.language);
+				while (!reachedEnd(langParser)) {
+					if (compareAndAdvance(langParser, "#diff[")) {
+						block._diffWithIdOrIdx = parseFunctionArgument(langParser)?.val;
+					} else if (compareAndAdvance(langParser, "#id[")) {
+						block._id = parseFunctionArgument(langParser)?.val;
+					}
+
+					sb.push(langParser.char);
+					advance(langParser);
+				}
+				block.language = sb.join("");
+			}
+		}
+
+		// Resolve diff blocks
+		for (let i = 0; i < blocks.length; i++) {
+			const block = blocks[i];
+			if (block.type === B_CODE) {
+				const diffWithId = block._diffWithIdOrIdx;
+				if (diffWithId) {
+					let foundBlockIdx: number | undefined;
+					
+					let num = parseInt(diffWithId);
+					if (!isNaN(num) && num !== 0) {
+						const dir = num > 0 ? 1 : -1;
+						let remainingSteps = num;
+						for (let j = i + dir; j >= 0 && j < blocks.length; j += dir) {
+							const block = blocks[j];
+							if (block.type === B_CODE) {
+								remainingSteps -= dir;
+								if (remainingSteps === 0) {
+									foundBlockIdx = j;
+									break;
 								}
 							}
 						}
-						sb.push(langParser.char);
-						advance(langParser);
+					} else {
+						for (let j = 0; j < blocks.length; j++) {
+							const block = blocks[j];
+							if (block.type === B_CODE && block._id === diffWithId) {
+								foundBlockIdx = j;
+								break;
+							}
+						}
 					}
-					block.language = sb.join("");
+
+					block.diffWithBlockIdx = foundBlockIdx;
 				}
-			} break;
+			}
 		}
 	}
 }

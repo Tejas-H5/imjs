@@ -13,6 +13,7 @@ import {
 import * as tsc from "minimal-tsc";
 import { imVisualTestInstallation, setCurrentTest, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";
+import { assert } from "assert";
 
 type InlineTest = {
     typescriptOriginal: string;
@@ -150,7 +151,7 @@ function inlineTestFromCodeBlock(code: string, language: string, userModules: ts
     };
 }
 
-function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRenderOptions, modules: tsc.Module[]): void {
+function imRenderBlockCustom(c: ImCache, block: bl.Block, otherBlocks: bl.Block[], options: BlogLangRenderOptions, modules: tsc.Module[]): void {
     if (im.If(c) && block.type === bl.B_CODE && block.language.startsWith("ts ")) {
         imui.Begin(c, BLOCK); imui.Relative(c); {
             const modulesChanged = im.Memo(c, modules);
@@ -158,11 +159,18 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
 
             let test = im.Get(c, inlineTestFromCodeBlock);
             if (!test || modulesChanged || blockChanged) {
+                let diffWithBlock: bl.CodeBlock | undefined;
+                if (block.diffWithBlockIdx !== undefined) {
+                    const diffCodeBlock = otherBlocks[block.diffWithBlockIdx];
+                    assert(diffCodeBlock.type === bl.B_CODE);
+                    diffWithBlock = diffCodeBlock;
+                }
+
                 test = im.Set(c, inlineTestFromCodeBlock(
                     block.code,
                     block.language,
                     modules,
-                    block.diffWith
+                    diffWithBlock?.code,
                 ));
             }
 
@@ -178,7 +186,7 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, options: BlogLangRende
         } imui.End(c);
     } else {
         im.Else(c);
-        imRenderBlogLangBlock(c, block, options);
+        imRenderBlogLangBlock(c, block, otherBlocks, options);
     } im.IfEnd(c);
 }
 
@@ -210,7 +218,7 @@ export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, post: 
     let renderOptions = im.Get(c, newBlogLangRenderOptions);
     if (!renderOptions || modulesChanged) {
         renderOptions = im.Set(c, newBlogLangRenderOptions(
-            (c, block, options) => imRenderBlockCustom(c, block, options, modules),
+            (c, block, otherBlocks, options) => imRenderBlockCustom(c, block, otherBlocks, options, modules),
             imRenderItemCustom,
         ));
     }
