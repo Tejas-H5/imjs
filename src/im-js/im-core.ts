@@ -1013,8 +1013,13 @@ const EndFor = imForEnd;
  *      You would expect the `Component2` from both switch cases to be the same instance, but they are actually seperate instances
  *      that look the same but have different state! If that doesn't matter for your usecase, then you can ignore this.
  * 
+ * NOTE: I picked `cached = im.NOT_CACHED` to avoid memory leaks by default. 
+ * If you know for a fact that your key is a closed and stable set of strings, numbers, or object references,
+ *     you can actually override this to `im.CACHED` for a performance boost when a key is re-used,
+ *     at the expense of additional memory usage.
+ * In the future, I may remove this option in favour of an LRU cache.
  */
-function imSwitch(c: ImCache, key: ValidKey, cached: boolean = im.NOT_CACHED) {
+function imSwitch(c: ImCache, key: ValidKey, cached = im.NOT_CACHED) {
     imImmediateModeBlockBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
     // I expect the keys to a switch statement to be constants that are known at 'compile time', 
     // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
@@ -1300,7 +1305,7 @@ export const im = {
     KeyedBegin: imKeyedBegin, KeyedEnd: imKeyedEnd,
     If: imIf, ElseIf: imIfElse, IfElse: imIfElse, Else: imElse, IfEnd: imIfEnd,
     Switch: imSwitch, SwitchEnd: imSwitchEnd,
-    CACHED: true, NOT_CACHED: false, // im.Switch(c, key, im.NOT_CACHED);
+    CACHED: true, NOT_CACHED: false, // im.Switch(c, key, im.CACHED);
     For: imFor, ForEnd: imForEnd,
     Try: imTry, Catch: imCatch, TryEnd: imTryEnd, TryCatch: imCatch,
 
