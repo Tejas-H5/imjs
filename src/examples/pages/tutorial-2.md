@@ -919,28 +919,28 @@ The easiest way to check collisions is to give both of them a
     is less than the distance from the player to it's radius, and the enemy to it's radius.
 
 ```ts - Lose condition #diff[-1]
-const PLAYER = 0;
-const BULLET = 1;
-const ENEMY = 2;
-function typeToSymbol(t: number): string {
-    switch(t) {
-        case PLAYER: return "^";
-        case BULLET: return "|";
-        case ENEMY:  return "v";
+    const PLAYER = 0;
+    const BULLET = 1;
+    const ENEMY = 2;
+    function typeToSymbol(t: number): string {
+        switch(t) {
+            case PLAYER: return "^";
+            case BULLET: return "|";
+            case ENEMY:  return "v";
+        }
+        throw new Error("wtf");
     }
-    throw new Error("wtf");
-}
-function newGameState(): GameState {
-    const state: GameState = {
-        objects: [], 
-        player: null,
-        shootTimer: 0, 
-        enemySpawnTimer: 0,
-        playerInvincibleTimer: 0,
-    };
-    state.player = newGameObject(state, PLAYER);
-    return state;
-}
+    function newGameState(): GameState {
+        const state: GameState = {
+            objects: [], 
+            player: null,
+            shootTimer: 0, 
+            enemySpawnTimer: 0,
+            playerInvincibleTimer: 0,
+        };
+        state.player = newGameObject(state, PLAYER);
+        return state;
+    }
 function newGameObject(state: GameState, type: number): GameObject {
     const obj: GameObject = {
         posX: 0, posY: 0,

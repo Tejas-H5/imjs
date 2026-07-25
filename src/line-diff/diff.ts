@@ -6,11 +6,27 @@
 export const NONE   = 0;
 export const INSERT = 1;
 export const REMOVE = 2;
+export const WHITESPACE = 3;
 
-export type Block = {
+export type Block = 
+ | NormalBlock
+ | IndentationBlock
+ ;
+
+export type BaseBlock = {
     lines: string[];
-    type: number;
-};
+}
+
+export type NormalBlock = BaseBlock & {
+    type: | typeof NONE
+          | typeof INSERT
+          | typeof REMOVE;
+}
+
+export type IndentationBlock = BaseBlock & {
+    type:  typeof WHITESPACE;
+    indentation: number[];
+}
 
 export function compute(a: string, b: string): Block[] {
     return computeLines(a.split("\n"), b.split("\n"));
@@ -19,7 +35,7 @@ export function compute(a: string, b: string): Block[] {
 export function toString(diff: Block[], insertChar="+", removeChar="-"): string {
     const sb: string[] = [];
     for (let blockIdx = 0; blockIdx < diff.length; blockIdx++) {
-        const block = diff[blockIdx];
+        const block     = diff[blockIdx];
         if (blockIdx > 0) {
             sb.push("\n");
         }
@@ -31,9 +47,12 @@ export function toString(diff: Block[], insertChar="+", removeChar="-"): string 
             }
 
             switch (block.type) {
-                case INSERT: sb.push(insertChar); break;
-                case REMOVE: sb.push(removeChar); break;
-                case NONE:   sb.push(""); break;
+                case INSERT:    sb.push(insertChar); break;
+                case REMOVE:    sb.push(removeChar); break;
+                case NONE:      sb.push(""); break;
+                case WHITESPACE: {
+                    sb.push(block.indentation[lineIdx] < 0 ? "<" : ">"); 
+                } break;
             }
             sb.push(line);
         }
@@ -56,6 +75,8 @@ const knownBadDiffAnchors = [
 ];
 
 function isBadDiffAnchor(repeatedLines: Set<string>, line: string): boolean {
+    line = line.trim();
+
     if (repeatedLines.has(line)) {
         // Any lines that occur multiple times in either set shouldn't be used to know when a particular section
         // in line a or line b has begun/end. This is because when we find them, we can't tell _which_ one we've hit, 
@@ -64,12 +85,23 @@ function isBadDiffAnchor(repeatedLines: Set<string>, line: string): boolean {
         return true;
     }
 
-    const trimmed = line.trim();
-    if (knownBadDiffAnchors.includes(trimmed)) {
+    if (knownBadDiffAnchors.includes(line)) {
         return true;
     }
 
     return false;
+}
+
+function getRepeatedLines(lines: string[], seen: Set<string>, repeated: Set<string>) {
+    for (let line of lines) {
+        line = line.trim();
+        if (!seen.has(line)) {
+            seen.add(line);
+            continue;
+        }
+
+        repeated.add(line);
+    }
 }
 
 // NOTE: It turns out, we have independently re-derived the 'patience' diff.
@@ -79,189 +111,149 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
     aLines = aLines.map(l => l.trimEnd());
     bLines = bLines.map(l => l.trimEnd());
 
-    let aIdx = 0; 
-    let bIdx = 0;
-
-    let aIdxLast = 0;
-    let bIdxLast = 0;
-
-    const S_NONE     = 0;
-    const S_ADDING   = 1;
-    const S_REMOVING = 2;
-
-    let aStopLine = 0, bStopLine = 0;
-
-    let state = S_NONE;
+    let aIdx = 0, bIdx = 0;
+    let aIdxLast = 0, bIdxLast = 0;
 
     const repeatedLines = new Set<string>();
 
     const seenLines = new Set<string>();
-    for (const line of aLines) {
-        if (!seenLines.has(line)) {
-            seenLines.add(line);
-            continue;
-        }
-
-        repeatedLines.add(line);
-    }
+    getRepeatedLines(aLines, seenLines, repeatedLines);
 
     seenLines.clear();
-    for (const line of bLines) {
-        if (!seenLines.has(line)) {
-            seenLines.add(line);
-            continue;
-        }
-
-        repeatedLines.add(line);
-    }
+    getRepeatedLines(aLines, seenLines, repeatedLines);
 
     const diff: Block[] = [];
 
     while (aIdx < aLines.length || bIdx < bLines.length) {
-        switch (state) {
-            case S_NONE: {
-                while (aIdx < aLines.length && bIdx < bLines.length) {
-                    const aLine = aLines[aIdx];
-                    const bLine = bLines[bIdx];
+        const aLine = aLines[aIdx];
+        const bLine = bLines[bIdx];
+        aIdxLast = aIdx;
+        bIdxLast = bIdx;
 
-                    if (linesEqual(aLine, bLine)) {
-                        aIdx++;
-                        bIdx++;
-                        continue
-                    }
-
-                    break;
-                }
-
-                let found = false;
-
-                // We need to find the next line they both have in common.
-                // The stuff in between would have been removed from a and
-                // added to b.
-                outer: for (let a2 = aIdx; a2 < aLines.length; a2++) {
-                    for (let b2 = bIdx; b2 < bLines.length; b2++) {
-                        const a2Line = aLines[a2];
-                        const b2Line = bLines[b2];
-
-                        if (
-                            isBadDiffAnchor(repeatedLines, a2Line) || 
-                            isBadDiffAnchor(repeatedLines, b2Line)
-                        ) {
-                            continue
-                        }
-
-                        if (linesEqual(a2Line, b2Line)) {
-                            aStopLine = a2;
-                            bStopLine = b2;
-                            found = true;
-                            // The only reason this break works, is because we've
-                            // culled all the bad diff anchors.
-                            break outer;
-                        }
-                    }
-                }
-
-                if (!found) {
-                    // Remove left, add the right. ez.
-                    aStopLine = aLines.length;
-                    bStopLine = bLines.length;
-                }
-
-                // huge brain - if nothing was removed, we push nothing, and transiton to adding.
-                state = S_REMOVING;
-
-                if (aIdxLast !== aIdx) {
-                    const equalBlock: Block = {
-                        // All of these lines are equal. It could have just as well have been
-                        // lines: bLines.slice(bIdxLast, bIdx),
-                        lines: aLines.slice(aIdxLast, aIdx),
-                        type:  NONE,
-                    };
-                    diff.push(equalBlock);
-                }
-
-                aIdxLast = aIdx;
-                bIdxLast = bIdx;
-            } break;
-            case S_ADDING: {
-                bIdx = bStopLine;
-                if (bIdxLast !== bIdx) {
-                    const insertion: Block = {
-                        lines: bLines.slice(bIdxLast, bIdx),
-                        type:  INSERT,
-                    };
-                    diff.push(insertion);
-                }
-                bIdxLast = bIdx;
-
-                state = S_NONE;
-            } break;
-            case S_REMOVING: {
-                aIdx = aStopLine;
-                if (aIdxLast !== aIdx) {
-                    const removal: Block = {
-                        lines: aLines.slice(aIdxLast, aIdx),
-                        type:  REMOVE,
-                    };
-                    diff.push(removal);
-                }
-                aIdxLast = aIdx;
-                state = S_ADDING;
-            } break;
-        }
-
-        if (aIdx === aLines.length && bIdx === bLines.length) {
+        if (!(aIdx < aLines.length && bIdx < bLines.length)) {
+            if (aIdx === aLines.length && bIdx === bLines.length) {
+                break;
+            }
+            if (aIdx === aLines.length && bIdxLast !== bLines.length) {
+                const insertion: Block = {
+                    lines: bLines.slice(bIdxLast),
+                    type:  INSERT,
+                };
+                diff.push(insertion);
+                break
+            }
+            if (bIdx === bLines.length && aIdxLast !== aLines.length) {
+                const removal: Block = {
+                    lines: aLines.slice(aIdxLast),
+                    type:  REMOVE,
+                };
+                diff.push(removal);
+                break
+            }
             break;
         }
-        if (aIdx === aLines.length && bIdxLast !== bLines.length) {
-            const insertion: Block = {
-                lines: bLines.slice(bIdxLast),
-                type:  INSERT,
-            };
-            diff.push(insertion);
-            break
+
+        if (aLine === bLine) {
+            // Collect equal lines
+            while (aIdx < aLines.length && bIdx < bLines.length) {
+                const aLine = aLines[aIdx];
+                const bLine = bLines[bIdx];
+                if (aLine !== bLine) {break;}
+                aIdx++; bIdx++;
+            }
+
+            if (aIdx !== aIdxLast) {
+                diff.push({
+                    type: NONE,
+                    lines: aLines.slice(aIdxLast, aIdx),
+                });
+            }
+            continue;
         }
-        if (bIdx === bLines.length && aIdxLast !== aLines.length) {
-            const removal: Block = {
-                lines: aLines.slice(aIdxLast),
-                type:  REMOVE,
-            };
-            diff.push(removal);
-            break
+
+        if (aLine.trim() === bLine.trim()) {
+            // Collect whitespace-equal lines
+            while (aIdx < aLines.length && bIdx < bLines.length) {
+                const aLine = aLines[aIdx];
+                const bLine = bLines[bIdx];
+                if (aLine === bLine) {
+                    // No longer whitespace-equal
+                    break;
+                }
+                if (aLine.trim() !== bLine.trim()) {break;}
+                aIdx++; bIdx++;
+            }
+
+            if (aIdx !== aIdxLast) {
+                const lines = bLines.slice(bIdxLast, bIdx);
+                const indentation = new Array(lines.length).fill(0);
+                for (let i = 0; i < lines.length; i++) {
+                    indentation[i] = lines[i].length - aLines[aIdxLast + i].length;
+                }
+                diff.push({
+                    type: WHITESPACE,
+                    lines: lines,
+                    indentation: indentation,
+                });
+            }
+            continue;
         }
-    }
 
-    // Trim the end of diffs.
-    // We skip over 'bad anchors'. This does however, mean that 
-    // each will end with the bad anchors.
-    {
-        for (let i = 1; i < diff.length; i++) {
-            const curr = diff[i];
-            const prev = diff[i - 1];
+        // Collect removals and inserts
+        let aLineAnchor = aLines.length;
+        let bLineAnchor = bLines.length;
+        for (let a2 = aIdx; a2 < aLines.length; a2++) {
+            for (let b2 = bIdx; b2 < bLineAnchor; b2++) {
+                const a2Line = aLines[a2];
+                const b2Line = bLines[b2];
 
-            if (curr.type === INSERT && prev.type === REMOVE) {
-                const equalLines: string[] = [];
-
-                while (prev.lines.length > 0 && curr.lines.length > 0) {
-                    const line = prev.lines[prev.lines.length - 1];
-                    if (line !== curr.lines[curr.lines.length - 1]) {
-                        break;
-                    }
-
-                    prev.lines.pop();
-                    curr.lines.pop();
-                    equalLines.push(line);
+                if (
+                    isBadDiffAnchor(repeatedLines, a2Line.trim()) || 
+                    isBadDiffAnchor(repeatedLines, b2Line.trim())
+                ) {
+                    continue
                 }
 
-                equalLines.reverse();
-                if (equalLines.length > 0) {
-                    let next = {lines: equalLines, type: NONE};
-                    diff.splice(i + 1, 0, next);
+                if (a2Line.trim() !== b2Line.trim()) {
+                    continue;
+                }
+
+                // const REQUIRED_EQUAL_LINES = 1;
+                // if (!compareLines(aLines, bLines, a2, b2, REQUIRED_EQUAL_LINES)) {
+                //     continue;
+                // }
+
+                // We want to find the closest anchor, basically.
+                if (b2 < bLineAnchor) {
+                    aLineAnchor = a2;
+                    bLineAnchor = b2;
+                    break;
                 }
             }
         }
 
-        filterInPlace(diff, d => d.lines.length > 0);
+        // Trim the ends of the anchor before we start adding
+        while (aLineAnchor > aIdx && bLineAnchor > bIdx) {
+            if (aLines[aLineAnchor-1] !== bLines[bLineAnchor-1]) {
+                break;
+            }
+            aLineAnchor--;
+            bLineAnchor--;
+        }
+        aIdx = aLineAnchor;
+        bIdx = bLineAnchor;
+
+        // Collect lines we added and removed
+        
+        if (aIdxLast !== aIdx) {
+            const removed = aLines.slice(aIdxLast, aIdx);
+            diff.push({ type: REMOVE, lines: removed });
+        }
+
+        if (bIdxLast !== bIdx) {
+            const inserted = bLines.slice(bIdxLast, bIdx);
+            diff.push({ type: INSERT, lines: inserted });
+        }
     }
 
     // improve diff order
@@ -330,16 +322,4 @@ function lineIdxWhereCodeBlockEnds(
     }
 
     return -1;
-}
-
-function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
-    let i2 = 0;
-    for (let i = 0; i < arr.length; i++) {
-        if (predicate(arr[i], i)) arr[i2++] = arr[i];
-    }
-    arr.length = i2;
-}
-
-function linesEqual(lineA: string, lineB: string): boolean {
-    return lineA === lineB;
 }

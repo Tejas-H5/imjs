@@ -114,11 +114,14 @@ export function imVisualTestInstallation(
                     }
 
                     let lineIdx = 0;
-                    im.For(c); for (const block of diffBlocks) {
-                        im.For(c); for (const line of block.lines) {
+                    im.For(c); for (let blockIdx = 0; blockIdx < diffBlocks.length; blockIdx++) {
+                        const block = diffBlocks[blockIdx];
+                        im.For(c); for (let blockLineIdx = 0; blockLineIdx < block.lines.length; blockLineIdx++) {
+                            const line = block.lines[blockLineIdx];
                             switch (block.type) {
                                 case ld.NONE:   lineIdx++; break;
                                 case ld.INSERT: lineIdx++; break;
+                                case ld.WHITESPACE: lineIdx++; break;
                                 case ld.REMOVE: break;
                             }
 
@@ -127,17 +130,23 @@ export function imVisualTestInstallation(
                                 switch (block.type) {
                                     case ld.INSERT: sign = " + "; break;
                                     case ld.REMOVE: sign = " - "; break;
+                                    case ld.WHITESPACE: {
+                                        const indentation = block.indentation[blockLineIdx];
+                                        sign = indentation > 0 ? "-> " : " <-";
+                                    } break;
                                 }
                                 imdom.Str(c, sign);
 
                                 const addCharBg = "#55FF55"
                                 const rmCharBg  = "#FF9999";
+                                const indentBg  = "#FF88FF";
 
                                 let currentBg = "";
                                 switch (block.type) {
-                                    case ld.NONE:   currentBg = "";     break;
-                                    case ld.INSERT: currentBg = addCharBg;  break;
-                                    case ld.REMOVE: currentBg = rmCharBg;   break;
+                                    case ld.NONE:       currentBg = "";        break;
+                                    case ld.INSERT:     currentBg = addCharBg; break;
+                                    case ld.REMOVE:     currentBg = rmCharBg;  break;
+                                    case ld.WHITESPACE: currentBg = indentBg;  break;
                                 }
                                 imui.Bg(c, currentBg);
 
@@ -146,9 +155,9 @@ export function imVisualTestInstallation(
                                 imui.Begin(c, INLINE); {
                                     let currentBg = "";
                                     switch (block.type) {
-                                        case ld.NONE:   currentBg = "";     break;
-                                        case ld.INSERT: currentBg = addCharBg;  break;
-                                        case ld.REMOVE: currentBg = rmCharBg;   break;
+                                        case ld.NONE:   currentBg = "";        break;
+                                        case ld.INSERT: currentBg = addCharBg; break;
+                                        case ld.REMOVE: currentBg = rmCharBg;  break;
                                     }
                                     imui.Bg(c, currentBg);
                                     imdom.Str(c, line);
