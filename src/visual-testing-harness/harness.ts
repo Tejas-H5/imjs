@@ -272,10 +272,10 @@ export function imVisualTestHarness(
         } im.IfEnd(c);
     } imui.End(c);
 
-    const currentScrolledInstallation = 
-        s.currentHoveredInstallation ??
-        s.currentInstallation;
-    if (im.Memo(c, currentScrolledInstallation)) {
+    if (im.Memo(c, s.currentHoveredInstallation)) {
+        const currentScrolledInstallation = 
+            s.currentHoveredInstallation ??
+            s.currentInstallation;
         scrollToInstalllation(s, currentScrolledInstallation)
     }
 
@@ -334,14 +334,12 @@ export function scrollToInstalllation(harness: VisualTestHarnessState, installat
         harness.animations.scrollingToTest = undefined;
     }
 
-    setTimeout(() => {
-        // Yooo. The # is the css id selector. Its also the hash in the URL.
-        // The hash in the url navigates to the element on the page with #<hash>. Damn. Orthogonality of design. crazy
-        const handle = document.getElementById(installation ? installation.hash : "top");
-        if (handle) {
-            handle.scrollIntoView();
-        }
-    }, 10);
+    // Yooo. The # is the css id selector. Its also the hash in the URL.
+    // The hash in the url navigates to the element on the page with #<hash>. Damn. Orthogonality of design. crazy
+    const handle = document.getElementById(installation ? installation.hash : "top");
+    if (handle) {
+        handle.scrollIntoView();
+    }
 }
 
 export function updateHash(harness: VisualTestHarnessState, installation: VisualTestHarnessInstallationState | undefined) {

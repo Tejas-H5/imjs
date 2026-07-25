@@ -324,8 +324,8 @@ function imTodoList(c: ImCache) {
         imdom.ElBegin(c, el.DIV); {
             imdom.Str(c, item); 
         } imdom.ElEnd(c, el.DIV);
-    } im.ForEnd(c);
     // im.For must be closed off with im.ForEnd. 
+    } im.ForEnd(c);
 
     imdom.ElBegin(c, el.BUTTON); {
         const clickEv = imdom.On(c, ev.CLICK);

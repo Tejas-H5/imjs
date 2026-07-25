@@ -919,28 +919,28 @@ The easiest way to check collisions is to give both of them a
     is less than the distance from the player to it's radius, and the enemy to it's radius.
 
 ```ts - Lose condition #diff[-1]
-    const PLAYER = 0;
-    const BULLET = 1;
-    const ENEMY = 2;
-    function typeToSymbol(t: number): string {
-        switch(t) {
-            case PLAYER: return "^";
-            case BULLET: return "|";
-            case ENEMY:  return "v";
-        }
-        throw new Error("wtf");
+const PLAYER = 0;
+const BULLET = 1;
+const ENEMY = 2;
+function typeToSymbol(t: number): string {
+    switch(t) {
+        case PLAYER: return "^";
+        case BULLET: return "|";
+        case ENEMY:  return "v";
     }
-    function newGameState(): GameState {
-        const state: GameState = {
-            objects: [], 
-            player: null,
-            shootTimer: 0, 
-            enemySpawnTimer: 0,
-            playerInvincibleTimer: 0,
-        };
-        state.player = newGameObject(state, PLAYER);
-        return state;
-    }
+    throw new Error("wtf");
+}
+function newGameState(): GameState {
+    const state: GameState = {
+        objects: [], 
+        player: null,
+        shootTimer: 0, 
+        enemySpawnTimer: 0,
+        playerInvincibleTimer: 0,
+    };
+    state.player = newGameObject(state, PLAYER);
+    return state;
+}
 function newGameObject(state: GameState, type: number): GameObject {
     const obj: GameObject = {
         posX: 0, posY: 0,
@@ -1731,7 +1731,7 @@ I haven't gotten a chance to talk about the framework very much, because it has
 
 The obvious thing to do is to move the game into it's own function:
 
-```ts - Move out the game to it's own function #diff[-1]
+```ts - Move out the game to it's own function #diff[-1] #id[before_refactor]
 const PLAYER = 0; 
 const PLAYER_BULLET = 1; 
 const ENEMY = 2; 
@@ -1797,6 +1797,14 @@ function imGame(c: ImCache) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
+
                 imGameInner(c, root);
             } imDivEnd(c);
         } im.IfEnd(c);
@@ -1809,14 +1817,6 @@ function imGameInner(c: ImCache, root: HTMLElement) {
     const halfHeight = rect.height / 2;
 
     const game = im.State(c, newGameState);
-
-    if (im.IsFirstRender(c)) {
-        imdom.setStyle(c, "backgroundColor", "transparent");
-        imdom.setStyle(c, "height", "100%");
-        imdom.setStyle(c, "width", "100%");
-        imdom.setStyle(c, "transform", "translate(50%, 50%)");
-        imdom.setStyle(c, "position", "absolute");
-    }
 
     const player = game.player;
 
@@ -2049,7 +2049,7 @@ The typical way to do this in other frameworks, is to extract out the game as a 
     then make the playfield accept a function that it can call. 
 This is a perfectly fine way of doing things:
 
-```ts - Refactor approach 1: extract imPlayfield(c, fn) #diff[-1]
+```ts - Refactor approach 1: extract imPlayfield(c, fn) #diff[before_refactor]
 const PLAYER = 0; 
 const PLAYER_BULLET = 1; 
 const ENEMY = 2; 
@@ -2119,6 +2119,14 @@ function imGameRunner(c: ImCache, FN: ImCacheRenderFn) {
         const visible = imdom.TrackVisibility(c, 0.5).isVisible;
         if (im.If(c) && visible) {
             imDivBegin(c); {
+                if (im.IsFirstRender(c)) {
+                    imdom.setStyle(c, "backgroundColor", "transparent");
+                    imdom.setStyle(c, "height", "100%");
+                    imdom.setStyle(c, "width", "100%");
+                    imdom.setStyle(c, "transform", "translate(50%, 50%)");
+                    imdom.setStyle(c, "position", "absolute");
+                }
+
                 // NOTE: FN is assumed to be a constant.
                 // For this to be 100% rock solid, we need 
                 // im.Switch(c, FN); switch (FN) {
@@ -2135,14 +2143,6 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
     const halfHeight = rect.height / 2;
 
     const game = im.State(c, newGameState);
-
-    if (im.IsFirstRender(c)) {
-        imdom.setStyle(c, "backgroundColor", "transparent");
-        imdom.setStyle(c, "height", "100%");
-        imdom.setStyle(c, "width", "100%");
-        imdom.setStyle(c, "transform", "translate(50%, 50%)");
-        imdom.setStyle(c, "position", "absolute");
-    }
 
     const player = game.player;
 
@@ -2377,7 +2377,7 @@ The main reason for this, is that the usage code won't need to extract
 The `imGameRunner` function is usually a stepping-stone to the `imGameRunnerBegin`/`imGameRunnerEnd` 
     refactor:
 
-```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd #diff[-2]
+```ts - Refactor approach 2: extract imPlayfieldBegin/imPlayfieldEnd #diff[before_refactor]
 const PLAYER = 0; 
 const PLAYER_BULLET = 1; 
 const ENEMY = 2; 
@@ -2483,14 +2483,6 @@ function imBulletHellGame(c: ImCache, root: HTMLElement) {
     const halfHeight = rect.height / 2;
 
     const game = im.State(c, newGameState);
-
-    if (im.IsFirstRender(c)) {
-        imdom.setStyle(c, "backgroundColor", "transparent");
-        imdom.setStyle(c, "height", "100%");
-        imdom.setStyle(c, "width", "100%");
-        imdom.setStyle(c, "transform", "translate(50%, 50%)");
-        imdom.setStyle(c, "position", "absolute");
-    }
 
     const player = game.player;
 

@@ -3,10 +3,12 @@
 // want to manually highlight every change you've made - 
 // this can automate that work away a bit.
 
-export const NONE   = 0;
-export const INSERT = 1;
-export const REMOVE = 2;
-export const WHITESPACE = 3;
+export const NONE   = 0;     // lines equal in both text
+export const INSERT = 1;     // lines inserted in the new text
+export const REMOVE = 2;     // lines removed from the old text
+export const WHITESPACE = 3; // lines that are not equal, but become equal after calling .trim() on them
+
+// TODO: Detect identical remove/insert pairs, and mark them as moves. 
 
 export type Block = 
  | NormalBlock
@@ -107,7 +109,7 @@ function getRepeatedLines(lines: string[], seen: Set<string>, repeated: Set<stri
 // NOTE: It turns out, we have independently re-derived the 'patience' diff.
 // Turns out that this is actually a pretty good algorithm! nice.
 // If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
-export function computeLines(aLines: string[], bLines: string[]): Block[] {
+export function computeLines(aLines: string[], bLines: string[], depth = 0): Block[] {
     aLines = aLines.map(l => l.trimEnd());
     bLines = bLines.map(l => l.trimEnd());
 
@@ -244,7 +246,6 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
         bIdx = bLineAnchor;
 
         // Collect lines we added and removed
-        
         if (aIdxLast !== aIdx) {
             const removed = aLines.slice(aIdxLast, aIdx);
             diff.push({ type: REMOVE, lines: removed });
@@ -253,6 +254,22 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
         if (bIdxLast !== bIdx) {
             const inserted = bLines.slice(bIdxLast, bIdx);
             diff.push({ type: INSERT, lines: inserted });
+        }
+    }
+
+    // Recursively improve the diff.
+    if (depth <= 2) {
+        for (let i = 1; i < diff.length; i++) {
+            const curr = diff[i];
+            const prev = diff[i - 1];
+
+            if (curr.type === INSERT && prev.type === REMOVE) {
+                // Very big brain. The diff will be better, because there will
+                // be fewer repeated anchors.
+                const recursion = computeLines(prev.lines, curr.lines, depth + 1)
+                diff.splice(i - 1, 2, ...recursion); // splice is a suspiciously useful operation.
+                i += recursion.length - 2;
+            }
         }
     }
 
