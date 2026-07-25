@@ -2751,3 +2751,12 @@ You also saw some new ways to abstract code:
     functionality in a slightly more flexible way.
     Begin-end pairs are especially useful for simpler components.
 ]
+
+Still not sure what to do?
+Maybe these tutorials aren't any good - submit an issue #url[here, https://github.com/Tejas-H5/imjs]
+    saying as such. 
+In the meantime, check out #url[Tutorial 3, /?test=Tutorial+3+-+Portfolio+website] - it will be the final tutorial in this series.
+We build a portfolio website with multiple smaller projects on it.
+If you still haven't got a clue how to use the framework by then, it's a skill issue on 
+    your part! 
+Sorry, I don't make the rules.

@@ -1,29 +1,22 @@
 # Tutorial 1 - a TODO List
 
-We will implement the skeleton of a TODO app on this page. 
-It should be enough to explain the entire framework well enough that you can 
-    use it to make your own stuff. 
-It'll take an hour to follow along with at home, and you WILL want to follow along.
-It doesn't deal with any web requests or async stuff - it is purely
-    a distillation of the the problem space that I built this framework
-    for - offline tooling that I could and build quickly, capable
-    of doing _whatever_ I wanted with no limitations.
-
+We'll implement a simple TODO list.
+Along the way, we will learn how the framework works, and how to use it.
 
 ## Part 0 - getting started
 
-You'll need to already know how to set up a blank TypeScript project. 
-If you don't, I'd suggest initializing a Vite vanilla TypeScript project,
+Initialize a blank typescript project, with an `index.html` and an `index.ts`
+    as the entrypoint, or similar.
+There are a lot of ways to do this - if you don't know how, I'd suggest 
+    initializing a vanilla TypeScript project with #url[Vite, https://vite.dev/guide/#scaffolding-your-first-vite-project],
     and then deleting most of the assets to get to a blank page.
-You should be left with a `html` file that pulls in a single `index.ts` file,
-    which will be the entrypoint for this tutorial.
 
 #url[Install the framework, /?test=How+to+install+imJS] if you 
     haven't already.
 
 To get started, you'll need to paste this into your entrypoint:
 
-```typescript
+```typescript Entrypoint
 import { ImCache, im, imdom } from "im-js";
 
 const globalCache = im.newCache();
@@ -38,33 +31,41 @@ function imMain(c: ImCache) {
 }
 
 function imApp(c: ImCahe) {
+    // Tutorial code will live here
     imdom.Str(c, "Henlo");
 }
 ```
+
+It isn't a good place to start understanding the framework, but you'll need it
+    if you want to follow along with the simpler examples that are.
 
 There's a lot going on here, and I've not been able to explain it well with
     a series of dot-points. 
 Instead, here's the same code again with explanatory comments:
 
-```typescript
+```typescript Entrypoint (Annotated) #diff[-1]
 import {
     ImCache,
-    im, // im is the namespace that contains all the core framework primitives.
-        // Rather than importing tens of methods, you only need to import this one 
-        // object with all the functions on it.
-        // Whether you're using this framework in a DOM context, or any other 
-        // contexts I decide to support in the future, this will always be relevant.
-        // It does NOT retain any global/internal state.
-    imdom, // imdom contains anything related to the DOM. It also contains a global
-           // event system that is used to allow methods like `imdom.hasMouseOver` to work.
-           // The global event system subscribes to events on `document` and `window`, so it's
-           // state is also stored as a global variable.
+    // im is the namespace that contains all the core framework primitives.
+    // Rather than importing tens of methods, you only need to import this one 
+    // object with all the functions on it.
+    // Whether you're using this framework in a DOM context, or any other 
+    // contexts I decide to support in the future, this will always be relevant.
+    // It does NOT retain any global/internal state.
+    im, 
+    // imdom contains anything related to the DOM. It also contains a global
+    // event system that is used to allow methods like `imdom.hasMouseOver` to work.
+    // The global event system subscribes to events on `document` and `window`, so it's
+    // state is also stored as a global variable.
+    imdom, 
 } from "im-js";
 
-const globalCache = im.newCache(); // This is the immediate-mode cache. 
-                                   // All framework state lives here.
+// This is the immediate-mode cache. 
+// All framework state lives here.
+const globalCache = im.newCache(); 
 
-imMain(globalCache);  // You'll need to call the main method once to kickstart rendering
+// You'll need to call the main method once to kickstart rendering
+imMain(globalCache);  
 
 // By convention, every function that retains immediate-mode state, or calls some other method starting with `im` should itself start with `im`.
 // For namespaces starting with `im`, methods starting with a Captial letter like im.Begin() can also be assumed to write immediate-mode state.
@@ -72,18 +73,22 @@ imMain(globalCache);  // You'll need to call the main method once to kickstart r
 // We can already see this from their first `c: ImCache` parameter.
 // This convention will be useful later.
 function imMain(
-    c: ImCache // I could have made this a global variable that I retain in my framework, but I
-               // didn't - accepting the parameter explicitly makes it more obvious at the callsite
-               // that this method reads from or writes to immediate-mode state. 
-               // It is even worth all the `c` being passed in everywhere.
+    // I could have made this a global variable that I retain in my framework, but I
+    // didn't - accepting the parameter explicitly makes it more obvious at the callsite
+    // that this method reads from or writes to immediate-mode state. 
+    // It is even worth all the `c` being passed in everywhere.
+    c: ImCache 
 ) {
-    im.CacheBegin(c, imMain); { // If the cache is not yet initialised, im.CacheBegin initialises the cache, and then
-                                // kicks off an animation loop that uses imMain to continuously rerender the UI.
+    // If the cache is not yet initialised, im.CacheBegin initialises the cache, and then
+    // kicks off an animation loop that uses imMain to continuously rerender the UI.
+    im.CacheBegin(c, imMain); { 
 
         // This region of code can't render DOM nodes, yet.
 
-        imdom.Begin(c, document.body); { // If the DOM module is not yet initialized, imdom will initialize it, and
-                                         // make `document.body` the root where `imApp` can append things to
+
+        // If the DOM module is not yet initialized, imdom will initialize it, and
+        // make `document.body` the root where `imApp` can append things to
+        imdom.Begin(c, document.body); { 
 
             // This region now supports rendering things to the DOM, as well as
             // using event-system helpers from `imdom`, like `imdom.hasMouseOver`, 
@@ -94,14 +99,15 @@ function imMain(
 
         // This region of code can no longer render DOM nodes
 
-    } im.CacheEnd(c); // im.CacheEnd does some sanity-checks. 
-                      // Were the same number of scopes pushed and popped?
-                      // Did we render the same number of entries this render?
-                      // If any of these fail, the code throws. 
-                      // It also measures how long the render took, which is useful while
-                      // developing to know whether your code is any good. 
-                      // Code that you put after im.CacheEnd won't be measured, so
-                      // you probably never want to do that.
+    // im.CacheEnd does some sanity-checks. 
+    // Were the same number of scopes pushed and popped?
+    // Did we render the same number of entries this render?
+    // If any of these fail, the code throws. 
+    // It also measures how long the render took, which is useful while
+    // developing to know whether your code is any good. 
+    // Code that you put after im.CacheEnd won't be measured, so
+    // you probably never want to do that.
+    } im.CacheEnd(c); 
 }
 
 // This is where the rest of the examples will take place!
@@ -1603,11 +1609,9 @@ Congrats! You've built a todo list where you can edit the items, mark them as do
 and re-prioritise the items. 
 It doesn't look particularly nice - this was an imJS tutorial, not a UI design one. 
 
-You've also learned exactly how the framework works, and how to use every feature.
-The time has come for you to start building that idea you've had bouncing around
-inside your head!
-Right now actually - delete this silly todo list app, spend the next 5 minutes on your 
-idea and see how far you get.
+You've also learned exactly how the framework works, and how to use almost every feature.
+You can probably start building stuff now! 
 
-Still not sure what to do? Check out the next tutorial. 
-It introduces a couple of ideas that we haven't seen in this one yet.
+Still not sure what to do? Check out the #url[next tutorial, /?test=Tutorial+2+-+bullet+hell+game] -
+it introduces some common abstraction mechanisms you can use to build your own 
+set of primitives, and has a couple of ideas that we haven't seen in this one yet.

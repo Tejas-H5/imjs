@@ -1,9 +1,22 @@
 // im-blog-lang-viewer v0.0.1
 
+import { assert } from "assert";
 import * as bl from "blog-lang";
 import { el, im, ImCache, imdom } from "im-js";
-import { cssVars, DisplayType, imui, BLOCK, COL, CENTER, INLINE, LEFT, NA, PX, ROW, VH, STRETCH } from "im-js/im-ui";
-import { imButtonStyle } from "im-js/im-ui/components/im-button";
+import {
+	BLOCK,
+	CENTER,
+	COL,
+	cssVars,
+	DisplayType,
+	imui,
+	INLINE,
+	LEFT,
+	PX,
+	VH
+} from "im-js/im-ui";
+import { imButtonStyle } from "./im-button";
+import { imCodeViewer } from "./im-code-viewer";
 
 export type MarkupRendererState = {
 	blogpost: bl.Blogpost | undefined;
@@ -106,30 +119,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, otherBlocks: 
 				} im.SwitchEnd(c)
 			} break;
 			case bl.B_CODE: {
-				const padding = 10;
-				imBegin(c); imui.Relative(c); {
-					if (im.IsFirstRender(c)) {
-						imdom.setStyle(c, "backgroundColor", cssVars.bg2);
-						imdom.setStyle(c, "padding", padding + "px");
-						imdom.setStyle(c, "borderRadius", 0.5 * padding + "px");
-					}
-					imBegin(c); imui.Absolute(c, padding, PX, padding, PX, 0, NA, 0, NA); {
-						if (im.IsFirstRender(c)) {
-							imdom.setStyle(c, "fontSize", "0.7em");
-							imdom.setStyle(c, "fontStyle", "italic");
-							imdom.setStyle(c, "whiteSpace", "pre-wrap");
-							imdom.setStyle(c, "color", cssVars.fg2);
-						}
-						imStr(c, block.language);
-					} imEnd(c);
-					imBegin(c); {
-						if (im.IsFirstRender(c)) {
-							imdom.setStyle(c, "fontFamily", "monospace");
-							imdom.setStyle(c, "whiteSpace", "pre-wrap");
-						}
-						imStr(c, block.code);
-					} imEnd(c);
-				} imEnd(c);
+				imCodeBlock(c, block, otherBlocks);
 			} break;
 			case bl.B_LIST: {
 				im.Switch(c, block.style); {
@@ -414,4 +404,17 @@ export function imCodeSpanEnd(c: ImCache) {
 
 export const imGap = imui.Gap;
 
+function imCodeBlock(c: ImCache, block: bl.CodeBlock, otherBlocks: bl.Block[]) {
+	let codeToDiffWith: string | undefined;
+	if (block.diffWithBlockIdx !== undefined) {
+		const otherBlock = otherBlocks[block.diffWithBlockIdx];
+		assert(otherBlock.type === bl.B_CODE);
+		codeToDiffWith = otherBlock.code;
+	}
 
+	// Blocks are assumed to be immutable, and only regenerated
+	// by re-parsing the entire blogpost's text. If this is 
+	// no longer the case, we'll need to update how this works.
+	const version = 0;
+	imCodeViewer(c, block.code, codeToDiffWith, version);
+}
