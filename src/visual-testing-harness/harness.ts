@@ -214,7 +214,6 @@ export function imVisualTestHarness(
                                 if (imButtonIsClicked(c, test.name, test === s.currentTest)) {
                                     deferredEvent = () => {
                                         setCurrentTest(s, test, true);
-                                        sidebar.sideBarOpen = false;
                                     }
                                 }
                             } imSidebarItemEnd(c, sidebar, test);
@@ -247,7 +246,6 @@ export function imVisualTestHarness(
                                 if (imButtonIsClicked(c, installation?.title ?? s.currentTest.name, installation === s.currentInstallation)) {
                                     deferredEvent = () => {
                                         updateHash(s, installation);
-                                        sidebar.sideBarOpen = false;
                                     }
                                 }
                             } imSidebarItemEnd(c, sidebar, installation);
@@ -299,7 +297,7 @@ export function imRenderWithErrorBoundary(
     harness: VisualTestHarnessState,
     test: (c: ImCache, harness: VisualTestHarnessState) => void
 ) {
-    im.Switch(c, test); {
+    im.Switch(c, test, im.CACHED); {
         const tryState = im.Try(c); try {
             const { err, recover } = tryState;
             if (im.If(c) && !err) {

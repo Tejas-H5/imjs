@@ -109,6 +109,7 @@ function getRepeatedLines(lines: string[], seen: Set<string>, repeated: Set<stri
 // NOTE: It turns out, we have independently re-derived the 'patience' diff.
 // Turns out that this is actually a pretty good algorithm! nice.
 // If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
+// TODO: write this in a performant way
 export function computeLines(aLines: string[], bLines: string[], depth = 0): Block[] {
     aLines = aLines.map(l => l.trimEnd());
     bLines = bLines.map(l => l.trimEnd());
@@ -265,7 +266,8 @@ export function computeLines(aLines: string[], bLines: string[], depth = 0): Blo
 
             if (curr.type === INSERT && prev.type === REMOVE) {
                 // Very big brain. The diff will be better, because there will
-                // be fewer repeated anchors.
+                // be fewer bad anchors in repeatedLines, since the region
+                // is going to be more localised. 
                 const recursion = computeLines(prev.lines, curr.lines, depth + 1)
                 diff.splice(i - 1, 2, ...recursion); // splice is a suspiciously useful operation.
                 i += recursion.length - 2;

@@ -735,6 +735,8 @@ function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel)
  * ```
  */
 function imKeyedBegin(c: ImCache, key: ValidKey) {
+    // Since the key can be arbitrary object references,
+    // it's better to destroy these rather than cache them.
     __BlockKeyedBegin(c, key, REMOVE_LEVEL_DESTROYED);
 }
 
@@ -1012,7 +1014,7 @@ const EndFor = imForEnd;
  *      that look the same but have different state! If that doesn't matter for your usecase, then you can ignore this.
  * 
  */
-function imSwitch(c: ImCache, key: ValidKey, cached: boolean = false) {
+function imSwitch(c: ImCache, key: ValidKey, cached: boolean = im.NOT_CACHED) {
     imImmediateModeBlockBegin(c, INTERNAL_TYPE_SWITCH_BLOCK);
     // I expect the keys to a switch statement to be constants that are known at 'compile time', 
     // so we don't need to worry about the usual memory leaks we would get with normal keyed blocks.
@@ -1298,6 +1300,7 @@ export const im = {
     KeyedBegin: imKeyedBegin, KeyedEnd: imKeyedEnd,
     If: imIf, ElseIf: imIfElse, IfElse: imIfElse, Else: imElse, IfEnd: imIfEnd,
     Switch: imSwitch, SwitchEnd: imSwitchEnd,
+    CACHED: true, NOT_CACHED: false, // im.Switch(c, key, im.NOT_CACHED);
     For: imFor, ForEnd: imForEnd,
     Try: imTry, Catch: imCatch, TryEnd: imTryEnd, TryCatch: imCatch,
 
