@@ -151,7 +151,7 @@ function imTodoList(c: ImCache) {
 
 Nice! The next thing I want to implement, is adding more items:
 
-```ts - Basic skeleton - adding items - attempt one #diff[-1]
+```ts - Basic skeleton - adding items - attempt one #diff[-1] #id[before_tangent]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -309,7 +309,7 @@ Rather rendering n items, we're rendering 1 list, where each loop iteration rend
 This is exactly what we achieve with the `im.For` / `im.ForEnd` control-flow annotation.
 Let's try adding multiple items again:
 
-```ts - Basic skeleton - adding more items - working #diff[-3]
+```ts - Basic skeleton - adding more items - working #diff[before_tangent] #id[after_tangent]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -541,7 +541,7 @@ To make sure that they're actually updating, let's render
     a second copy of the list just below our inputs that should update
     in realtime.
 
-```ts - Basic skeleton - adding more items - editing #diff[-5]
+```ts - Basic skeleton - adding more items - editing #diff[after_tangent]
 import { ImCache, im, imdom, el, ev } from "im-js";
 
 const items = [
@@ -589,7 +589,9 @@ function imTodoList(c: ImCache) {
 
         imdom.ElBegin(c, el.BUTTON); {
             const clickEv = imdom.On(c, ev.CLICK);
-            if (clickEv) items.push("item " + (items.length + 1));
+            if (clickEv) {
+                items.push("item " + (items.length + 1));
+            }
             imdom.Str(c, "New Item");
         } imdom.ElEnd(c, el.BUTTON);
     } imdom.ElEnd(c, el.DIV);

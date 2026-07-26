@@ -104,7 +104,7 @@ function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumber
             handleColor = "#FF0000";
         } else if (block.type === ld.INSERT) {
             handleColor = "#00FF00";
-        } else if (block.type === ld.WHITESPACE) {
+        } else if (block.type === ld.INDENTATION) {
             handleColor = "#FF44FF";
         }
 
@@ -149,7 +149,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
         switch (block.type) {
             case ld.NONE: lineIdx++; break;
             case ld.INSERT: lineIdx++; break;
-            case ld.WHITESPACE: lineIdx++; break;
+            case ld.INDENTATION: lineIdx++; break;
             case ld.REMOVE: break;
         }
 
@@ -163,7 +163,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
                 case ld.NONE: currentBg       = ""; break;
                 case ld.INSERT: currentBg     = addCharBg; break;
                 case ld.REMOVE: currentBg     = rmCharBg; break;
-                case ld.WHITESPACE: currentBg = indentBg; break;
+                case ld.INDENTATION: currentBg = indentBg; break;
             }
             imui.Bg(c, currentBg);
 
@@ -176,7 +176,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
                 switch (block.type) {
                     case ld.INSERT: sign = " + "; break;
                     case ld.REMOVE: sign = " - "; break;
-                    case ld.WHITESPACE: {
+                    case ld.INDENTATION: {
                         const indentation = block.indentation[blockLineIdx];
                         sign = indentation > 0 ? "-> " : " <-";
                     } break;

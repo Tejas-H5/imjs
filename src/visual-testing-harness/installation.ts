@@ -1,9 +1,9 @@
-import { ImCacheRerenderFn, im, ImCache, imdom, el } from "im-js";
-import { inverseLerp } from "im-js/im-ui/components/math-utils";
-import { imui, BLOCK, CENTER, COL, cssVars, INLINE, NA, NONE, PX, ROW, STRETCH } from "im-js/im-ui";
-import { VisualTestHarnessState } from "./harness";
+import { el, im, ImCache, ImCacheRerenderFn, imdom } from "im-js";
+import { BLOCK, CENTER, COL, cssVars, imui, NA, NONE, PX, ROW, STRETCH } from "im-js/im-ui";
 import { imButtonIsClicked } from "im-js/im-ui/components/button";
-import * as ld from "line-diff";
+import { imCodeViewer } from "im-js/im-ui/components/im-blog-lang-viewer/im-code-viewer";
+import { inverseLerp } from "im-js/im-ui/components/math-utils";
+import { VisualTestHarnessState } from "./harness";
 
 export const TEST_CENTERED = (1 << 0);
 export const TEST_SCROLLABLE = (2 << 0);
@@ -104,57 +104,12 @@ export function imVisualTestInstallation(
                 }
             } imui.End(c);
 
-            const maxLineNumberSize = getMaxLineNumberSize(s.code.length);
-
-            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); imCodeStyle(c); {
-                if (im.If(c) && s.codeToDiffWith) {
-                    let diffBlocks = im.Get(c, ld.computeLines)
-                    if (!diffBlocks) {
-                        diffBlocks = im.Set(c, ld.computeLines(s.codeToDiffWith, s.code));
-                    }
-
-                    let lineIdx = 0;
-                    im.For(c); for (let blockIdx = 0; blockIdx < diffBlocks.length; blockIdx++) {
-                        const block = diffBlocks[blockIdx];
-                        lineIdx = imDiffBlock(c, block, lineIdx, maxLineNumberSize);
-                    } im.ForEnd(c);
-
-                } else {
-                    im.Else(c);
-
-                    // Regular code view
-
-                    im.For(c); for (let lineIdx = 0; lineIdx < s.code.length; lineIdx++) {
-                        const line = s.code[lineIdx];
-
-                        imLineNumber(c, lineIdx, maxLineNumberSize);
-                        imdom.Str(c, line);
-                        imdom.ElBegin(c, el.BR); imdom.ElEnd(c, el.BR);
-                    } im.ForEnd(c);
-                } im.IfEnd(c);
+            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
+                imCodeViewer(c, code ?? "", diff, 0);
             } imui.End(c);
         } imui.End(c);
     } imui.End(c);
 }
-
-
-function getMaxLineNumberSize(numLines: number) {
-    return Math.ceil(Math.log10(numLines));
-}
-
-function lineNumberToStr(num: number, maxLineNumberSize: number) {
-    num += 1;
-    if (isNaN(num)) {
-        return "" + num;
-    }
-    const lineWidth = Math.ceil(Math.log10(num + 1));
-    let str = "" + num;
-
-    for (let i = lineWidth; i < maxLineNumberSize; i++) {
-        str = "0" + str;
-    }
-    return str;
-};
 
 
 function formatCode(fnSource: string, srcTabSize: number): string[] {
@@ -224,152 +179,4 @@ function imRenderWithErrorBoundary2(
             im.Catch(c, tryState, err);
         } im.TryEnd(c, tryState);
     } im.SwitchEnd(c);
-}
-
-function imCodeStyle(c: ImCache) {
-    imui.Pre(c); 
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
-    if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
-    imui.Fg(c, cssVars.fg2);
-    imui.Bg(c, cssVars.bg2);
-}
-
-function imLineNumber(c: ImCache, lineIdx: number, maxLineNumberSize: number) {
-    imui.Begin(c, INLINE); {
-        if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
-        imdom.Str(c, " ");
-        imdom.Str(c, lineNumberToStr(lineIdx, maxLineNumberSize));
-        imdom.Str(c, " | ");
-    } imui.End(c);
-}
-
-function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumberSize: number): number {
-    let state = im.GetInline(c, imDiffBlock) ??
-        im.Set(c, { collapsed: true, canBeCollapsed: true });
-
-    if (im.Memo(c, block)) {
-        // Let's collapse unimportant blocks by default.
-        // Most of the time, I'm removing explanatory comments
-        // in the next example - they don't need to be there really.
-        let isImportant = true;
-        if (block.type === ld.REMOVE) {
-            isImportant = false;
-            for (const line of block.lines) {
-                if (line.trimStart().startsWith("//")) continue;
-                if (line.trim() === "") continue;
-                if (line.trim() === ")") continue;
-                if (line.trim() === "}") continue;
-                
-                isImportant = true;
-                break;
-            }
-        }
-
-        state.canBeCollapsed = !isImportant;
-    }
-
-    if (im.If(c) && state.canBeCollapsed) {
-        let handleColor = "#000000";
-        if (block.type === ld.REMOVE) {
-            handleColor = "#FF0000";
-        } else if (block.type === ld.INSERT) {
-            handleColor = "#00FF00";
-        } else if (block.type === ld.WHITESPACE) {
-            handleColor = "#FF44FF";
-        }
-
-        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 2, PX); {
-            imui.Bg(c, handleColor);
-        } imui.End(c);
-        imui.Begin(c, BLOCK); {
-            if (im.IsFirstRender(c)) {
-                imdom.setStyle(c, "transition", "height 2s linear");
-                imdom.setStyle(c, "cursor", "pointer");
-            }
-
-            if (imdom.hasMousePress(c)) {
-                state.collapsed = !state.collapsed;
-            }
-
-            if (im.If(c) && state.collapsed) {
-                imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 10, PX); {
-                    imui.Bg(c, handleColor);
-                    imui.Opacity(c, 0.2);
-                } imui.End(c);
-            } else {
-                im.Else(c);
-                lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
-            } im.IfEnd(c);
-        } imui.End(c);
-        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 2, PX); {
-            imui.Bg(c, handleColor);
-        } imui.End(c);
-    } else {
-        im.Else(c);
-        lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
-    } im.IfEnd(c);
-
-    return lineIdx;
-}
-
-
-function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumberSize: number): number {
-    im.For(c); for (let blockLineIdx = 0; blockLineIdx < block.lines.length; blockLineIdx++) {
-        const line = block.lines[blockLineIdx];
-        switch (block.type) {
-            case ld.NONE: lineIdx++; break;
-            case ld.INSERT: lineIdx++; break;
-            case ld.WHITESPACE: lineIdx++; break;
-            case ld.REMOVE: break;
-        }
-
-        imui.Begin(c, BLOCK); {
-            const addCharBg = "#55FF55"
-            const rmCharBg = "#FF9999";
-            const indentBg = "#FF88FF";
-
-            let currentBg = "";
-            switch (block.type) {
-                case ld.NONE: currentBg       = ""; break;
-                case ld.INSERT: currentBg     = addCharBg; break;
-                case ld.REMOVE: currentBg     = rmCharBg; break;
-                case ld.WHITESPACE: currentBg = indentBg; break;
-            }
-            imui.Bg(c, currentBg);
-
-            imui.Begin(c, INLINE); {
-                if (im.IsFirstRender(c)) {
-                    imdom.setStyle(c, "userSelect", "none");
-                }
-
-                let sign = "   ";
-                switch (block.type) {
-                    case ld.INSERT: sign = " + "; break;
-                    case ld.REMOVE: sign = " - "; break;
-                    case ld.WHITESPACE: {
-                        const indentation = block.indentation[blockLineIdx];
-                        sign = indentation > 0 ? "-> " : " <-";
-                    } break;
-                }
-                imdom.Str(c, sign);
-            } imui.End(c);
-
-            imLineNumber(c, lineIdx, maxLineNumberSize);
-
-            imui.Begin(c, INLINE); {
-                if (im.Memo(c, block.type)) {
-                    // It's important that we can copy code from the examples.
-                    // When removals are interlaced with inserts and normal blocks,
-                    // we only want to select the 'current' code, and that will just be
-                    // non-removals
-                    const canSelect = block.type !== ld.REMOVE;
-                    imdom.setStyle(c, "userSelect", canSelect ? "" : "none");
-                }
-
-                imdom.Str(c, line);
-            } imui.End(c);
-        } imui.End(c);
-    } im.ForEnd(c);
-
-    return lineIdx;
 }

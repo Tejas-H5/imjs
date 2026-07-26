@@ -1154,9 +1154,9 @@ from an enemy bullet.
 
 
 ```ts - Enemies to start shooting back #diff[-1]
-const PLAYER = 0; 
-const BULLET = 1; 
-const ENEMY = 2; 
+const PLAYER = 0;
+const BULLET = 1;
+const ENEMY = 2;
 const ENEMY_BULLET = 3;
 function typeToSymbol(t: number): string {
     switch(t) {
