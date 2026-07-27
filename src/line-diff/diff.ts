@@ -106,11 +106,255 @@ function getRepeatedLines(lines: string[], seen: Set<string>, repeated: Set<stri
     }
 }
 
+function longestCommonSubsequence(
+    aLines: string[], bLines: string[],
+    aStart: number, aEnd: number,
+    bStart: number, bEnd: number,
+): [number, number, number] {
+    let aLcsStart = 0;
+    let bLcsStart = 0;
+    let len = 0;
+
+    for (let aIdx = aStart; aIdx < aEnd; aIdx++) {
+        for (let bIdx = bStart; bIdx < bEnd; bIdx++) {
+            if (aLines[aIdx] !== bLines[bIdx]) continue;
+
+            let length = -1;
+            for (
+                let k = 0; 
+                (aIdx + k < aEnd) && (bIdx + k < bEnd);
+                k++
+            ) { 
+                if (aLines[aIdx + k] !== bLines[bIdx + k]) {
+                    break;
+                } else {
+                    length = k;
+                }
+            }
+
+            if (length > len) {
+                len = length;
+                aLcsStart = aIdx;
+                bLcsStart = bIdx;
+            }
+        }
+    }
+
+    return [aLcsStart, bLcsStart, len];
+}
+
+function findLines(lines: string[], queryLines: string[]): number {
+    if (queryLines.length === 0) {
+        return -1;
+    }
+
+    for (let i = 0; i < lines.length - queryLines.length; i++) {
+        if (lines[i] !== queryLines[0]) continue;
+
+        let found = true;
+        for (let j = 0; j < queryLines.length; j++) {
+            if (lines[i + j] !== queryLines[j]) {
+                found = false;
+                break;
+            }
+        }
+
+        if (found) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+export function computeLines(aLines: string[], bLines: string[]): Block[] {
+    aLines = aLines.map(l => l.trimEnd());
+    bLines = bLines.map(l => l.trimEnd());
+
+    let result: Block[] = [];
+
+    function dfs(
+        aStart: number, aEnd: number,
+        bStart: number, bEnd: number
+    ) {
+        if (aStart === aEnd && bStart === bEnd) {
+            return;
+        }
+
+        const [aLcsStart, bLcsStart, len] 
+            = longestCommonSubsequence(aLines, bLines, aStart, aEnd, bStart, bEnd);
+
+        if (len === 0) {
+            if (aStart !== aEnd) {
+                result.push({type: REMOVE, lines: aLines.slice(aStart, aEnd)});
+            }
+            if (bStart !== bEnd) {
+                result.push({type: INSERT, lines: bLines.slice(bStart, bEnd)});
+            }
+            return;
+        }
+
+        dfs(aStart, aLcsStart, bStart, bLcsStart);
+
+        result.push({type: NONE, lines: aLines.slice(aLcsStart, aLcsStart + len)});
+
+        dfs(aLcsStart + len, aEnd, bLcsStart + len, bEnd);
+    }
+    dfs(0, aLines.length, 0, bLines.length);
+
+    result = coalesceBlocks(result);
+
+    // Optimize diffs
+    let optimized = true;
+    while (optimized) {
+        optimized = false;
+        const dst: Block[] = [];
+
+        for (let i = 0; i < result.length; i++) {
+            const curr = result[i];
+            if (i < result.length - 1) {
+                const next = result[i + 1];
+
+                if (curr.type === REMOVE && next.type === INSERT) {
+                    let currLines = curr.lines;
+                    let nextLines = next.lines;
+
+                    // Trim the common prefixes of two adjacent diffs (top)
+                    {
+                        let commonPrefixLen = 0;
+                        for (let i = 0; i < currLines.length && i < nextLines.length; i++) {
+                            if (currLines[i] !== nextLines[i]) break;
+                            commonPrefixLen = i + 1;
+                        }
+                        if (commonPrefixLen > 0) {
+                            dst.push({type: NONE, lines: currLines.slice(0, commonPrefixLen) });
+                            currLines = currLines.slice(commonPrefixLen);
+                            nextLines = nextLines.slice(commonPrefixLen);
+                        }
+                    }
+
+                    // Trim the common suffixes of two adjacent diffs
+                    let suffixBlock: Block | undefined; 
+                    {
+                        let commonSuffixLen = 0;
+                        for (let i = 0; i < currLines.length && i < nextLines.length; i++) {
+                            if (currLines[currLines.length - 1 - i] !== nextLines[nextLines.length - 1 - i]) {
+                                break;
+                            }
+                            commonSuffixLen = i + 1;
+                        }
+                        if (commonSuffixLen > 0) {
+                            suffixBlock = { type: NONE, lines: currLines.slice(currLines.length - commonSuffixLen) };
+                            currLines = currLines.slice(0, currLines.length - commonSuffixLen + 1)
+                            nextLines = nextLines.slice(0, nextLines.length - commonSuffixLen + 1)
+                        }
+                    }
+
+                    // Trim the part where the diffs meet.
+                    // -console.log(a)
+                    // -console.log(b)
+                    // -console.log(c)
+                    // -console.log(f)
+                    // +console.log(b)
+                    // +console.log(c)
+                    // +console.log(d)
+                    // +console.log(e)
+                    // -> 
+                    // -console.log(a)
+                    // console.log(b)
+                    // console.log(c)
+                    // -console.log(f)
+                    // +console.log(d)
+                    // +console.log(e)
+                    // NOTE: the diffs are no longer touching, so 
+                    // we can't apply the next optimization.
+                    // In fact, I think the next optimization is
+                    // a subset of this one, so we can just delete it once
+                    // we've coded this.
+                    {
+                    }
+
+                    // Apply current edits so far
+                    curr.lines = currLines;
+                    next.lines = nextLines;
+
+                    // If an insert block and a removal block are adjacent to 
+                    // one-another, and the insert is wholly contained in the
+                    // removal, we can actually combine the insertion and removal
+                    // into two smaller removals.
+                    //
+                    // - console.log(a)
+                    // - console.log(b)
+                    // - console.log(c)
+                    // + console.log(b)
+                    // ->
+                    // - console.log(a)
+                    //   console.log(b)
+                    // - console.log(c)
+                    {
+                        if (currLines.length > 0 && nextLines.length > 0) {
+                            const pos = findLines(currLines, nextLines);
+                            if (pos !== -1) {
+                                if (pos !== 0) {
+                                    dst.push({type: REMOVE, lines: currLines.slice(0, pos)});
+                                }
+
+                                dst.push({type: NONE, lines: nextLines});
+
+                                dst.push({type: REMOVE, lines: currLines.slice(pos + nextLines.length)});
+
+                                optimized = true;
+                                // Skip the next block
+                                i++;
+                                continue;
+                            }
+                        }
+                    }
+
+                    if (suffixBlock) {
+                        dst.push(suffixBlock);
+                    }
+                }
+            }
+
+            dst.push(curr);
+        }
+
+        result = dst;
+    }
+
+    result = coalesceBlocks(result);
+
+    filterInPlace(result, r => r.lines.length > 0);
+
+    return result;
+}
+
+function coalesceBlocks(result: Block[]): Block[] {
+    const dst: Block[] = [];
+
+    for (let i = 0; i < result.length; i++) {
+        const curr = result[i];
+
+        if (i < result.length - 1) {
+            const next = result[i + 1];
+            if (curr.type !== WHITESPACE && curr.type === next.type) {
+                dst.push({type: curr.type, lines: [...curr.lines, ...next.lines] });
+                continue;
+            }
+        }
+
+        dst.push(curr);
+    }
+
+    return dst;
+}
+
 // NOTE: It turns out, we have independently re-derived the 'patience' diff.
 // Turns out that this is actually a pretty good algorithm! nice.
 // If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
 // TODO: write this in a performant way
-export function computeLines(aLines: string[], bLines: string[], depth = 0): Block[] {
+export function computeLinesOld(aLines: string[], bLines: string[], depth = 0): Block[] {
     aLines = aLines.map(l => l.trimEnd());
     bLines = bLines.map(l => l.trimEnd());
 
@@ -341,4 +585,12 @@ function lineIdxWhereCodeBlockEnds(
     }
 
     return -1;
+}
+
+function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
+    let i2 = 0;
+    for (let i = 0; i < arr.length; i++) {
+        if (predicate(arr[i], i)) arr[i2++] = arr[i];
+    }
+    arr.length = i2;
 }

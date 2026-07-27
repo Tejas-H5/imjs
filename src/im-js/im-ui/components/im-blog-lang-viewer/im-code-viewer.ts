@@ -139,6 +139,9 @@ function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumber
         lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
     } im.IfEnd(c);
 
+    // imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 10, PX); imui.Bg(c, "black"); {
+    // } imui.End(c);
+
     return lineIdx;
 }
 

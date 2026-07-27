@@ -383,7 +383,7 @@ function imRootEnd(c: ImCache, root: ValidElement) {
 /**
  * If you will only ever have a single root (majority of usecases), this is the one to use.
  * If you need multiple roots for some reason, then you want a call to {@link imRootBegin}/{@link imRootEnd}
- * per-root, and just a single call to {@link imGlobalEventSystemPoll}/{@link imGlobalEventSystemEnd}
+ * per-root, and just a single call to {@link imGlobalEventSystemPoll}
  */
 function imDomBegin(c: ImCache, singleRoot: HTMLElement) {
     imGlobalEventSystemPoll(c);
