@@ -128,7 +128,7 @@ function longestCommonSubsequence(
                 if (aLines[aIdx + k] !== bLines[bIdx + k]) {
                     break;
                 } else {
-                    length = k;
+                    length = k + 1;
                 }
             }
 
@@ -173,34 +173,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
 
     let result: Block[] = [];
 
-    function dfs(
-        aStart: number, aEnd: number,
-        bStart: number, bEnd: number
-    ) {
-        if (aStart === aEnd && bStart === bEnd) {
-            return;
-        }
-
-        const [aLcsStart, bLcsStart, len] 
-            = longestCommonSubsequence(aLines, bLines, aStart, aEnd, bStart, bEnd);
-
-        if (len === 0) {
-            if (aStart !== aEnd) {
-                result.push({type: REMOVE, lines: aLines.slice(aStart, aEnd)});
-            }
-            if (bStart !== bEnd) {
-                result.push({type: INSERT, lines: bLines.slice(bStart, bEnd)});
-            }
-            return;
-        }
-
-        dfs(aStart, aLcsStart, bStart, bLcsStart);
-
-        result.push({type: NONE, lines: aLines.slice(aLcsStart, aLcsStart + len)});
-
-        dfs(aLcsStart + len, aEnd, bLcsStart + len, bEnd);
-    }
-    dfs(0, aLines.length, 0, bLines.length);
+    diffInternal(aLines, bLines, 0, aLines.length, 0, bLines.length, result);
 
     result = coalesceBlocks(result);
 
@@ -216,6 +189,8 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 const next = result[i + 1];
 
                 if (curr.type === REMOVE && next.type === INSERT) {
+                    {
+
                     let currLines = curr.lines;
                     let nextLines = next.lines;
 
@@ -291,7 +266,7 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                     // - console.log(a)
                     //   console.log(b)
                     // - console.log(c)
-                    {
+                    if (false) {
                         if (currLines.length > 0 && nextLines.length > 0) {
                             const pos = findLines(currLines, nextLines);
                             if (pos !== -1) {
@@ -311,8 +286,20 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                         }
                     }
 
+                    if (currLines.length > 0 && nextLines.length > 0) {
+                        diffInternal(
+                            currLines, nextLines,
+                            0, curr.lines.length,
+                            0, next.lines.length,
+                            dst
+                        );
+                        i++;
+                        continue;
+                    }
+
                     if (suffixBlock) {
                         dst.push(suffixBlock);
+                    }
                     }
                 }
             }
@@ -328,6 +315,36 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
     filterInPlace(result, r => r.lines.length > 0);
 
     return result;
+}
+
+function diffInternal(
+    aLines: string[], bLines: string[],
+    aStart: number, aEnd: number,
+    bStart: number, bEnd: number,
+    result: Block[],
+) {
+    if (aStart === aEnd && bStart === bEnd) {
+        return;
+    }
+
+    const [aLcsStart, bLcsStart, len] 
+        = longestCommonSubsequence(aLines, bLines, aStart, aEnd, bStart, bEnd);
+
+    if (len === 0) {
+        if (aStart !== aEnd) {
+            result.push({type: REMOVE, lines: aLines.slice(aStart, aEnd)});
+        }
+        if (bStart !== bEnd) {
+            result.push({type: INSERT, lines: bLines.slice(bStart, bEnd)});
+        }
+        return;
+    }
+
+    diffInternal(aLines, bLines, aStart, aLcsStart, bStart, bLcsStart, result);
+
+    result.push({type: NONE, lines: aLines.slice(aLcsStart, aLcsStart + len)});
+
+    diffInternal(aLines, bLines, aLcsStart + len, aEnd, bLcsStart + len, bEnd, result);
 }
 
 function coalesceBlocks(result: Block[]): Block[] {
