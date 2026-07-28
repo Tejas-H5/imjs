@@ -3,12 +3,12 @@
 // want to manually highlight every change you've made - 
 // this can automate that work away a bit.
 
+import { assert } from "assert";
+
 export const NONE   = 0;     // lines equal in both text
 export const INSERT = 1;     // lines inserted in the new text
 export const REMOVE = 2;     // lines removed from the old text
-export const WHITESPACE = 3; // lines that are not equal, but become equal after calling .trim() on them
-
-// TODO: Detect identical remove/insert pairs, and mark them as moves. 
+export const INDENTATION = 3; // lines that are not equal, but become equal after calling .trim() on them
 
 export type Block = 
  | NormalBlock
@@ -26,7 +26,7 @@ export type NormalBlock = BaseBlock & {
 }
 
 export type IndentationBlock = BaseBlock & {
-    type:  typeof WHITESPACE;
+    type:  typeof INDENTATION;
     indentation: number[];
 }
 
@@ -52,7 +52,7 @@ export function toString(diff: Block[], insertChar="+", removeChar="-"): string 
                 case INSERT:    sb.push(insertChar); break;
                 case REMOVE:    sb.push(removeChar); break;
                 case NONE:      sb.push(""); break;
-                case WHITESPACE: {
+                case INDENTATION: {
                     sb.push(block.indentation[lineIdx] < 0 ? "<" : ">"); 
                 } break;
             }
@@ -62,51 +62,7 @@ export function toString(diff: Block[], insertChar="+", removeChar="-"): string 
     return sb.join("");
 }
 
-// This is why I write all my stuff from scratch when I can instead of importing libraries.
-// The diff completely makes or breaks how hard it is to comprehend a code change.
-// A diff library needs to be 100% general, and cannot include carve-outs that
-// are useful to you, as they are 'incorrect' in a more general sense.
-const knownBadDiffAnchors = [
-    "return", "return;",
-    "continue", "continue;",
-    "break", "break;",
-    "}", "};",
-    ")", ");",
-    "})", "});",
-    "",
-];
-
-function isBadDiffAnchor(repeatedLines: Set<string>, line: string): boolean {
-    line = line.trim();
-
-    if (repeatedLines.has(line)) {
-        // Any lines that occur multiple times in either set shouldn't be used to know when a particular section
-        // in line a or line b has begun/end. This is because when we find them, we can't tell _which_ one we've hit, 
-        // so we may end or start a diff far earlier than we actually should have, causing in a diff that's way more
-        // bloated than it needs to be.
-        return true;
-    }
-
-    if (knownBadDiffAnchors.includes(line)) {
-        return true;
-    }
-
-    return false;
-}
-
-function getRepeatedLines(lines: string[], seen: Set<string>, repeated: Set<string>) {
-    for (let line of lines) {
-        line = line.trim();
-        if (!seen.has(line)) {
-            seen.add(line);
-            continue;
-        }
-
-        repeated.add(line);
-    }
-}
-
-function longestCommonSubsequence(
+function longestCommonSubsequenceScored(
     aLines: string[], bLines: string[],
     aStart: number, aEnd: number,
     bStart: number, bEnd: number,
@@ -114,26 +70,34 @@ function longestCommonSubsequence(
     let aLcsStart = 0;
     let bLcsStart = 0;
     let len = 0;
+    let score = 0;
 
     for (let aIdx = aStart; aIdx < aEnd; aIdx++) {
         for (let bIdx = bStart; bIdx < bEnd; bIdx++) {
-            if (aLines[aIdx] !== bLines[bIdx]) continue;
+            if (aLines[aIdx].trim() !== bLines[bIdx].trim()) continue;
 
             let length = -1;
+            let thisScore = 0;
             for (
                 let k = 0; 
                 (aIdx + k < aEnd) && (bIdx + k < bEnd);
                 k++
             ) { 
-                if (aLines[aIdx + k] !== bLines[bIdx + k]) {
+                // This diff will be whitespace start/end insensitive.
+                // We'll figure out the difference between whitespace and indentation 
+                // blocks at the end.
+                const thisLine = aLines[aIdx + k].trim();
+                if (thisLine !== bLines[bIdx + k].trim()) {
                     break;
                 } else {
                     length = k + 1;
+                    thisScore += thisLine.length;
                 }
             }
 
-            if (length > len) {
+            if (thisScore > score) {
                 len = length;
+                score = thisScore;
                 aLcsStart = aIdx;
                 bLcsStart = bIdx;
             }
@@ -143,44 +107,18 @@ function longestCommonSubsequence(
     return [aLcsStart, bLcsStart, len];
 }
 
-function findLines(lines: string[], queryLines: string[]): number {
-    if (queryLines.length === 0) {
-        return -1;
-    }
-
-    for (let i = 0; i < lines.length - queryLines.length; i++) {
-        if (lines[i] !== queryLines[0]) continue;
-
-        let found = true;
-        for (let j = 0; j < queryLines.length; j++) {
-            if (lines[i + j] !== queryLines[j]) {
-                found = false;
-                break;
-            }
-        }
-
-        if (found) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
 export function computeLines(aLines: string[], bLines: string[]): Block[] {
     aLines = aLines.map(l => l.trimEnd());
     bLines = bLines.map(l => l.trimEnd());
 
     let result: Block[] = [];
 
+    // First pass
     diffInternal(aLines, bLines, 0, aLines.length, 0, bLines.length, result);
 
-    result = coalesceBlocks(result);
-
-    // Optimize diffs
-    let optimized = true;
-    while (optimized) {
-        optimized = false;
+    // Optimize diffs - find touching insert/remove blocks, and re-run the diff
+    // algorithm on them. I've found that I don't need to do this recursively (so far)
+    {
         const dst: Block[] = [];
 
         for (let i = 0; i < result.length; i++) {
@@ -189,117 +127,15 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
                 const next = result[i + 1];
 
                 if (curr.type === REMOVE && next.type === INSERT) {
-                    {
-
-                    let currLines = curr.lines;
-                    let nextLines = next.lines;
-
-                    // Trim the common prefixes of two adjacent diffs (top)
-                    {
-                        let commonPrefixLen = 0;
-                        for (let i = 0; i < currLines.length && i < nextLines.length; i++) {
-                            if (currLines[i] !== nextLines[i]) break;
-                            commonPrefixLen = i + 1;
-                        }
-                        if (commonPrefixLen > 0) {
-                            dst.push({type: NONE, lines: currLines.slice(0, commonPrefixLen) });
-                            currLines = currLines.slice(commonPrefixLen);
-                            nextLines = nextLines.slice(commonPrefixLen);
-                        }
-                    }
-
-                    // Trim the common suffixes of two adjacent diffs
-                    let suffixBlock: Block | undefined; 
-                    {
-                        let commonSuffixLen = 0;
-                        for (let i = 0; i < currLines.length && i < nextLines.length; i++) {
-                            if (currLines[currLines.length - 1 - i] !== nextLines[nextLines.length - 1 - i]) {
-                                break;
-                            }
-                            commonSuffixLen = i + 1;
-                        }
-                        if (commonSuffixLen > 0) {
-                            suffixBlock = { type: NONE, lines: currLines.slice(currLines.length - commonSuffixLen) };
-                            currLines = currLines.slice(0, currLines.length - commonSuffixLen + 1)
-                            nextLines = nextLines.slice(0, nextLines.length - commonSuffixLen + 1)
-                        }
-                    }
-
-                    // Trim the part where the diffs meet.
-                    // -console.log(a)
-                    // -console.log(b)
-                    // -console.log(c)
-                    // -console.log(f)
-                    // +console.log(b)
-                    // +console.log(c)
-                    // +console.log(d)
-                    // +console.log(e)
-                    // -> 
-                    // -console.log(a)
-                    // console.log(b)
-                    // console.log(c)
-                    // -console.log(f)
-                    // +console.log(d)
-                    // +console.log(e)
-                    // NOTE: the diffs are no longer touching, so 
-                    // we can't apply the next optimization.
-                    // In fact, I think the next optimization is
-                    // a subset of this one, so we can just delete it once
-                    // we've coded this.
-                    {
-                    }
-
-                    // Apply current edits so far
-                    curr.lines = currLines;
-                    next.lines = nextLines;
-
-                    // If an insert block and a removal block are adjacent to 
-                    // one-another, and the insert is wholly contained in the
-                    // removal, we can actually combine the insertion and removal
-                    // into two smaller removals.
-                    //
-                    // - console.log(a)
-                    // - console.log(b)
-                    // - console.log(c)
-                    // + console.log(b)
-                    // ->
-                    // - console.log(a)
-                    //   console.log(b)
-                    // - console.log(c)
-                    if (false) {
-                        if (currLines.length > 0 && nextLines.length > 0) {
-                            const pos = findLines(currLines, nextLines);
-                            if (pos !== -1) {
-                                if (pos !== 0) {
-                                    dst.push({type: REMOVE, lines: currLines.slice(0, pos)});
-                                }
-
-                                dst.push({type: NONE, lines: nextLines});
-
-                                dst.push({type: REMOVE, lines: currLines.slice(pos + nextLines.length)});
-
-                                optimized = true;
-                                // Skip the next block
-                                i++;
-                                continue;
-                            }
-                        }
-                    }
-
-                    if (currLines.length > 0 && nextLines.length > 0) {
+                    if (curr.lines.length > 0 && next.lines.length > 0) {
                         diffInternal(
-                            currLines, nextLines,
+                            curr.lines, next.lines,
                             0, curr.lines.length,
                             0, next.lines.length,
                             dst
                         );
                         i++;
                         continue;
-                    }
-
-                    if (suffixBlock) {
-                        dst.push(suffixBlock);
-                    }
                     }
                 }
             }
@@ -310,9 +146,8 @@ export function computeLines(aLines: string[], bLines: string[]): Block[] {
         result = dst;
     }
 
+    // Coalesce blocks
     result = coalesceBlocks(result);
-
-    filterInPlace(result, r => r.lines.length > 0);
 
     return result;
 }
@@ -328,7 +163,7 @@ function diffInternal(
     }
 
     const [aLcsStart, bLcsStart, len] 
-        = longestCommonSubsequence(aLines, bLines, aStart, aEnd, bStart, bEnd);
+        = longestCommonSubsequenceScored(aLines, bLines, aStart, aEnd, bStart, bEnd);
 
     if (len === 0) {
         if (aStart !== aEnd) {
@@ -342,7 +177,36 @@ function diffInternal(
 
     diffInternal(aLines, bLines, aStart, aLcsStart, bStart, bLcsStart, result);
 
-    result.push({type: NONE, lines: aLines.slice(aLcsStart, aLcsStart + len)});
+    // Push NONE/WHITESPACE based on whether the lines are equal, or equal after calling trim()
+    {
+        let k = 0;
+        while (k < len) {
+            const kStart = k;
+            if (aLines[aLcsStart + k] !== bLines[bLcsStart + k]) {
+                while (k < len && aLines[aLcsStart + k] !== bLines[bLcsStart + k]) {
+                    k++;
+                }
+
+                const lines = bLines.slice(bLcsStart + kStart, bLcsStart + k);
+
+                const indentation: number[] = [];
+                for (let i = kStart; i < k; i++) {
+                    const aLine = aLines[aLcsStart + i];
+                    const bLine = lines[i - kStart];
+                    const indent = bLine.length - aLine.length;
+                    indentation.push(indent);
+                }
+
+                result.push({type: INDENTATION, lines: lines, indentation: indentation});
+            } else if (aLines[aLcsStart + k] === bLines[bLcsStart + k]) {
+                while (k < len && aLines[aLcsStart + k] === bLines[bLcsStart + k]) {
+                    k++;
+                }
+
+                result.push({type: NONE, lines: aLines.slice(aLcsStart + kStart, aLcsStart + k)});
+            }
+        }
+    }
 
     diffInternal(aLines, bLines, aLcsStart + len, aEnd, bLcsStart + len, bEnd, result);
 }
@@ -355,7 +219,7 @@ function coalesceBlocks(result: Block[]): Block[] {
 
         if (i < result.length - 1) {
             const next = result[i + 1];
-            if (curr.type !== WHITESPACE && curr.type === next.type) {
+            if (curr.type !== INDENTATION && curr.type === next.type) {
                 dst.push({type: curr.type, lines: [...curr.lines, ...next.lines] });
                 continue;
             }
@@ -365,249 +229,4 @@ function coalesceBlocks(result: Block[]): Block[] {
     }
 
     return dst;
-}
-
-// NOTE: It turns out, we have independently re-derived the 'patience' diff.
-// Turns out that this is actually a pretty good algorithm! nice.
-// If you are building tooling, and you think your diff algorithm is not so good, pls pls copy this one
-// TODO: write this in a performant way
-export function computeLinesOld(aLines: string[], bLines: string[], depth = 0): Block[] {
-    aLines = aLines.map(l => l.trimEnd());
-    bLines = bLines.map(l => l.trimEnd());
-
-    let aIdx = 0, bIdx = 0;
-    let aIdxLast = 0, bIdxLast = 0;
-
-    const repeatedLines = new Set<string>();
-
-    const seenLines = new Set<string>();
-    getRepeatedLines(aLines, seenLines, repeatedLines);
-
-    seenLines.clear();
-    getRepeatedLines(aLines, seenLines, repeatedLines);
-
-    const diff: Block[] = [];
-
-    while (aIdx < aLines.length || bIdx < bLines.length) {
-        const aLine = aLines[aIdx];
-        const bLine = bLines[bIdx];
-        aIdxLast = aIdx;
-        bIdxLast = bIdx;
-
-        if (!(aIdx < aLines.length && bIdx < bLines.length)) {
-            if (aIdx === aLines.length && bIdx === bLines.length) {
-                break;
-            }
-            if (aIdx === aLines.length && bIdxLast !== bLines.length) {
-                const insertion: Block = {
-                    lines: bLines.slice(bIdxLast),
-                    type:  INSERT,
-                };
-                diff.push(insertion);
-                break
-            }
-            if (bIdx === bLines.length && aIdxLast !== aLines.length) {
-                const removal: Block = {
-                    lines: aLines.slice(aIdxLast),
-                    type:  REMOVE,
-                };
-                diff.push(removal);
-                break
-            }
-            break;
-        }
-
-        if (aLine === bLine) {
-            // Collect equal lines
-            while (aIdx < aLines.length && bIdx < bLines.length) {
-                const aLine = aLines[aIdx];
-                const bLine = bLines[bIdx];
-                if (aLine !== bLine) {break;}
-                aIdx++; bIdx++;
-            }
-
-            if (aIdx !== aIdxLast) {
-                diff.push({
-                    type: NONE,
-                    lines: aLines.slice(aIdxLast, aIdx),
-                });
-            }
-            continue;
-        }
-
-        if (aLine.trim() === bLine.trim()) {
-            // Collect whitespace-equal lines
-            while (aIdx < aLines.length && bIdx < bLines.length) {
-                const aLine = aLines[aIdx];
-                const bLine = bLines[bIdx];
-                if (aLine === bLine) {
-                    // No longer whitespace-equal
-                    break;
-                }
-                if (aLine.trim() !== bLine.trim()) {break;}
-                aIdx++; bIdx++;
-            }
-
-            if (aIdx !== aIdxLast) {
-                const lines = bLines.slice(bIdxLast, bIdx);
-                const indentation = new Array(lines.length).fill(0);
-                for (let i = 0; i < lines.length; i++) {
-                    indentation[i] = lines[i].length - aLines[aIdxLast + i].length;
-                }
-                diff.push({
-                    type: WHITESPACE,
-                    lines: lines,
-                    indentation: indentation,
-                });
-            }
-            continue;
-        }
-
-        // Collect removals and inserts
-        let aLineAnchor = aLines.length;
-        let bLineAnchor = bLines.length;
-        for (let a2 = aIdx; a2 < aLines.length; a2++) {
-            for (let b2 = bIdx; b2 < bLineAnchor; b2++) {
-                const a2Line = aLines[a2];
-                const b2Line = bLines[b2];
-
-                if (
-                    isBadDiffAnchor(repeatedLines, a2Line.trim()) || 
-                    isBadDiffAnchor(repeatedLines, b2Line.trim())
-                ) {
-                    continue
-                }
-
-                if (a2Line.trim() !== b2Line.trim()) {
-                    continue;
-                }
-
-                // const REQUIRED_EQUAL_LINES = 1;
-                // if (!compareLines(aLines, bLines, a2, b2, REQUIRED_EQUAL_LINES)) {
-                //     continue;
-                // }
-
-                // We want to find the closest anchor, basically.
-                if (b2 < bLineAnchor) {
-                    aLineAnchor = a2;
-                    bLineAnchor = b2;
-                    break;
-                }
-            }
-        }
-
-        // Trim the ends of the anchor before we start adding
-        while (aLineAnchor > aIdx && bLineAnchor > bIdx) {
-            if (aLines[aLineAnchor-1] !== bLines[bLineAnchor-1]) {
-                break;
-            }
-            aLineAnchor--;
-            bLineAnchor--;
-        }
-        aIdx = aLineAnchor;
-        bIdx = bLineAnchor;
-
-        // Collect lines we added and removed
-        if (aIdxLast !== aIdx) {
-            const removed = aLines.slice(aIdxLast, aIdx);
-            diff.push({ type: REMOVE, lines: removed });
-        }
-
-        if (bIdxLast !== bIdx) {
-            const inserted = bLines.slice(bIdxLast, bIdx);
-            diff.push({ type: INSERT, lines: inserted });
-        }
-    }
-
-    // Recursively improve the diff.
-    if (depth <= 2) {
-        for (let i = 1; i < diff.length; i++) {
-            const curr = diff[i];
-            const prev = diff[i - 1];
-
-            if (curr.type === INSERT && prev.type === REMOVE) {
-                // Very big brain. The diff will be better, because there will
-                // be fewer bad anchors in repeatedLines, since the region
-                // is going to be more localised. 
-                const recursion = computeLines(prev.lines, curr.lines, depth + 1)
-                diff.splice(i - 1, 2, ...recursion); // splice is a suspiciously useful operation.
-                i += recursion.length - 2;
-            }
-        }
-    }
-
-    // improve diff order
-    {
-        for (let i = 1; i < diff.length; i++) {
-            const curr = diff[i];
-            const prev = diff[i - 1];
-
-            if (curr.type === INSERT && prev.type === REMOVE) {
-                // I'd like any insertion that is closing off a code block that comes before it
-                // to appear before a removal. That way, if we added code above and
-                // below a code block, the code that was inserted remains visually intact. 
-                // The removals are far less importan than the insertions usually, and
-                // if you have an easier time understanding the insertions, it'll
-                // give you additional context that makes understanding the removals easier too.
-
-                const idx = lineIdxWhereCodeBlockEnds(prev, "({[", ")}]");
-                if (idx !== -1) {
-                    // Huge brain move - split this insertion and removal into two blocks, such
-                    // that the closing block can still appear before the removal,
-                    // BUT the next insertion still appears where it is supposed to appear.
-
-                    const tmp = diff[i - 1];
-                    diff[i - 1] = diff[i];
-                    diff[i] = tmp;
-                }
-            }
-        }
-    }
-
-    return diff;
-}
-
-function lineIdxWhereCodeBlockEnds(
-    block: Block,
-    openingComponents: string,
-    closingComponents: string,
-): number {
-    let numOpen = 0;
-
-    for (let lineIdx = 0; lineIdx < block.lines.length; lineIdx++) {
-        const line = block.lines[lineIdx];
-        for (let cLineIdx = 0; cLineIdx < line.length; cLineIdx++) {
-            const cLine = line[cLineIdx];
-
-            for (let cIdx = 0; cIdx < openingComponents.length; cIdx++) {
-                const c = openingComponents[cIdx];
-                if (c === cLine) {
-                    numOpen++;
-                    break;
-                }
-            }
-
-            for (let cIdx = 0; cIdx < closingComponents.length; cIdx++) {
-                const c = closingComponents[cIdx];
-                if (c === cLine) {
-                    numOpen--;
-                    break;
-                }
-            }
-
-            if (numOpen < 0) {
-                return lineIdx;
-            }
-        }
-    }
-
-    return -1;
-}
-
-function filterInPlace<T>(arr: T[], predicate: (v: T, i: number) => boolean) {
-    let i2 = 0;
-    for (let i = 0; i < arr.length; i++) {
-        if (predicate(arr[i], i)) arr[i2++] = arr[i];
-    }
-    arr.length = i2;
 }

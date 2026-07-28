@@ -13,20 +13,21 @@ imDivBegin(); {
         // OMG
     } imDivEnd();
 } imDivEnd();
-imDivBegin(); {
     imDivBegin(); {
-        // OMG
+        imDivBegin(); {
+            // OMG
+        } imDivEnd();
     } imDivEnd();
-} imDivEnd();
 ```
 
 
 ```ts - Moving the player around #diff[-1]
 imDivBegin(); {
-        // OMG
     imDivBegin(); {
+        // OMG
     } imDivEnd();
 } imDivEnd();
+
 imDivBegin(); {
     imDivBegin(); {
         // OMG
