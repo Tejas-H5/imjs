@@ -59,7 +59,7 @@ export function imCodeViewer(
 }
 
 function imCodeStyle(c: ImCache) {
-    imui.Pre(c); 
+    imui.PreWrap(c); 
     if (im.IsFirstRender(c)) imdom.setStyle(c, "fontFamily", "monospace");
     if (im.IsFirstRender(c)) imdom.setStyle(c, "tabSize", "4");
     imui.Fg(c, cssVars.fg2);

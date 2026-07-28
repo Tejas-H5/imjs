@@ -115,15 +115,21 @@ function imTodoList(c: ImCache) {
 
 ```
 
-Unlike other frameworks, this one wholly rejects the idea that all state must be immutable, 
-    and that UI is literally some kind of pure function of state.
-I would argue that rendering to a buffer by incrementing an index, and then
-    resetting that index back to 0 and doing it again, while being impure by nature,
-    is in practice the same thing - but a hell of a lot faster.
+Looks pretty verbose. Such is the cost of not using JSX, and using namespace objects.
+But you will notice that it is all `TypeScript`/`JavaScript`!
+Creating abstractions, then, is (almost) the same as extracting common/repeating
+    logic into their own functions.
+The `c: ImCache` immediate-mode cache variable is actually doing a lot of heavy lifting here - 
+    this is where all the state lives.
+It's what allows the callsites that created DOM nodes on the first render to reuse them
+    on subsequent renders!
+The mechanism works a lot like React hooks (I think) - not because I compared the source
+    code, but because restrictions very similar to the 'rule of hooks' have arisen
+    independently in this framework as well - but I think it's worth it.
 
-The difference between the two worldviews, then, is that I can rerender my UI at 60fps+, and they can't. :D
-
-If you don't have motion sickness, tap the example below to un-pause it:
+If you don't have motion sickness, tap the example below to un-pause it.
+It shows off most of the functionality of this framework - state management, 
+    conditional rendering, list rendering, and animation:
 
 ```ts - you will try imjs ... you will try imj - hey dont look away
 
@@ -292,25 +298,16 @@ function imSquareLetter(
 
 ```
 
-OK, maybe that one wasn't quite 60fps, and it's probably making your computer 
-    fan spin a little.
+That example was probably making your computer fan spin a little.
 It's way more taxing than most UIs will ever be though, since
     the opacity and position of every element is changing every render.
-If you profile this page while it's running, you'll find that the most expensive 
+If you profile this page while the example is running, you'll find that the most expensive 
     methods are actually the calls to the DOM API's own style setters, as opposed 
     to data-manipulations done in this framework.
-Don't believe me? Click the example to pause it - the FPS should go right back up to 
-    your monitor's refresh-rate.
 
 If the code examples haven't put you off the framework by now, then great!
-However, some things about these examples may have stuck out to you. 
+Here's how you #url[get set up, /?test=How+to+install+imJS].
 
-#list[
--   What is this `c: ImCache` thing all the UI elements have as their first argument?
--   Who are `im`, `el` and `imdom`?
--   What is `im.If` and `im.For`, and why do I need them?
--   Why `im.GetInline`? Does this imply the existance of `im.Get`?
--   How do I handle exceptions? 
-]
-
-Before I tell you, you should probably #url[get set up, /?test=How+to+install+imJS] first.
+I've also got tutorials on the page!
+You can see all the pages by mousing over the strange rectangle thing
+hovering on the center-left.
