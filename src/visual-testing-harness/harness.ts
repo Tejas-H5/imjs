@@ -171,7 +171,7 @@ export function imVisualTestHarness(
     const root = imui.Begin(c, COL); imui.Flex(c); {
         const rootClientRect = root.getBoundingClientRect();
 
-        if (im.If(c) && s.currentTest && !s.splash) {
+        if (im.If(c) && s.currentTest) {
             if (im.If(c) && tests.length === 0) {
                 imui.Begin(c, ROW); imui.Flex(c); imui.Align(c); imui.Justify(c); {
                     imdom.Str(c, "No tests yet");
