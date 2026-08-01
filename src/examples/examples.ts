@@ -57,9 +57,14 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(tutorial3, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
-    newVisualTestFromBlogLang(diffTest, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
+
+if (!import.meta.env.IS_PROD) {
+    tests.push(
+        newVisualTestFromBlogLang(diffTest, modules),
+    )
+}
 
 export function imMain(c: ImCache) {
     im.CacheBegin(c, imMain); {
