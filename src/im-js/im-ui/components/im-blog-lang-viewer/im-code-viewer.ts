@@ -89,7 +89,6 @@ function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumber
             for (const line of block.lines) {
                 if (line.trimStart().startsWith("//")) continue;
                 if (line.trim() === "") continue;
-                
                 isImportant = true;
                 break;
             }
@@ -103,7 +102,7 @@ function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumber
         if (block.type === ld.REMOVE) {
             handleColor = "#FF0000";
         } else if (block.type === ld.INSERT) {
-            handleColor = "#00FF00";
+            handleColor = "#44FF55";
         } else if (block.type === ld.INDENTATION) {
             handleColor = "#FF44FF";
         }
@@ -157,7 +156,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
         }
 
         imui.Begin(c, BLOCK); {
-            const addCharBg = "#55FF55"
+            const addCharBg = "#44FF77"
             const rmCharBg = "#FF9999";
             const indentBg = "#FF88FF";
 

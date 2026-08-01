@@ -1,4 +1,4 @@
-import { im, imdom, ImCache } from "im-js";
+import { im, imdom, ImCache, ev } from "im-js";
 import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-js/im-ui";
 import { lerp01 } from "im-js/im-ui/components/math-utils";
 import { VisualTestHarnessState } from "./harness";
@@ -8,6 +8,15 @@ const numIntros = 3;
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     const { size } = imdom.TrackSize(c);
     const { width, height } = size;
+
+    const loadedState = im.GetInline(c, imSplashScreen) ??
+        im.Set(c, { loaded: false });
+
+    const loadEv = imdom.On(c, ev.LOAD);
+    if (loadEv) {
+        loadedState.loaded = true;
+    }
+
 
     const a = s.animations;
     let animationComplete = false;

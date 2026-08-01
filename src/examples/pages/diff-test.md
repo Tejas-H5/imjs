@@ -8,29 +8,11 @@ Initial state:
 
 
 ```ts - imSetPosition abstraction #diff[1]
-imDivBegin(); {
-    imDivBegin(); {
-        // OMG
-    } imDivEnd();
-} imDivEnd();
-    imDivBegin(); {
-        imDivBegin(); {
-            // OMG
-        } imDivEnd();
-    } imDivEnd();
+const s = {
+    kanbanBoard: newKabanBoard(),
+}
 ```
 
 
 ```ts - Moving the player around #diff[-1]
-imDivBegin(); {
-    imDivBegin(); {
-        // OMG
-    } imDivEnd();
-} imDivEnd();
-
-imDivBegin(); {
-    imDivBegin(); {
-        // OMG
-    } imDivEnd();
-} imDivEnd();
 ```

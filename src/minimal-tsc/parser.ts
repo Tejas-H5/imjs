@@ -42,13 +42,18 @@ function skipTypeExpression(tsCode: string, pos: number): number {
 		i = toNonIdentifier(tsCode, i);
 		i = toNonWhitespace(tsCode, i);
 
-		if (tsCode[i] !== ".") {
-			break;
-		}
-
-		if (tsCode[i] !== "(") {
+		if (tsCode[i] === "(") {
 			// This is a function call. Not a type at all :D false alarm guys. All this tarversal for null? or was it undefined? void 0?
 			return pos;
+		}
+
+		if (tsCode[i] === "_") {
+			// This is probably a constant.
+			return pos;
+		}
+
+		if (tsCode[i] !== ".") {
+			break;
 		}
 
 		i++;

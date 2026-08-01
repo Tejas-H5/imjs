@@ -91,16 +91,16 @@ export function imVisualTestInstallation(
             // Middle draggable splitter thing
             imui.Begin(c, BLOCK); imui.Size(c, 10, PX, 0, NA); imui.Bg(c, (imdom.hasMouseOver(c) || split.dragging) ? cssVars.fg : ""); {
                 const mouse = imdom.getMouse();
-                if (imdom.hasMouseOver(c) && mouse.leftMouseButton) split.dragging = true;
+                if (imdom.hasMousePress(c) && mouse.leftMouseButton) split.dragging = true;
                 if (!mouse.leftMouseButton) split.dragging = false;
 
                 if (im.IsFirstRender(c)) imdom.setStyle(c, "transition", "background-color 0.1s ease-in");
                 if (im.IsFirstRender(c)) imdom.setStyle(c, "cursor", "ew-resize");
                 if (im.IsFirstRender(c)) imdom.setStyle(c, "userSelect", "none");
 
-                if (im.Memo(c, mouse.X) && split.dragging) {
+                if (im.Memo(c, mouse.x) && split.dragging) {
                     const rect = root.getBoundingClientRect();
-                    split.vSplit = inverseLerp(mouse.X, rect.left, rect.right);
+                    split.vSplit = inverseLerp(mouse.x, rect.left, rect.right);
                 }
             } imui.End(c);
 

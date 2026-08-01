@@ -473,7 +473,7 @@ function parseBlocks(parser: Parser, blocks: Block[], ctx: ParseContext) {
 					sb.push(langParser.char);
 					advance(langParser);
 				}
-				block.language = sb.join("");
+				block.language = sb.join("").trim();
 			}
 		}
 

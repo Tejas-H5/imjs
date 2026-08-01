@@ -146,7 +146,7 @@ export function imRangeSlider(
         const sliderScreenStart  = bodyRect.left + startRect.width / 2;
         const sliderScreenEnd    = bodyRect.right - endRect.width / 2;
         const sliderScreenLength = sliderScreenEnd - sliderScreenStart;
-        const mousePos = (mouse.X - sliderScreenStart) / sliderScreenLength;
+        const mousePos = (mouse.x - sliderScreenStart) / sliderScreenLength;
 
         // NOTE: order  matters - if middleDragStarted, then bodyDragStarted is always true
         if (middleDragStarted) {

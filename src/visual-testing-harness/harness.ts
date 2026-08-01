@@ -270,6 +270,13 @@ export function imVisualTestHarness(
         } im.IfEnd(c);
     } imui.End(c);
 
+    if (im.Memo(c, s.installations.length > 0)) {
+        const hash = decodeURIComponent(window.location.hash).substring("#".length);
+        console.log(hash, s.installations.map(i => i.hash))
+        const installation = s.installations.find(i => i.hash === hash);
+        scrollToInstalllation(s, installation)
+    }
+
     if (im.Memo(c, s.currentHoveredInstallation)) {
         const currentScrolledInstallation = 
             s.currentHoveredInstallation ??
@@ -406,7 +413,7 @@ function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown)
                 maxX = rootClientRect.right;
             }
 
-            if (minX <= mouse.X && mouse.X <= maxX) {
+            if (minX <= mouse.x && mouse.x <= maxX) {
                 sidebar.sideBarOpen = true;
             } else {
                 sidebar.sideBarOpen = false;

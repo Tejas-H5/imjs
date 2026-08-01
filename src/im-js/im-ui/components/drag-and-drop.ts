@@ -89,10 +89,10 @@ export function imDragHandle(c: ImCache, dnd: DragAndDropState, idx: number) {
             const elRect = imdom.getElement(c).getBoundingClientRect();
 
             dnd.drag = {
-                startX: mouse.X,
-                startXOffset: mouse.X - elRect.left,
-                startY: mouse.Y,
-                startYOffset: mouse.Y - elRect.top,
+                startX: mouse.x,
+                startXOffset: mouse.x - elRect.left,
+                startY: mouse.y,
+                startYOffset: mouse.y - elRect.top,
                 startIdx: idx,
                 hoveringOverIdx: idx,
             };
@@ -117,8 +117,8 @@ export function imDragZoneBegin(c: ImCache, dnd: DragAndDropState, idx: number):
     let isDragging = false;
     if (dnd.drag && dnd.drag.startIdx === idx) {
         const mouse = imdom.getMouse();
-        dX = mouse.X - dnd.drag.startX - dnd.drag.startXOffset;
-        dY = mouse.Y - dnd.drag.startY - dnd.drag.startYOffset;
+        dX = mouse.x - dnd.drag.startX - dnd.drag.startXOffset;
+        dY = mouse.y - dnd.drag.startY - dnd.drag.startYOffset;
         isDragging = true;
     }
 

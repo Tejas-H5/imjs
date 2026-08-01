@@ -76,7 +76,7 @@ function longestCommonSubsequenceScored(
         for (let bIdx = bStart; bIdx < bEnd; bIdx++) {
             if (aLines[aIdx].trim() !== bLines[bIdx].trim()) continue;
 
-            let length = -1;
+            let thisLen = -1;
             let thisScore = 0;
             for (
                 let k = 0; 
@@ -90,13 +90,25 @@ function longestCommonSubsequenceScored(
                 if (thisLine !== bLines[bIdx + k].trim()) {
                     break;
                 } else {
-                    length = k + 1;
+                    thisLen = k + 1;
                     thisScore += thisLine.length;
                 }
             }
 
-            if (thisScore > score) {
-                len = length;
+            // Penalize lines starting with } or ). 
+            // This will make most code diffs look nicer.
+            for (let i = 0; i < thisLen; i++) {
+                const startTrimmed = aLines[aIdx + i].trimStart();
+                if (
+                    startTrimmed.startsWith("}") ||
+                    startTrimmed.startsWith(")")
+                ) {
+                    thisScore -= (0.05 * thisScore) * (thisLen - i - 1) / thisLen;
+                }
+            }
+
+            if (thisScore >= score) {
+                len = thisLen;
                 score = thisScore;
                 aLcsStart = aIdx;
                 bLcsStart = bIdx;

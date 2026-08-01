@@ -97,7 +97,7 @@ export function imSliderInput(
 
             const x0 = rect.left + sliderHandleSize / 2;
             const x1 = rect.right - sliderHandleSize / 2;
-            let t = inverseLerp(mouse.X, x0, x1);
+            let t = inverseLerp(mouse.x, x0, x1);
             t = clamp(t, 0, 1);
 
             value = lerp(start, end, t);

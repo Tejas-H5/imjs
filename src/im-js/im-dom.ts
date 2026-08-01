@@ -386,12 +386,13 @@ function imRootEnd(c: ImCache, root: ValidElement) {
  * per-root, and just a single call to {@link imGlobalEventSystemPoll}
  */
 function imDomBegin(c: ImCache, singleRoot: HTMLElement) {
-    imGlobalEventSystemPoll(c);
+    imGlobalEventSystemBegin(c);
     imRootBegin(c, singleRoot);
 }
 
 function imDomEnd(c: ImCache, singleRoot: HTMLElement) {
     imRootEnd(c, singleRoot);
+    imGlobalEventSystemEnd(c);
 }
 
 function addDebugLabelToAppender(c: ImCache, str: string | undefined) {
@@ -666,19 +667,18 @@ export type KeyboardState = {
 
 
 export type MouseState = {
-    lastX: number;
-    lastY: number;
-
     ev: MouseEvent | null;
 
     leftMouseButton: boolean;
     middleMouseButton: boolean;
     rightMouseButton: boolean;
 
-    dX: number;
-    dY: number;
-    X: number;
-    Y: number;
+    dx: number;
+    dy: number;
+    x: number;
+    y: number;
+    xLast: number;
+    yLast: number;
 
     /**
      * NOTE: if you want to use this, you'll have to prevent scroll event propagation.
@@ -735,14 +735,14 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
         middleMouseButton: false,
         rightMouseButton: false,
 
-        dX: 0,
-        dY: 0,
+        dx: 0,
+        dy: 0,
         // By making the initial position offscreen, the mouse 
         // doesn't hover any UI element on page-load
-        X: -1,
-        Y: -1,
-        lastX: -1,
-        lastY: -1,
+        x: -1,
+        y: -1,
+        xLast: -1,
+        yLast: -1,
 
         scrollWheel: 0,
 
@@ -755,13 +755,13 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
 
     function handleMouseMove(e: MouseEvent) {
         mouse.ev = e;
-        mouse.lastX = mouse.X;
-        mouse.lastY = mouse.Y;
-        mouse.X = e.clientX;
-        mouse.Y = e.clientY;
-        if (mouse.lastX >= 0 && mouse.lastY >= 0) {
-            mouse.dX += mouse.X - mouse.lastX;
-            mouse.dY += mouse.Y - mouse.lastY;
+        mouse.xLast = mouse.x;
+        mouse.yLast = mouse.y;
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        if (mouse.xLast >= 0 && mouse.yLast >= 0) {
+            mouse.dx += mouse.x - mouse.xLast;
+            mouse.dy += mouse.y - mouse.yLast;
         }
 
         if (mouse.lastMouseOverElement !== e.target) {
@@ -883,36 +883,32 @@ function resetImKeyboardState(keyboard: KeyboardState) {
 let globalEventSystem: GlobalEventSystem | undefined;
 
 // TODO: is there any point in separating this from DomRoot ?
-function imGlobalEventSystemPoll(c: ImCache): GlobalEventSystem {
-    let eventSystem = im.Get(c, newImGlobalEventSystem);
-    if (eventSystem === undefined) {
+function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
+    let state = im.Get(c, newImGlobalEventSystem);
+    if (state === undefined) {
         // Can't make two of these
         assert(globalEventSystem === undefined);
 
-        const newEventSystem = newImGlobalEventSystem(c);
-        addDocumentAndWindowEventListeners(newEventSystem);
-        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(newEventSystem));
-        eventSystem = im.Set(c, newEventSystem);
+        const eventSystem = newImGlobalEventSystem(c);
+        addDocumentAndWindowEventListeners(eventSystem);
+        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
+        state = im.Set(c, eventSystem);
 
-        globalEventSystem = newEventSystem;
+        globalEventSystem = state;
     }
 
-    if (eventSystem.dontClear === false) {
-        updateMouseState(eventSystem.mouse);
-        updateKeysState(eventSystem.keyboard.keys, null, null, false);
+    return state;
+}
 
-        eventSystem.keyboard.keyDown = null
-        eventSystem.keyboard.keyUp = null
-        eventSystem.blur = false;
-    } else {
-        // Ensure that we only ever let 1 event through - 
-        // make sure that if the component threw before reaching 
-        // imGlobalEventSystemPoll, the next render of the component
-        // will still clear out the event 
-        eventSystem.dontClear = false;
-    }
+function imGlobalEventSystemEnd(_c: ImCache) {
+    assert(globalEventSystem !== undefined);
 
-    return eventSystem;
+    updateMouseState(globalEventSystem.mouse);
+    updateKeysState(globalEventSystem.keyboard.keys, null, null, false);
+
+    globalEventSystem.keyboard.keyDown = null
+    globalEventSystem.keyboard.keyUp = null
+    globalEventSystem.blur = false;
 }
 
 function imTrackSize(c: ImCache, rerender = false) {
@@ -1023,19 +1019,19 @@ function imPreventScrollEventPropagation(c: ImCache, isBlocking = true): number 
 }
 
 function updateMouseState(mouse: MouseState) {
-    mouse.dX = 0;
-    mouse.dY = 0;
-    mouse.lastX = mouse.X;
-    mouse.lastY = mouse.Y;
+    mouse.dx = 0;
+    mouse.dy = 0;
+    mouse.xLast = mouse.x;
+    mouse.yLast = mouse.y;
 
     mouse.scrollWheel = 0;
 }
 
 function resetImMouseState(mouse: MouseState) {
-    mouse.dX = 0;
-    mouse.dY = 0;
-    mouse.lastX = mouse.X;
-    mouse.lastY = mouse.Y;
+    mouse.dx = 0;
+    mouse.dy = 0;
+    mouse.xLast = mouse.x;
+    mouse.yLast = mouse.y;
 
     mouse.scrollWheel = 0;
 
@@ -1365,7 +1361,7 @@ export const imdom = {
      * const globalImCache: ImCache = []; // yes it's just an array
      * imMain(globalImCache);
      */
-    Begin: imDomBegin, End:   imDomEnd,
+    Begin: imDomBegin, End: imDomEnd,
     RootBegin: imRootBegin, RootEnd: imRootEnd,
 
     /** DOM-node creation */
@@ -1407,8 +1403,8 @@ export const imdom = {
 
     /** Global event system */
 
-    /* Already called by {@link imdom.Begin}, so you don't need to use it yourself */
-    imGlobalEventSystemPoll: imGlobalEventSystemPoll, 
+    /* Already called by {@link imdom.Begin}/{@link imdom.End}, so you don't need to use it yourself */
+    GlobalEventSystemBegin: imGlobalEventSystemBegin, GlobalEventSystemEnd: imGlobalEventSystemEnd, 
 
     getMouse,
     getKeyboard,

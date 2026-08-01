@@ -61,6 +61,7 @@ function pushLog(logs: any[], vals: any) {
     if (logs.length > 10) {
         logs.shift();
     }
+    console.log(...vals);
 }
 
 function inlineTestFromCodeBlock(code: string, language: string, userModules: tsc.Module[], diff?: string): InlineTest {
