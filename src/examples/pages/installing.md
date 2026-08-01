@@ -7,12 +7,12 @@ Copy the folders you need from #url[this GitHub repository, https://github.com/T
 
 ```
 im-js/
-    The core framework. You'll need every file here, but not necessarily the folders
     <all files> (required)
+        The core framework. You'll need every file here, but not necessarily the folders
 
-    A minimal design system I've included for my own convenience.
-    It's optional - im-js will work without it.
     im-ui/      (optional)
+        A minimal design system I've included for my own convenience.
+        It's optional - im-js will work without it.
 ```
 
 ## npm
