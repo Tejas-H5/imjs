@@ -2797,6 +2797,7 @@ Here are all the outstanding tasks:
 
 #list[
 - Get animated cells working with scroll overflow.
+- Add userSelect: none to a bunch of elements
 - Fine-tune the animating. 
     Right now, we animate from the (current UI position, without the drag offset applied) -> (target position). 
     I think it looks cool, but it is actually a bit illogical. 
@@ -2811,6 +2812,8 @@ Here are all the outstanding tasks:
     to implement that #url[framerate independent, https://www.youtube.com/watch?v=LSNQuFEDOyQ]
     lerp.
 ]
+
+I'le leave this as an exercise to the reader.
 
 Got ideas for a tutorial? 
 Send them through #url[here, https://github.com/Tejas-H5/imjs].

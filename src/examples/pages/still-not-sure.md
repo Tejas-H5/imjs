@@ -67,3 +67,6 @@ app-dir/
         other-file.ts
         other-other-file.ts
 ```
+
+You can now copy-paste and reuse entire libraries between your stuff.
+

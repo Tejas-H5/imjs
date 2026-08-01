@@ -6,12 +6,13 @@ Copy the folders you need from #url[this GitHub repository, https://github.com/T
     into your project.
 
 ```
-/im-js/ (required)
-    The core framework. You'll need everything from here
-    ...
-    /im-ui/ (optional)
-        A minimal design system I've included for my own convenience.
-        It's optional - im-js will work without it.
+im-js/
+    The core framework. You'll need every file here, but not necessarily the folders
+    <all files> (required)
+
+    A minimal design system I've included for my own convenience.
+    It's optional - im-js will work without it.
+    im-ui/      (optional)
 ```
 
 ## npm
@@ -49,7 +50,7 @@ The code you write in this framework will abuse the hell out of semi-colons, cod
 Your formatter needs to be configured to not do this:
 
 #table[
-#row #cell Unformatted #cell Formatted. It's good for normal code, but bad for our framework's UI code
+#row #cell *Unformatted* #cell *Formatted. It's good for normal code, but bad for our framework's UI code*
 #row 
 #cell
 
@@ -70,10 +71,18 @@ im.ForEnd(c);
 ```
 ]
 
-
-The default TypeScript formatter, for example, does just that - as such, 
-    it's the one that I use.
+The default TypeScript formatter will never add or remove newlines, and only
+    formats whiltespace.
+That's the one that I use.
 
 Now that you're set up, you'll want to do the #url[first tutorial, /?test=Tutorial+1+-+a+TODO+List].
 It's the only one that you shouldn't skip - do that one first, and then the others
 are optional.
+
+## Linters
+
+None, yet. 
+Eventually, I want something that can match up begin/end pairs.
+It's the biggest source of pain in this framework, and probably
+    the only reason why other people haven't already created a similar framework.
+The benefits outweight the costs imo.
