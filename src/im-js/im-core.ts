@@ -1270,7 +1270,7 @@ function imTryEnd(c: ImCache, tryState: TryState) {
 }
 
 function getDeltaTimeSeconds(c: ImCache): number {
-    return c[CACHE_ANIMATION_DELTA_TIME_SECONDS];
+    return Math.min(0.05, c[CACHE_ANIMATION_DELTA_TIME_SECONDS]);
 }
 
 // Events can trigger rerenders in the same frame.
