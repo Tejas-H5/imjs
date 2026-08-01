@@ -1,9 +1,8 @@
-import { im, imdom, ImCache, ev } from "im-js";
-import { imui, cssVars, BLOCK, COL, PERCENT, PX, ROW } from "im-js/im-ui";
-import { lerp01 } from "im-js/im-ui/components/math-utils";
+import { ImCache, ev, im, imdom } from "im-js";
+import { BLOCK, COL, PX, ROW, cssVars, imui } from "im-js/im-ui";
 import { VisualTestHarnessState } from "./harness";
 
-const numIntros = 3;
+const numIntros = 1;
 
 export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     const { size } = imdom.TrackSize(c);
@@ -27,48 +26,7 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
     }
 
     im.Switch(c, a.introToUse); switch(a.introToUse) {
-        case 0: { // Not sure what this is. im / JS. I have since scrapped the line
-            const target = 0.2;
-            a.t = lerp01(target, a.t, Math.exp(-15 * im.getDeltaTimeSeconds(c)));
-            animationComplete = Math.abs(a.t - target) < 0.0001;
-
-            imui.Begin(c, BLOCK); imui.Absolute(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "overflow", "hidden");
-
-                imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * a.t, PX, height * a.t, PX);
-                    if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
-
-                    imdom.Str(c, "im");
-                } imui.End(c);
-
-                imui.Begin(c, BLOCK); imui.Bg(c, cssVars.fg); {
-                    imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateZ(-${(70 - 45 * a.t)}deg)`);
-
-                    imui.Size(c, 100 * a.t, PERCENT, 5 * a.t, PERCENT);
-                    imui.AbsoluteXY(c, width / 2, PX, height / 2, PX);
-                } imui.End(c);
-
-                imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * (1 - a.t), PX, height * (1 - a.t), PX);
-                    if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
-
-                    if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-100%, -100%)`);
-
-                    imdom.Str(c, "JS");
-                } imui.End(c);
-
-                imui.Begin(c, BLOCK); {
-                    imui.AbsoluteXY(c, width * 0.5, PX, height * (1 - a.t * 0.5), PX);
-                    if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                    if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
-
-                    imdom.Str(c, "Visual testing harness");
-                } imui.End(c);
-
-            } imui.End(c);
-        } break;
-        case 1: { // Some visual that stuck in my head after watching Billain third impact AMV
+        case 0: { // Some visual that stuck in my head after watching Billain third impact AMV
             a.t += im.getDeltaTimeSeconds(c);
             const duration = 0.75;
             const rowsDuration = duration * 1.5;
@@ -156,35 +114,6 @@ export function imSplashScreen(c: ImCache, s: VisualTestHarnessState): boolean {
                     } imui.End(c);
                 } imui.End(c);
             } im.IfEnd(c);
-        } break;
-        case 2: { // Which way it rotating tho?
-            a.t += im.getDeltaTimeSeconds(c);
-
-            let angle = a.t * Math.PI * 2 - Math.PI / 2;
-            // if (a.t > 1) {
-            //     angle -= Math.PI * 2;
-            // }
-
-            if (a.t > 1) {
-                animationComplete = true;
-            }
-
-            imui.Begin(c, BLOCK); imui.AbsoluteXY(c, width / 2, PX, height / 2, PX); {
-                const flip = angle < Math.PI / 2;
-
-                imdom.setStyle(c, "transform", `translate(-50%, -50%) rotateY(${angle}rad) scaleX(${flip ? "1" : "-1"})`);
-                if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.4 * height) + "px")
-
-                imdom.Str(c, flip ? "im" : "JS");
-            } imui.End(c);
-
-            imui.Begin(c, BLOCK); {
-                imui.AbsoluteXY(c, width * 0.5, PX, height * 0.8, PX);
-                if (im.Memo(c, height)) imdom.setStyle(c, "fontSize", (0.1 * height) + "px")
-                if (im.IsFirstRender(c)) imdom.setStyle(c, "transform", `translate(-50%, -100%)`);
-
-                imdom.Str(c, "Visual testing harness");
-            } imui.End(c);
         } break;
         // We need more of these. I want 90% loc of this harness to just be various intro screens.
         // That being said. Maybe this is the mindset that is preventing me from shipping things...
