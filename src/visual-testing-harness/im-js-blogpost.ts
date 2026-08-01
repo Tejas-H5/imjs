@@ -203,11 +203,20 @@ function imRenderItemCustom(c: ImCache, item: bl.InlineItem, options: BlogLangRe
                     // It's a local path, so we shouldn't need to navigate anywhere.
                     clickEvent.preventDefault();
                     let baseUrl = window.location.href;
+
+                    // remove hash
+                    {
+                        const idx = baseUrl.lastIndexOf("#");
+                        if (idx !== -1) {
+                            baseUrl = baseUrl.substring(0, idx);
+                        }
+                    }
+
                     const idx = baseUrl.lastIndexOf("/");
                     if (idx !== -1) {
                         baseUrl = baseUrl.substring(0, idx);
                     }
-                    window.history.pushState(null, "", baseUrl + item.url);
+                    window.history.pushState(null, "", baseUrl + "/" + item.url);
                     document.getElementById("top")?.scrollIntoView();
                 }
             }

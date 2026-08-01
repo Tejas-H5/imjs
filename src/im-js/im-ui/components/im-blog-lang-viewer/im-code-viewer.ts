@@ -104,7 +104,7 @@ function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumber
         } else if (block.type === ld.INSERT) {
             handleColor = "#44FF55";
         } else if (block.type === ld.INDENTATION) {
-            handleColor = "#FF44FF";
+            handleColor = "#AAAAAA";
         }
 
         imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 2, PX); {
@@ -158,7 +158,7 @@ function imDiffBlockInner(c: ImCache, block: ld.Block, lineIdx: number, maxLineN
         imui.Begin(c, BLOCK); {
             const addCharBg = "#44FF77"
             const rmCharBg = "#FF9999";
-            const indentBg = "#FF88FF";
+            const indentBg = "#BBBBBB";
 
             let currentBg = "";
             switch (block.type) {

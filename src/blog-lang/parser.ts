@@ -162,7 +162,7 @@ function parseBlockType(parser: Parser, advance: boolean): number {
 	else if (compareAndMaybeAdvance(parser, "## ",    advance)) { blockType = BT_HEADING2; }
 	else if (compareAndMaybeAdvance(parser, "### ",   advance)) { blockType = BT_HEADING3; }
 	// Heading 4 is never used. Just bold your text at that point.
-	else if (compareAndMaybeAdvance(parser, "> ",     advance))  { blockType = BT_QUOTE;    }
+	else if (compareAndMaybeAdvance(parser, "\n> ",   advance))  { blockType = BT_QUOTE;    }
 	else if (compareAndMaybeAdvance(parser, "```",    advance))  { blockType = BT_CODE;     }
 	else if (compareAndMaybeAdvance(parser, "#list[", advance))  { blockType = BT_UNORDERED_LIST;  }
 	else if (compareAndMaybeAdvance(parser, "#ul[",   advance))  { blockType = BT_UNORDERED_LIST;  }
