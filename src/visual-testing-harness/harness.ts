@@ -171,7 +171,19 @@ export function imVisualTestHarness(
     const root = imui.Begin(c, COL); imui.Flex(c); {
         const rootClientRect = root.getBoundingClientRect();
 
-        if (im.If(c) && s.currentTest) {
+        if (im.If(c) && !s.currentTest) {
+            if (imSplashScreen(c, s)) {
+                if (tests.length > 0) {
+                    setCurrentTest(s, tests[0], true);
+                } else {
+                    // TODO: we should have a UI for this.
+                    console.error("Need at least one test")
+                }
+            }
+        } im.IfEnd(c);
+
+        const currentTest = s.currentTest ?? tests[0];
+        if (im.If(c) && currentTest) {
             if (im.If(c) && tests.length === 0) {
                 imui.Begin(c, ROW); imui.Flex(c); imui.Align(c); imui.Justify(c); {
                     imdom.Str(c, "No tests yet");
@@ -191,7 +203,7 @@ export function imVisualTestHarness(
                         }
                     } imui.End(c);
 
-                    imRenderWithErrorBoundary(c, s, s.currentTest.code);
+                    imRenderWithErrorBoundary(c, s, currentTest.code);
                 } imui.End(c);
 
                 scrolledToTop = scrollView.scrollTop < 20;
@@ -199,7 +211,7 @@ export function imVisualTestHarness(
                 // Left
                 {
                     const sidebar = s.animations.leftSidebar;
-                    imSidebarBegin(c, sidebar, s.currentTest); {
+                    imSidebarBegin(c, sidebar, currentTest); {
                         imSidebarTitle(c, sidebar.isLeft, "Tests");
 
                         let deferredEvent: (() => void) | undefined;
@@ -211,7 +223,7 @@ export function imVisualTestHarness(
                                     // TODO: same as right sidebar - hover any test.
                                 }
 
-                                if (imButtonIsClicked(c, test.name, test === s.currentTest)) {
+                                if (imButtonIsClicked(c, test.name, test === currentTest)) {
                                     deferredEvent = () => {
                                         setCurrentTest(s, test, true);
                                     }
@@ -243,7 +255,7 @@ export function imVisualTestHarness(
                                     s.currentHoveredInstallation = installation;
                                 }
 
-                                if (imButtonIsClicked(c, installation?.title ?? s.currentTest.name, installation === s.currentInstallation)) {
+                                if (imButtonIsClicked(c, installation?.title ?? currentTest.name, installation === s.currentInstallation)) {
                                     deferredEvent = () => {
                                         updateHash(s, installation);
                                     }
@@ -259,14 +271,6 @@ export function imVisualTestHarness(
             } im.IfEnd(c);
         } else {
             im.IfElse(c);
-            if (imSplashScreen(c, s)) {
-                if (tests.length > 0) {
-                    setCurrentTest(s, tests[0], true);
-                } else {
-                    // TODO: we should have a UI for this.
-                    console.error("Need at least one test")
-                }
-            }
         } im.IfEnd(c);
     } imui.End(c);
 

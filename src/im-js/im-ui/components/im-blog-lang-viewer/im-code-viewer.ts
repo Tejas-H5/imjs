@@ -1,5 +1,5 @@
 import { el, im, ImCache, imdom } from "im-js";
-import { BLOCK, cssVars, imui, INLINE, NA, PX } from "im-js/im-ui";
+import { BLOCK, cssVars, imui, INLINE, NA, PX, VH } from "im-js/im-ui";
 import * as ld from "line-diff";
 
 type CodeBlockState = {
@@ -76,70 +76,7 @@ function imLineNumber(c: ImCache, lineIdx: number, maxLineNumberSize: number) {
 }
 
 function imDiffBlock(c: ImCache, block: ld.Block, lineIdx: number, maxLineNumberSize: number): number {
-    let state = im.GetInline(c, imDiffBlock) ??
-        im.Set(c, { collapsed: true, canBeCollapsed: true });
-
-    if (im.Memo(c, block)) {
-        // Let's collapse unimportant blocks by default.
-        // Most of the time, I'm removing explanatory comments
-        // in the next example - they don't need to be there really.
-        let isImportant = true;
-        if (block.type === ld.REMOVE) {
-            isImportant = false;
-            for (const line of block.lines) {
-                if (line.trimStart().startsWith("//")) continue;
-                if (line.trim() === "") continue;
-                isImportant = true;
-                break;
-            }
-        }
-
-        state.canBeCollapsed = !isImportant;
-    }
-
-    if (im.If(c) && state.canBeCollapsed) {
-        let handleColor = "#000000";
-        if (block.type === ld.REMOVE) {
-            handleColor = "#FF0000";
-        } else if (block.type === ld.INSERT) {
-            handleColor = "#44FF55";
-        } else if (block.type === ld.INDENTATION) {
-            handleColor = "#AAAAAA";
-        }
-
-        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 2, PX); {
-            imui.Bg(c, handleColor);
-        } imui.End(c);
-        imui.Begin(c, BLOCK); {
-            if (im.IsFirstRender(c)) {
-                imdom.setStyle(c, "transition", "height 2s linear");
-                imdom.setStyle(c, "cursor", "pointer");
-            }
-
-            if (imdom.hasMousePress(c)) {
-                state.collapsed = !state.collapsed;
-            }
-
-            if (im.If(c) && state.collapsed) {
-                imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 10, PX); {
-                    imui.Bg(c, handleColor);
-                    imui.Opacity(c, 0.2);
-                } imui.End(c);
-            } else {
-                im.Else(c);
-                lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
-            } im.IfEnd(c);
-        } imui.End(c);
-        imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 2, PX); {
-            imui.Bg(c, handleColor);
-        } imui.End(c);
-    } else {
-        im.Else(c);
-        lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
-    } im.IfEnd(c);
-
-    // imui.Begin(c, BLOCK); imui.Size(c, 0, NA, 10, PX); imui.Bg(c, "black"); {
-    // } imui.End(c);
+    lineIdx = imDiffBlockInner(c, block, lineIdx, maxLineNumberSize);
 
     return lineIdx;
 }

@@ -50,6 +50,14 @@ In fact, they have influenced a lot of my design decisions in this framework.
 ## What does the usage code look like?
 
 The usage code reads a lot like if a React functional component were imperatively rendered.
+The render method will always be _synchronous_ (non-`async`), and it will rerender the entire UI from
+    top to bottom in a single pass.
+This makes it easier for UI components to coordinate with one-another, and also gives
+    us the benefit of being able to look at the callstack when breakpointed to see which 
+    component a particular component rendered inside of all the way up to the entrypoint, 
+    and even makes the profiler output a lot friendlier, so much so that I won't ever 
+    need to make an `imJS` dev tools.
+
 You will also need to make good use code blocks, and put related constructs onto the same line where appropriate:
 
 ```ts - TODO List
@@ -115,8 +123,10 @@ function imTodoList(c: ImCache) {
 
 ```
 
-Looks pretty verbose. Such is the cost of not using JSX, and using namespace objects.
+Looks pretty verbose. Such is the cost of not using JSX, as well as using namespace objects.
 But you will notice that it is all `TypeScript`/`JavaScript`!
+And, there isn't a single closure in sight. 
+
 Creating abstractions, then, is (almost) the same as extracting common/repeating
     logic into their own functions.
 The `c: ImCache` immediate-mode cache variable is actually doing a lot of heavy lifting here - 

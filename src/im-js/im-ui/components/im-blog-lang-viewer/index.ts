@@ -38,21 +38,14 @@ export type BlogLangRenderOptions = {
 	imRenderInlineItem: (c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void;
 };
 
-export const defaultBlogLangRenderOptions = newBlogLangRenderOptions();
-
-export function newBlogLangRenderOptions(
-	imRenderBlock: ((c: ImCache, block: bl.Block, otherBlocks: bl.Block[], options: BlogLangRenderOptions) => void) = imRenderBlogLangBlock,
-	imRenderInlineItem: ((c: ImCache, block: bl.InlineItem, options: BlogLangRenderOptions) => void) = imRenderBlogLangBlockItem,
-	userPtr?: unknown,
-): BlogLangRenderOptions {
+export function newBlogLangRenderOptions(): BlogLangRenderOptions {
 	return {
-		imRenderBlock: imRenderBlock,
-		imRenderInlineItem: imRenderInlineItem,
-		userPtr:       userPtr,
+		imRenderBlock: imRenderBlogLangBlock,
+		imRenderInlineItem: imRenderBlogLangBlockItem,
 	};
 }
 
-export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion: number, options = defaultBlogLangRenderOptions) {
+export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion: number, options = newBlogLangRenderOptions()) {
 	const s = im.State(c, newMarkupRendererState);
 
 	if (im.Memo(c, markupVersion) || !s.blogpost) {
@@ -62,7 +55,7 @@ export function imRenderBlogLangMarkup(c: ImCache, markup: string, markupVersion
 	imRenderBlogLangBlogpost(c, s.blogpost, options);
 }
 
-export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = defaultBlogLangRenderOptions) {
+export function imRenderBlogLangBlogpost(c: ImCache, post: bl.Blogpost, options = newBlogLangRenderOptions()) {
 	imBegin(c, COL, CENTER); imui.Padding(c, 15, PX, 15, PX, 50, VH, 15, PX); {
 		imBegin(c); {
 			imRenderBlocksInternal(c, post.blocks, options);
@@ -192,7 +185,7 @@ export function imRenderBlogLangBlock(c: ImCache, block: bl.Block, otherBlocks: 
 
 export function imRenderBlogpostBlockItems(c: ImCache, items: bl.InlineItem[], options: BlogLangRenderOptions) {
 	if (im.IsFirstRender(c)) {
-		imdom.setStyle(c, "lineHeight", "1.4");
+		imdom.setStyle(c, "lineHeight", "1.5");
 	}
 	
 	im.For(c); for (const item of items) {

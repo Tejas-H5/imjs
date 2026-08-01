@@ -534,8 +534,9 @@ function imGet<T>(
     const entries = c[CACHE_CURRENT_ENTRIES];
     c[CACHE_ITEMS_ITERATED]++;
 
-    // Make sure you called Set for the previous state before calling imGet again.
-    assert(c[CACHE_CURRENT_WAITING_FOR_SET] === false);
+    if (c[CACHE_CURRENT_WAITING_FOR_SET] !== false) {
+        throw new Error("The previous call to imGet was not paired with a call to imSet");
+    }
 
     onMaybeStartedRenderingEntries(c, entries);
 

@@ -11,7 +11,7 @@ import tutorial1 from "./pages/tutorial-1-todo-list.md";
 import tutorial2 from "./pages/tutorial-2.md";
 import tutorial3 from "./pages/tutorial-3.md";
 import stillNotSure from "./pages/still-not-sure.md";
-// import diffTest from "./pages/diff-test.md";
+import diffTest from "./pages/diff-test.md";
 
 import { assert } from "assert";
 
@@ -57,7 +57,7 @@ const tests: VisualTest[] = [
     newVisualTestFromBlogLang(tutorial2, modules),
     newVisualTestFromBlogLang(tutorial3, modules),
     newVisualTestFromBlogLang(stillNotSure, modules),
-    // newVisualTestFromBlogLang(diffTest, modules),
+    newVisualTestFromBlogLang(diffTest, modules),
     newVisualTestFromBlogLang(page7, modules),
 ]
 

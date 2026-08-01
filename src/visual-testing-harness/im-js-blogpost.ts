@@ -11,7 +11,7 @@ import {
     newBlogLangRenderOptions
 } from "im-js/im-ui/components/im-blog-lang-viewer";
 import * as tsc from "minimal-tsc";
-import { imVisualTestInstallation, setCurrentTest, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
+import { imVisualTestInstallation, TEST_CENTERED, VisualTestHarnessState } from "visual-testing-harness";
 import { imBaseContainerBegin, imBaseContainerEnd } from "../examples/common";
 import { assert } from "assert";
 
@@ -216,7 +216,7 @@ function imRenderItemCustom(c: ImCache, item: bl.InlineItem, options: BlogLangRe
                     if (idx !== -1) {
                         baseUrl = baseUrl.substring(0, idx);
                     }
-                    window.history.pushState(null, "", baseUrl + "/" + item.url);
+                    window.history.pushState(null, "", baseUrl + item.url);
                     document.getElementById("top")?.scrollIntoView();
                 }
             }
@@ -232,10 +232,12 @@ export function imJsBlogPost(c: ImCache, harness: VisualTestHarnessState, post: 
 
     let renderOptions = im.Get(c, newBlogLangRenderOptions);
     if (!renderOptions || modulesChanged) {
-        renderOptions = im.Set(c, newBlogLangRenderOptions(
-            (c, block, otherBlocks, options) => imRenderBlockCustom(c, block, otherBlocks, options, modules),
-            imRenderItemCustom,
-        ));
+        renderOptions = newBlogLangRenderOptions();
+        renderOptions.imRenderBlock = (c, block, otherBlocks, options) => {
+            imRenderBlockCustom(c, block, otherBlocks, options, modules);
+        };
+        renderOptions.imRenderInlineItem = imRenderItemCustom;
+        im.Set(c, renderOptions);
     }
     renderOptions.userPtr = harness;
 

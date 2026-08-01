@@ -1,5 +1,5 @@
 import { el, im, ImCache, ImCacheRerenderFn, imdom } from "im-js";
-import { BLOCK, CENTER, COL, cssVars, imui, NA, NONE, PX, ROW, STRETCH } from "im-js/im-ui";
+import { BLOCK, CENTER, COL, cssVars, imui, NA, NONE, PX, ROW, STRETCH, VH } from "im-js/im-ui";
 import { imButtonIsClicked } from "im-js/im-ui/components/button";
 import { imCodeViewer } from "im-js/im-ui/components/im-blog-lang-viewer/im-code-viewer";
 import { inverseLerp } from "im-js/im-ui/components/math-utils";
@@ -104,7 +104,7 @@ export function imVisualTestInstallation(
                 }
             } imui.End(c);
 
-            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
+            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); imui.Size(c, 0, NA, 80, VH); {
                 imCodeViewer(c, code ?? "", diff, 0);
             } imui.End(c);
         } imui.End(c);

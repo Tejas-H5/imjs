@@ -195,7 +195,12 @@ function diffInternal(
         while (k < len) {
             const kStart = k;
             if (aLines[aLcsStart + k] !== bLines[bLcsStart + k]) {
-                while (k < len && aLines[aLcsStart + k] !== bLines[bLcsStart + k]) {
+                while (k < len) {
+                    if (aLines[aLcsStart + k] === bLines[bLcsStart + k]) {
+                        if (aLines[aLcsStart + k].trim() !== "") {
+                            break;
+                        }
+                    }
                     k++;
                 }
 
@@ -229,15 +234,22 @@ function coalesceBlocks(result: Block[]): Block[] {
     for (let i = 0; i < result.length; i++) {
         const curr = result[i];
 
-        if (i < result.length - 1) {
-            const next = result[i + 1];
-            if (curr.type !== INDENTATION && curr.type === next.type) {
-                dst.push({type: curr.type, lines: [...curr.lines, ...next.lines] });
-                continue;
+        let handled = false;
+
+        if (dst.length > 0) {
+            const prev = dst[dst.length - 1];
+            if (prev.type === INDENTATION) {
+            } else {
+                if (prev.type === curr.type) {
+                    prev.lines.push(...curr.lines);
+                    handled = true;
+                }
             }
         }
 
-        dst.push(curr);
+        if (!handled) {
+            dst.push(curr);
+        }
     }
 
     return dst;
