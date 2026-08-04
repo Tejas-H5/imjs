@@ -20,20 +20,9 @@ To get started, you'll need to paste this into your entrypoint:
 ```typescript
 import { ImCache, im, imdom } from "im-js";
 
-im.startAnimationLoop(c => {
-    try {
-        im.CacheBegin(c); {
-            imdom.Begin(c, document.body); {
-                imApp(c);
-            } imdom.End(c, document.body);
-        } im.CacheEnd(c);
-    } catch (e) {
-        document.body.replaceChildren();
-        throw e;
-    }
-});
+imdom.startAnimationLoop(document.body, imMain);
 
-function imApp(c: ImCache) {
+function imMain(c: ImCache) {
      // Your code here
 }
 ```

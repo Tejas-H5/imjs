@@ -1400,11 +1400,13 @@ function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): Animati
 
     im.setRenderFn(c, eventRerenderFn);
 
+    // It's pretty important that no-one else calls rerenderFn anywhere else.
+    // If they did, we would get two concurrent renderings happening at once,
+    // which would continue splitting infinitely.
     function rerenderFn() {
         imMain(c, true);
         requestAnimationFrame(rerenderFn);
     }
-
     requestAnimationFrame(rerenderFn);
 
     return anim;
