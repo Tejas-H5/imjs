@@ -952,7 +952,10 @@ function imTodoList(c: ImCache) {
                         imdom.setAttr(c, "type", "checkbox");
                     }
 
-                    if (im.Memo(c, item.done)) {
+                    // Because we now change the checkbox's state on press, 
+                    // we must re-drive the checkbox's checked state even when checkbox.checked 
+                    // updates again from the regular click action (mouse being released right after a press)
+                    if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                         checkbox.checked = item.done;
                     }
 
@@ -1113,7 +1116,10 @@ function imTodoListItem(
                 imdom.setAttr(c, "type", "checkbox");
             }
 
-            if (im.Memo(c, item.done)) {
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                 checkbox.checked = item.done;
             }
 
@@ -1275,7 +1281,10 @@ function imTodoListItem(
                 imdom.setAttr(c, "type", "checkbox");
             }
 
-            if (im.Memo(c, item.done)) {
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                 checkbox.checked = item.done;
             }
 
@@ -1471,7 +1480,12 @@ function imTodoListItem(
         const checkbox = imdom.ElBegin(c, el.INPUT).root; {
             if (im.IsFirstRender(c)) imdom.setAttr(c, "type", "checkbox");
 
-            if (im.Memo(c, item.done)) checkbox.checked = item.done;
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
+                checkbox.checked = item.done;
+            }
 
             const mouse = imdom.getMouse();
             const hasMouseOver = imdom.hasMouseOver(c);

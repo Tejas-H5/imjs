@@ -1367,8 +1367,8 @@ function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): Animati
 
         if (anim.isRendering === true) {
             // This will make debugging a lot easier. 
-            // Otherwise the animation will play while
-            // we're breakpointed. Firefox moment. xD
+            // Otherwise the animation will play while we're breakpointed. 
+            // Firefox moment. xD
             return;
         }
 
