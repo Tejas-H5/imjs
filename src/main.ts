@@ -1,4 +1,4 @@
-import { im } from "im-js";
+import { im, imdom } from "im-js";
 import { imMain } from "./examples/examples";
 import { cssVars, imui, } from "./im-js/im-ui";
 
@@ -24,5 +24,4 @@ h1, h2, h3, h4, p, ul {
 
 imui.init();
 
-const globalCache = im.newCache();
-imMain(globalCache);
+imdom.startAnimationLoop(document.body, imMain);

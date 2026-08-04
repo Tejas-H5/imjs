@@ -143,7 +143,7 @@ function imLotsOfBoxesWithUI(c: ImCache) {
 
     const fps = im.getFpsCounterState(c);
 
-    if (!im.isEventRerender(c)) {
+    if (im.isAnimationFrame(c)) {
         s.timeElapsed += im.getDeltaTimeSeconds(c);
     }
     if (s.timeElapsed > 1) {
@@ -214,7 +214,7 @@ function generateReport(s: BenchmarkRunnerState, root: HTMLDivElement) {
             );
 
             function renderFn(c: ImCache, rows = 10, cols = 10) {
-                im.CacheBegin(c, renderFn); {
+                im.CacheBegin(c, true); {
                     imdom.RootBegin(c, root); {
                         imLotsOfBoxes(c, rows, cols);
                     } imdom.RootEnd(c, root);
@@ -273,7 +273,7 @@ function runRenderingBenchmark(
 
         for (let sample = 0; sample < numSamples; sample++) {
             // new cache for each rows config
-            const c: ImCache = [];
+            const c = im.newCache();
             root.replaceChildren();
 
             getTime(timer);

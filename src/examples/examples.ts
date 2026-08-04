@@ -67,11 +67,8 @@ if (!import.meta.env.IS_PROD) {
 }
 
 export function imMain(c: ImCache) {
-    im.CacheBegin(c, imMain); {
-        imdom.Begin(c, document.body); {
-            imui.LayoutBegin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
-                imVisualTestHarness(c, tests);
-            } imui.LayoutEnd(c);
-        } imdom.End(c, document.body);
-    } im.CacheEnd(c);
+    imui.LayoutBegin(c, COL); imui.Fixed(c, 0, PX, 0, PX, 0, PX, 0, PX); {
+        imVisualTestHarness(c, tests);
+    } imui.LayoutEnd(c);
 }
+

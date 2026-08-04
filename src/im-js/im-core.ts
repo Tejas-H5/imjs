@@ -24,28 +24,23 @@ import { assert } from "./assert";
 // implementation, so only getters and setters get exported
 const CACHE_FPS_COUNTER_STATE             = 0; // Useful for debugging performance in general, and running expensive computations over multiple frames
 const CACHE_RERENDER_FN                   = 1;
-const CACHE_ANIMATE_FN                    = 2;
-const CACHE_ANIMATE_FN_STILL_ANIMATING    = 3;
-const CACHE_ANIMATION_TIME_LAST           = 4;
-const CACHE_ANIMATION_TIME                = 5;
-const CACHE_ANIMATION_DELTA_TIME_SECONDS  = 6;
-const CACHE_TOTAL_DESTRUCTORS             = 7; // Useful memory leak indicator
-const CACHE_RENDER_FN_CHANGES             = 8;
-const CACHE_RERENDER_FN_INNER             = 9;
-const CACHE_IS_EVENT_RERENDER             = 10;
-const CACHE_NEEDS_RERENDER                = 11;
-const CACHE_ITEMS_ITERATED                = 12;
-const CACHE_IS_RENDERING                  = 13;
-const CACHE_TOTAL_MAP_ENTRIES             = 14; // Useful memory leak indicator
-const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME  = 15; // Useful memory leak indicator
-const CACHE_ITEMS_ITERATED_LAST_FRAME     = 16; // Useful performance metric
-const CACHE_PARENT_STACK                  = 17;
-const CACHE_RENDER_COUNT                  = 18;
-const CACHE_CURRENT_WAITING_FOR_SET       = 19;
-const CACHE_ROOT_ENTRIES                  = 20;
-const CACHE_CURRENT_ENTRIES               = 21;
-const CACHE_IDX                           = 22;
-const CACHE_ENTRIES_START                 = 23; // Not in the struct implementation, but we'll need it for the array implementation
+const CACHE_ANIMATION_TIME_LAST           = 2;
+const CACHE_ANIMATION_DELTA_TIME_SECONDS  = 3;
+const CACHE_TOTAL_DESTRUCTORS             = 4; // Useful memory leak indicator
+const CACHE_IS_ANIMATION_FRAME            = 5;
+const CACHE_NEEDS_RERENDER                = 6;
+const CACHE_ITEMS_ITERATED                = 7;
+const CACHE_IS_RENDERING                  = 8;
+const CACHE_TOTAL_MAP_ENTRIES             = 9; // Useful memory leak indicator
+const CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME  = 10; // Useful memory leak indicator
+const CACHE_ITEMS_ITERATED_LAST_FRAME     = 11; // Useful performance metric
+const CACHE_PARENT_STACK                  = 12;
+const CACHE_RENDER_COUNT                  = 13;
+const CACHE_CURRENT_WAITING_FOR_SET       = 14;
+const CACHE_ROOT_ENTRIES                  = 15;
+const CACHE_CURRENT_ENTRIES               = 16;
+const CACHE_IDX                           = 17;
+const CACHE_ENTRIES_START                 = 18; // Not in the struct implementation, but we'll need it for the array implementation
 
 
 const ENTRIES_REMOVE_LEVEL                    = 1;
@@ -67,7 +62,29 @@ const ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT   = 12;
 const ENTRIES_ITEMS_START                     = 13; // Not in the struct implementation, but we'll need it for the array implementation
 
 function newCache(): ImCache {
-    return [];
+    const c: ImCache = new Array(CACHE_ENTRIES_START)
+        .fill(undefined) as ImCache;
+
+    // starts at -1 and increments onto the current value. So we can keep accessing this idx over and over without doing idx - 1.
+    // NOTE: memory access is supposedly far slower than math. So might not matter too much
+    c[CACHE_IDX] = 0;
+    c[CACHE_ROOT_ENTRIES] = newCacheEntries(INTERNAL_TYPE_CACHE);
+    c[CACHE_CURRENT_ENTRIES] = c[CACHE_ROOT_ENTRIES];
+    c[CACHE_CURRENT_WAITING_FOR_SET] = false;
+    c[CACHE_NEEDS_RERENDER] = false;
+    c[CACHE_ITEMS_ITERATED] = 0;
+    c[CACHE_ITEMS_ITERATED_LAST_FRAME] = 0;
+    c[CACHE_TOTAL_DESTRUCTORS] = 0;
+    c[CACHE_TOTAL_MAP_ENTRIES] = 0;
+    c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME] = 0;
+    c[CACHE_IS_RENDERING] = true; 
+    c[CACHE_RENDER_COUNT] = 0;
+    c[CACHE_FPS_COUNTER_STATE] = newFpsCounterState();
+    c[CACHE_PARENT_STACK] = [];
+    c[CACHE_ANIMATION_TIME_LAST] = 0;
+    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
+
+    return c;
 }
 
 function getItemsIterated(c: ImCache): number {
@@ -132,7 +149,7 @@ function newFpsCounterState(): FpsCounterState {
 }
 
 function fpsMarkRenderingStart(fps: FpsCounterState) {
-    const t = performance.now();;
+    const t = performance.now();
 
     fps.renderMs = fps.renderEnd - fps.renderStart;
     fps.frameMs = t - fps.renderStart;
@@ -203,90 +220,11 @@ export type ImCacheRerenderFn = (c: ImCache) => void;
  * The main point of this framework is that rerendering your components as an animation eliminates and simplifies various problems, 
  * so it's pretty pointless if you have to start issuing manual rerenders.
  */
-function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
-    if (c.length === 0) {
-        c.length = CACHE_ENTRIES_START;
-        c.fill(undefined);
-
-        // starts at -1 and increments onto the current value. So we can keep accessing this idx over and over without doing idx - 1.
-        // NOTE: memory access is supposedly far slower than math. So might not matter too much
-        c[CACHE_IDX] = 0;
-        c[CACHE_ROOT_ENTRIES] = [];
-        c[CACHE_CURRENT_ENTRIES] = c[CACHE_ROOT_ENTRIES];
-        c[CACHE_CURRENT_WAITING_FOR_SET] = false;
-        c[CACHE_NEEDS_RERENDER] = false;
-        c[CACHE_ITEMS_ITERATED] = 0;
-        c[CACHE_ITEMS_ITERATED_LAST_FRAME] = 0;
-        c[CACHE_TOTAL_DESTRUCTORS] = 0;
-        c[CACHE_TOTAL_MAP_ENTRIES] = 0;
-        c[CACHE_TOTAL_MAP_ENTRIES_LAST_FRAME] = 0;
-        c[CACHE_IS_RENDERING] = true; 
-        c[CACHE_RENDER_COUNT] = 0;
-        c[CACHE_FPS_COUNTER_STATE] = newFpsCounterState();
-        c[CACHE_PARENT_STACK] = [];
-        c[CACHE_ANIMATION_TIME] = 0;
-        c[CACHE_ANIMATION_TIME_LAST] = 0;
-        c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = 0;
-        c[CACHE_RENDER_FN_CHANGES]      = 0;
-        c[CACHE_ANIMATE_FN_STILL_ANIMATING] = true;
-    }
-
-    if (c[CACHE_RERENDER_FN_INNER] !== renderFn) {
-        c[CACHE_RERENDER_FN_INNER] = renderFn;
-
-        // In a production app, this should remain 1.
-        // In a dev environment with HMR enabled, it should be incrementing each
-        // time HMR causes the render function to reload.
-        const id = c[CACHE_RENDER_FN_CHANGES] + 1;
-        c[CACHE_RENDER_FN_CHANGES] = id;
-
-        c[CACHE_RERENDER_FN] = (c: ImCache) => {
-            // I've found a significant speedup by writing code like
-            // if (x === false) or if (x === true) instead of if (!x) or if (x).
-            // You won't need to do this in 99.9999% of your code, but it
-            // would be nice if all 'library'-like code that underpins most of the stuff did it.
-            if (c[CACHE_IS_RENDERING] === true) {
-                // we can't rerender right here, so we'll queue a rerender at the end of the component
-                c[CACHE_NEEDS_RERENDER] = true;
-            } else {
-                c[CACHE_IS_EVENT_RERENDER] = true;
-                try {
-                    renderFn(c);
-                } catch (e) {
-                    console.error(e);
-                }
-                c[CACHE_IS_EVENT_RERENDER] = false;
-            }
-        };
-
-        const animateFn = (t: number) => {
-            if (c[CACHE_ANIMATE_FN_STILL_ANIMATING] === false) {
-                return;
-            }
-
-            if (c[CACHE_IS_RENDERING] === true) {
-                // This will make debugging a lot easier. Otherwise the animation will play while
-                // we're breakpointed. Firefox moment. xD
-                return;
-            }
-
-            if (c[CACHE_RERENDER_FN_INNER] !== renderFn) {
-                return;
-            }
-
-            c[CACHE_ANIMATION_TIME] = t;
-
-            renderFn(c);
-
-            // Needs to go stale, so that c[CACHE_RERENDER_FN_INNER] !== renderFn can work.
-            requestAnimationFrame(animateFn);
-        }
-        c[CACHE_ANIMATE_FN] = animateFn;
-        requestAnimationFrame(animateFn);
-    }
-
+function imCacheBegin(c: ImCache, isAnimationFrame: boolean) {
     const fpsState = getFpsCounterState(c);
-    if (c[CACHE_IS_EVENT_RERENDER] === false) {
+
+    c[CACHE_IS_ANIMATION_FRAME] = isAnimationFrame;
+    if (isAnimationFrame) {
         fpsMarkRenderingStart(fpsState);
     }
     fpsState.renderCount += 1;
@@ -302,8 +240,9 @@ function imCacheBegin(c: ImCache, renderFn: ImCacheRerenderFn) {
     c[CACHE_RENDER_COUNT]++;
 
     // Deltatime should naturally reach 0 on 'rerenders'. Not sure how it will work for manual rendering.
-    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (c[CACHE_ANIMATION_TIME] - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
-    c[CACHE_ANIMATION_TIME_LAST] = c[CACHE_ANIMATION_TIME];
+    const now = performance.now();
+    c[CACHE_ANIMATION_DELTA_TIME_SECONDS] = (now - c[CACHE_ANIMATION_TIME_LAST]) / 1000;
+    c[CACHE_ANIMATION_TIME_LAST] = now;
 
     imCacheEntriesBegin(c, c[CACHE_ROOT_ENTRIES], INTERNAL_TYPE_CACHE);
 
@@ -348,7 +287,7 @@ function imCacheEnd(c: ImCache) {
         c[CACHE_NEEDS_RERENDER] = false;
     }
 
-    if (c[CACHE_IS_EVENT_RERENDER] === false) {
+    if (c[CACHE_IS_ANIMATION_FRAME] === true) {
         fpsMarkRenderingEnd(c[CACHE_FPS_COUNTER_STATE]);
     }
 }
@@ -381,6 +320,8 @@ function imCacheEntriesBegin<T>(
     entries: ImCacheEntries,
     internalType: number,
 ) {
+    assert(entries[ENTRIES_INTERNAL_TYPE] === internalType, CONDITIONAL_RENDERING_ERROR_MESSAGE);
+
     c[CACHE_IDX] += 1;
     const idx = c[CACHE_IDX];
     if (idx === c.length) {
@@ -391,22 +332,6 @@ function imCacheEntriesBegin<T>(
 
     c[CACHE_CURRENT_ENTRIES] = entries;
 
-    if (entries.length === 0) {
-        for (let i = 0; i < ENTRIES_ITEMS_START; i++) {
-            entries.push(undefined);
-        }
-
-        entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
-        entries[ENTRIES_LAST_IDX] = ENTRIES_ITEMS_START - 2;
-        entries[ENTRIES_REMOVE_LEVEL] = REMOVE_LEVEL_DETATCHED;
-        entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
-        entries[ENTRIES_IS_DERIVED] = false;
-        entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
-        entries[ENTRIES_INTERNAL_TYPE] = internalType;
-        entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
-        entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
-        entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = 0;
-    }
     entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
     entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
 
@@ -693,7 +618,7 @@ function __BlockKeyedBegin(c: ImCache, key: ValidKey, removeLevel: RemovedLevel)
 
     let block = map.get(key);
     if (block === undefined) {
-        block = { rendered: false, entries: [] as unknown as ImCacheEntries };
+        block = { rendered: false, entries: newCacheEntries(INTERNAL_TYPE_KEYED_BLOCK) };
         map.set(key, block);
     }
 
@@ -850,20 +775,33 @@ function cacheEntriesOnDestroy(c: ImCache, entries: ImCacheEntries) {
     }
 }
 
-// This is the typeId for a list of cache entries.
-function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK): ImCacheEntries {
-    let entries; entries = imGet(c, imImmediateModeBlockBegin);
-    if (entries === undefined) {
-        entries = imSet(c, [] as unknown as ImCacheEntries);
-    }
+function newCacheEntries(internalType: number): ImCacheEntries {
+    const entries: ImCacheEntries = new Array(ENTRIES_ITEMS_START)
+        .fill(undefined) as ImCacheEntries;
 
-    imCacheEntriesBegin(c, entries, internalType);
+    entries[ENTRIES_IDX] = ENTRIES_ITEMS_START - 2;
+    entries[ENTRIES_LAST_IDX] = ENTRIES_ITEMS_START - 2;
+    entries[ENTRIES_REMOVE_LEVEL] = REMOVE_LEVEL_DETATCHED;
+    entries[ENTRIES_IS_IN_CONDITIONAL_PATHWAY] = false;
+    entries[ENTRIES_IS_DERIVED] = false;
+    entries[ENTRIES_STARTED_CONDITIONALLY_RENDERING] = false;
+    entries[ENTRIES_INTERNAL_TYPE] = internalType;
+    entries[ENTRIES_KEYED_MAP_REMOVE_LEVEL] = REMOVE_LEVEL_DESTROYED;
+    entries[ENTRIES_FIRST_RENDER_QUERY_COUNT] = 0;
+    entries[ENTRIES_PREV_FIRST_RENDER_QUERY_COUNT] = 0;
 
     return entries;
 }
 
-function __GetEntries(c: ImCache): ImCacheEntries {
-    const entries = c[CACHE_CURRENT_ENTRIES];
+// This is the typeId for a list of cache entries.
+function imImmediateModeBlockBegin(c: ImCache, internalType: number = INTERNAL_TYPE_NORMAL_BLOCK): ImCacheEntries {
+    let entries; entries = imGet(c, imImmediateModeBlockBegin);
+    if (entries === undefined) {
+        entries = imSet(c, newCacheEntries(internalType));
+    }
+
+    imCacheEntriesBegin(c, entries, internalType);
+
     return entries;
 }
 
@@ -916,8 +854,8 @@ function imImmediateModeBlockEnd(c: ImCache, internalType: number = INTERNAL_TYP
     imCacheEntriesEnd(c);
 }
 
-function isEventRerender(c: ImCache) {
-    return c[CACHE_IS_EVENT_RERENDER];
+function isAnimationFrame(c: ImCache): boolean {
+    return c[CACHE_IS_ANIMATION_FRAME] === true;
 }
 
 
@@ -1279,9 +1217,16 @@ function getRenderCount(c: ImCache) {
     return c[CACHE_RENDER_COUNT];
 }
 
+function setRenderFn(c: ImCache, imFn: ImCacheRerenderFn) {
+    if (c[CACHE_RERENDER_FN] !== imFn) {
+        c[CACHE_RERENDER_FN] = imFn;
+    }
+}
+
 export const im = {
     /** You'll need to call this once, and retain the state somewhere. So, technically speaking, this framework is retained-mode :nerd-emoji: */
     newCache,
+    setRenderFn,
 
     /** Need to call these two for the immediate-mode cache to work */
     CacheBegin: imCacheBegin, CacheEnd: imCacheEnd,
@@ -1325,9 +1270,9 @@ export const im = {
 
     /** Performance optimization */
 
-    // Is this rerender caused by an event (as opposed to an animation frame)? 
+    // Is this rerender an animation frame? (as opposed to some other kind of rendering mechanism, like events).
     // Useful to avoid expensive canvas rendering when true.
-    isEventRerender,
+    isAnimationFrame,
 
     /** State management - surprisingly useless method */
     getEntryAt,

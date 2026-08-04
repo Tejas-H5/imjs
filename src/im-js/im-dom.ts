@@ -2,7 +2,7 @@ import { assert } from "./assert";
 import { EL } from "./el";
 import { EL_SVG } from "./elsvg";
 import { EV } from "./ev";
-import { im, ImCache } from "./im-core";
+import { im, ImCache, ImCacheRerenderFn } from "./im-core";
 import { KEY } from "./key";
 
 ///////////////////////////
@@ -694,11 +694,12 @@ export type MouseState = {
 };
 
 export type GlobalEventSystem = {
-    rerender: () => void;
-    keyboard: KeyboardState;
-    mouse: MouseState;
-    blur:  boolean;
-    dontClear: boolean;
+    rerender:      () => void;
+    isRerendering: boolean;
+    keyboard:      KeyboardState;
+    mouse:         MouseState;
+    blur:          boolean;
+    dontClear:     boolean;
     globalEventHandlers: {
         mousedown:  (e: MouseEvent) => void;
         mousemove:  (e: MouseEvent) => void;
@@ -710,6 +711,12 @@ export type GlobalEventSystem = {
         keyup:      (e: KeyboardEvent) => void;
         blur:       () => void;
     };
+}
+
+
+function isEventRerender(): boolean {
+    if (!globalEventSystem) return false;
+    return globalEventSystem.isRerendering;
 }
 
 function findParents(el: ValidElement, elements: Set<ValidElement>) {
@@ -781,9 +788,15 @@ function newImGlobalEventSystem(c: ImCache): GlobalEventSystem {
 
     const eventSystem: GlobalEventSystem = {
         rerender: () => {
-            eventSystem.dontClear = true;
-            im.rerenderCache(c)
+            eventSystem.isRerendering = true;
+            try {
+                eventSystem.dontClear = true;
+                im.rerenderCache(c)
+            } finally {
+                eventSystem.isRerendering = false;
+            }
         },
+        isRerendering: false,
         keyboard,
         mouse,
         blur: false,
@@ -1333,6 +1346,71 @@ function isLetterHeld(keysState: KeyboardState, letter: string): boolean {
     return false;
 }
 
+type AnimationLoop = {
+    isRendering: boolean;
+    stopRendering: boolean;
+    c: ImCache;
+};
+
+function startAnimationLoop(root: HTMLElement, imFn: ImCacheRerenderFn): AnimationLoop {
+    const c = im.newCache();
+    const anim: AnimationLoop = {
+        isRendering: false,
+        stopRendering: false,
+        c,
+    };
+
+    const imMain = (c: ImCache, isFrame = false) => {
+        if (anim.stopRendering === true) {
+            return;
+        }
+
+        if (anim.isRendering === true) {
+            // This will make debugging a lot easier. 
+            // Otherwise the animation will play while
+            // we're breakpointed. Firefox moment. xD
+            return;
+        }
+
+        anim.isRendering = true;
+
+        try {
+            im.CacheBegin(c, isFrame); {
+                imdom.Begin(c, root); {
+                    imFn(c);
+                } imdom.End(c, root);
+            } im.CacheEnd(c);
+
+            anim.isRendering = false;
+        } catch (e) {
+            // Without doing this, errors become mostly invisible.
+            // I could put a little error page here saying what the error
+            // is, but I think this is just confusing to customers and
+            // not as good as the dev console for developers.
+            root.replaceChildren();
+
+            anim.isRendering = false;
+            throw e;
+        }
+    };
+
+    function eventRerenderFn() {
+        imMain(c, false);
+    }
+
+    im.setRenderFn(c, eventRerenderFn);
+
+    function rerenderFn() {
+        imMain(c, true);
+        requestAnimationFrame(rerenderFn);
+    }
+
+    requestAnimationFrame(rerenderFn);
+
+    return anim;
+}
+
+
 export const ev = EV;
 export const el = EL;
 export const elsvg = EL_SVG;
@@ -1347,19 +1425,28 @@ export const imdom = {
     /**
      * Typicaly just used at the very root of the program:
      *
-     * const globalim.Cache: im.Cache = [];
-     * main(globalim.Cache);
-     *
+     * ```
      * function imMain(c: im.Cache) {
-     *      im.CacheBegin(c, imMain); {
-     *          const ev = imdom.Begin(c, document.body); {
-     *              // Your code here
-     *          } imdom.End(c, document.body, ev);
-     *      } im.CacheEnd(c);
+     *      try {
+     *          im.CacheBegin(c, imMain); {
+     *              imdom.Begin(c, document.body); {
+     *                  // Your code here
+     *              } imdom.End(c, document.body, ev);
+     *          } im.CacheEnd(c);
+     *      } catch (e) {
+     *          document.body.replaceChildren();
+     *          throw e;
+     *      }
      * }
      *
-     * const globalImCache: ImCache = []; // yes it's just an array
+     * const globalImCache: ImCache = im.newCache();
      * imMain(globalImCache);
+     * ```
+     *
+     * The try/catch allows top-level uncaught to actually be noticeable.
+     * If you wanted to put a little error page there, I'd recommend looking into
+     * `im.Try/im.Catch/im.TryEnd`, but untill then, the error handling above is 
+     * a lot better than nothing.
      */
     Begin: imDomBegin, End: imDomEnd,
     RootBegin: imRootBegin, RootEnd: imRootEnd,
@@ -1415,6 +1502,8 @@ export const imdom = {
     hasMouseOver,
     isKeyPressed, isKeyRepeated, isKeyPressedOrRepeated, isKeyReleased, isKeyHeld,
     isLetterPressed, isLetterRepeated, isLetterPressedOrRepeated, isLetterReleased, isLetterHeld,
+
+    startAnimationLoop,
 
     /** Global event system - internal methods */
     newImGlobalEventSystem,

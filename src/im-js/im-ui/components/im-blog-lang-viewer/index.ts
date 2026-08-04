@@ -409,5 +409,24 @@ function imCodeBlock(c: ImCache, block: bl.CodeBlock, otherBlocks: bl.Block[]) {
 	// by re-parsing the entire blogpost's text. If this is 
 	// no longer the case, we'll need to update how this works.
 	const version = 0;
-	imCodeViewer(c, block.code, codeToDiffWith, version);
+	imBegin(c); {
+		if (im.IsFirstRender(c)) {
+			imdom.setStyle(c, "position", "relative");
+		}
+
+		imCodeViewer(c, block.code, codeToDiffWith, version);
+
+		imBegin(c); imui.Fg(c, cssVars.fg2); {
+			if (im.IsFirstRender(c)) {
+				imdom.setStyle(c, "position", "absolute");
+				imdom.setStyle(c, "top", "0");
+				imdom.setStyle(c, "right", "0");
+				imdom.setStyle(c, "fontFamily", "monospace");
+				imdom.setStyle(c, "fontStyle", "italic");
+				imdom.setStyle(c, "fontSize", "0.7rem");
+			}
+
+			imdom.Str(c, block.language);
+		} imEnd(c);
+	} imEnd(c);
 }

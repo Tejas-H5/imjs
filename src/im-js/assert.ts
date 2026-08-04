@@ -1,6 +1,6 @@
-export function assert(value: boolean): asserts value {
+export function assert(value: boolean, message: string = "Assertion failed"): asserts value {
     if (value === false) {
-        throw new Error("Assertion failed");
+        throw new Error(message);
     }
 }
 
