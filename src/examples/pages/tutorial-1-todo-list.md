@@ -2,6 +2,7 @@
 
 We'll implement a simple TODO list.
 Along the way, we will learn how the framework works, and how to use it.
+You'll need to at least skim over this tutorial to get how the framework works.
 
 ## Part 0 - getting started
 
@@ -16,108 +17,31 @@ There are a lot of ways to do this - if you don't know how, I'd suggest
 
 To get started, you'll need to paste this into your entrypoint:
 
-```typescript Entrypoint
+```typescript
 import { ImCache, im, imdom } from "im-js";
 
-const globalCache = im.newCache();
-imMain(globalCache);
+imdom.startAnimationLoop(document.body, imMain);
 
 function imMain(c: ImCache) {
-    im.CacheBegin(c, imMain); {
-        imdom.Begin(c, document.body); {
-            imApp(c);
-        } imdom.End(c, document.body);
-    } im.CacheEnd(c);
-}
-
-function imApp(c: ImCahe) {
-    // Tutorial code will live here
-    imdom.Str(c, "Henlo");
+     // Your code here
 }
 ```
 
-It isn't a good place to start understanding the framework, but you'll need it
-    if you want to follow along with the simpler examples that are.
+`im.CacheBegin/End` open and close a scope where immediate-mode state can be used.
+`imdom.Begin/End` open and close a scope where other `imdom` methods can be used
+    to render DOM nodes, register event handlers, etc. etc.
+Your app goes in the middle. 
 
-There's a lot going on here, and I've not been able to explain it well with
-    a series of dot-points. 
-Instead, here's the same code again with explanatory comments:
+By default, when an uncaught error is thrown, it's pretty hard to see.
+The animation loop will grind to a halt, but all the DOM nodes will still be present.
+A user or developer won't notice the crash till they try clicking on or otherwise interacting
+    with the page and nothing works.
+Rather than creating an app runner that you have to pass a function into,
+    I think it's better for you to catch this exception and handle it on your side.
+A good default is to just clear the entire page, like we do above.
+You'll see how to create a proper error boundary further down in this tutorial.
 
-```typescript Entrypoint (Annotated) #diff[-1]
-import {
-    ImCache,
-    // im is the namespace that contains all the core framework primitives.
-    // Rather than importing tens of methods, you only need to import this one 
-    // object with all the functions on it.
-    // Whether you're using this framework in a DOM context, or any other 
-    // contexts I decide to support in the future, this will always be relevant.
-    // It does NOT retain any global/internal state.
-    im, 
-    // imdom contains anything related to the DOM. It also contains a global
-    // event system that is used to allow methods like `imdom.hasMouseOver` to work.
-    // The global event system subscribes to events on `document` and `window`, so it's
-    // state is also stored as a global variable.
-    imdom, 
-} from "im-js";
-
-// This is the immediate-mode cache. 
-// All framework state lives here.
-const globalCache = im.newCache(); 
-
-// You'll need to call the main method once to kickstart rendering
-imMain(globalCache);  
-
-// By convention, every function that retains immediate-mode state, or calls some other method starting with `im` should itself start with `im`.
-// For namespaces starting with `im`, methods starting with a Captial letter like im.Begin() can also be assumed to write immediate-mode state.
-// Methods that only read from immediate-mode state don't need to be prefixed with `im`.
-// We can already see this from their first `c: ImCache` parameter.
-// This convention will be useful later.
-function imMain(
-    // I could have made this a global variable that I retain in my framework, but I
-    // didn't - accepting the parameter explicitly makes it more obvious at the callsite
-    // that this method reads from or writes to immediate-mode state. 
-    // It is even worth all the `c` being passed in everywhere.
-    c: ImCache 
-) {
-    // If the cache is not yet initialised, im.CacheBegin initialises the cache, and then
-    // kicks off an animation loop that uses imMain to continuously rerender the UI.
-    im.CacheBegin(c, imMain); { 
-
-        // This region of code can't render DOM nodes, yet.
-
-
-        // If the DOM module is not yet initialized, imdom will initialize it, and
-        // make `document.body` the root where `imApp` can append things to
-        imdom.Begin(c, document.body); { 
-
-            // This region now supports rendering things to the DOM, as well as
-            // using event-system helpers from `imdom`, like `imdom.hasMouseOver`, 
-            // `imdom.keyIsDown`, etc.
-            imApp(c);
-
-        } imdom.End(c, document.body);
-
-        // This region of code can no longer render DOM nodes
-
-    // im.CacheEnd does some sanity-checks. 
-    // Were the same number of scopes pushed and popped?
-    // Did we render the same number of entries this render?
-    // If any of these fail, the code throws. 
-    // It also measures how long the render took, which is useful while
-    // developing to know whether your code is any good. 
-    // Code that you put after im.CacheEnd won't be measured, so
-    // you probably never want to do that.
-    } im.CacheEnd(c); 
-}
-
-// This is where the rest of the examples will take place!
-function imApp(c: ImCahe) {
-    imdom.Str(c, "Henlo");
-}
-```
-
-Don't worry too much if you don't get it 100%, it should make more sense
-    by the end of the tutorial.
+You then need to do `imMain(globalImCache)` to actually kick off the animatin loop.
 
 ## Part 1 - getting the skeleton of the app in place
 
@@ -1017,7 +941,10 @@ function imTodoList(c: ImCache) {
                         imdom.setAttr(c, "type", "checkbox");
                     }
 
-                    if (im.Memo(c, item.done)) {
+                    // Because we now change the checkbox's state on press, 
+                    // we must re-drive the checkbox's checked state even when checkbox.checked 
+                    // updates again from the regular click action (mouse being released right after a press)
+                    if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                         checkbox.checked = item.done;
                     }
 
@@ -1178,7 +1105,10 @@ function imTodoListItem(
                 imdom.setAttr(c, "type", "checkbox");
             }
 
-            if (im.Memo(c, item.done)) {
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                 checkbox.checked = item.done;
             }
 
@@ -1340,7 +1270,10 @@ function imTodoListItem(
                 imdom.setAttr(c, "type", "checkbox");
             }
 
-            if (im.Memo(c, item.done)) {
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
                 checkbox.checked = item.done;
             }
 
@@ -1536,7 +1469,12 @@ function imTodoListItem(
         const checkbox = imdom.ElBegin(c, el.INPUT).root; {
             if (im.IsFirstRender(c)) imdom.setAttr(c, "type", "checkbox");
 
-            if (im.Memo(c, item.done)) checkbox.checked = item.done;
+            // Because we now change the checkbox's state on press, 
+            // we must re-drive the checkbox's checked state even when checkbox.checked 
+            // updates again from the regular click action (mouse being released right after a press)
+            if (im.Memo(c, item.done) | im.Memo(c, checkbox.checked)) {
+                checkbox.checked = item.done;
+            }
 
             const mouse = imdom.getMouse();
             const hasMouseOver = imdom.hasMouseOver(c);

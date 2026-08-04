@@ -25,10 +25,6 @@ But I am not against including it later.
 I haven't stress-tested the framework on client-server stuff as much as I have for
     local storage/indexed-db use cases, but I may end up doing this 
     when I eventually get around to it.
-- The default error behaviour is a bit shit - the animation loop simply breaks, and the page
-    stops animating. But everything is still responsive! 
-    The result is that everything is subtley broken, but it also isn't super clear that is the case.
-    Anyway, not ideal.
 ]
 
 ## Out of scope
