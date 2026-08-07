@@ -13,6 +13,11 @@ im-js/
     im-ui/      (optional)
         A minimal design system I've included for my own convenience.
         It's optional - im-js will work without it.
+
+    tests/  (ignore)
+        I put the tests here, you can ignore them.
+
+<other folders>  (ignore)
 ```
 
 ## npm

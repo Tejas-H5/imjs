@@ -27,21 +27,12 @@ function imMain(c: ImCache) {
 }
 ```
 
-`im.CacheBegin/End` open and close a scope where immediate-mode state can be used.
-`imdom.Begin/End` open and close a scope where other `imdom` methods can be used
-    to render DOM nodes, register event handlers, etc. etc.
-Your app goes in the middle. 
+`imdom.startAnimationLoop` Sets up a render loop where you can start rendering DOM nodes. 
+The assumption is that you only ever start one of these.
+Since `requestAnimationFrame` is actually DOM-related, I've put the animation loop 
+    helper in `imdom`, as opposed to the main `im` namespace that is solely
+    dedicated to immediate-mode-state helpers.
 
-By default, when an uncaught error is thrown, it's pretty hard to see.
-The animation loop will grind to a halt, but all the DOM nodes will still be present.
-A user or developer won't notice the crash till they try clicking on or otherwise interacting
-    with the page and nothing works.
-Rather than creating an app runner that you have to pass a function into,
-    I think it's better for you to catch this exception and handle it on your side.
-A good default is to just clear the entire page, like we do above.
-You'll see how to create a proper error boundary further down in this tutorial.
-
-You then need to do `imMain(globalImCache)` to actually kick off the animatin loop.
 
 ## Part 1 - getting the skeleton of the app in place
 
@@ -1506,7 +1497,7 @@ function imTodoListItem(
 
         if (im.If(c) && itemIdx < items.length - 1){ 
             if (imButtonIsClicked(c, "down")) {
-                // This itneraction should now be fixed
+                // This interaction should now be fixed
                 state.deferredEvent = () => {
                     [items[itemIdx + 1], items[itemIdx]] 
                         = [items[itemIdx], items[itemIdx + 1]];

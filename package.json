@@ -5,24 +5,25 @@
   "description": "An immediate-mode UI framework",
   "type": "module",
   "scripts": {
-    "dev":   "node ./build/build.ts devserver",
+    "dev": "node ./build/build.ts devserver",
     "build": "node ./build/build.ts build",
-    "test":  "node ./build/test.ts"
+    "test": "node ./build/test.ts"
   },
   "devDependencies": {
     "@types/node": "^25.3.2",
     "@typescript/native-preview": "^7.0.0-dev.20260227.1",
+    "domino": "^2.1.7",
     "esbuild": "^0.27.3",
     "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
       "import": "./src/im-js/index.ts",
-      "types":  "./src/im-js/index.ts"
+      "types": "./src/im-js/index.ts"
     },
     "./im-ui": {
       "import": "./src/im-js/im-ui/index.ts",
-      "types":  "./src/im-js/im-ui/index.ts"
+      "types": "./src/im-js/im-ui/index.ts"
     }
   },
   "files": [

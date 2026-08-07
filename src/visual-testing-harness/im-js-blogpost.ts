@@ -194,12 +194,14 @@ function imRenderBlockCustom(c: ImCache, block: bl.Block, otherBlocks: bl.Block[
 
 function imRenderItemCustom(c: ImCache, item: bl.InlineItem, options: BlogLangRenderOptions): void {
     if (im.If(c) && item.type === bl.T_URL) {
+        const isLocalPath = item.url.startsWith("/");
+
         imItemUrlBegin(c, item, options); {
             imdom.Str(c, item.text);
 
             const clickEvent = imdom.On(c, ev.CLICK);
             if (clickEvent) {
-                if (item.url.startsWith("/")) {
+                if (isLocalPath) {
                     // It's a local path, so we shouldn't need to navigate anywhere.
                     clickEvent.preventDefault();
                     let baseUrl = window.location.href;
@@ -220,7 +222,7 @@ function imRenderItemCustom(c: ImCache, item: bl.InlineItem, options: BlogLangRe
                     document.getElementById("top")?.scrollIntoView();
                 }
             }
-        } imItemUrlEnd(c);
+        } imItemUrlEnd(c, !isLocalPath);
     } else {
         im.Else(c);
         imRenderBlogLangBlockItem(c, item, options);

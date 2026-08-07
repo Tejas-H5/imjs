@@ -1,8 +1,11 @@
 import * as test from "testing";
 import * as ld from "line-diff";
 
+test.file("diff.test.ts");
 
 test.group("Basic diffing", [], () => {
+    // NOTE: these tests are the bare minimum. 
+    // Our diff algorithm has a bunch of heuristics that haven't yet been captured here.
     const cases: { name: string, before: string, after: string, diff: string }[] = [
         {
             name: "one insert at the start",

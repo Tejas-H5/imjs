@@ -104,7 +104,9 @@ export function imVisualTestInstallation(
                 }
             } imui.End(c);
 
-            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); imui.Size(c, 0, NA, 80, VH); {
+            imui.Begin(c, BLOCK); imui.ScrollOverflow(c); imui.Flex(c, 1 - split.vSplit); {
+                if (im.IsFirstRender(c)) imdom.setStyle(c, "maxHeight", "80vh");
+
                 imCodeViewer(c, code ?? "", diff, 0);
             } imui.End(c);
         } imui.End(c);

@@ -1,4 +1,4 @@
-import { im, imdom } from "im-js";
+import { imdom } from "im-js";
 import { imMain } from "./examples/examples";
 import { cssVars, imui, } from "./im-js/im-ui";
 

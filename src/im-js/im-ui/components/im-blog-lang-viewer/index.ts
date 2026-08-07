@@ -2,7 +2,7 @@
 
 import { assert } from "assert";
 import * as bl from "blog-lang";
-import { el, im, ImCache, imdom } from "im-js";
+import { el, elsvg, im, ImCache, imdom } from "im-js";
 import {
 	BLOCK,
 	CENTER,
@@ -242,7 +242,7 @@ function makeUrl(url: string): URL | undefined {
 export function imRenderItemUrl(c: ImCache, item: bl.InlineUrl, options: BlogLangRenderOptions) {
 	imItemUrlBegin(c, item, options); {
 		imStr(c, item.text);
-	} imItemUrlEnd(c);
+	} imItemUrlEnd(c, true);
 }
 
 export function imItemUrlBegin(c: ImCache, item: bl.InlineUrl, options: BlogLangRenderOptions) {
@@ -262,14 +262,57 @@ export function imItemUrlBegin(c: ImCache, item: bl.InlineUrl, options: BlogLang
 	} // imEnd
 }
 
-export function imItemUrlEnd(c: ImCache) {
+export function imItemUrlEnd(c: ImCache, opensExternally: boolean) {
 	// imBegin
 	{
 		// imdom.ElBegin(c, el.A); 
 		{
-
 			if (im.If(c) && imdom.hasMouseOver(c)) {
-				imStr(c, " -> ");
+				if (im.If(c) && !opensExternally) {
+					imStr(c, " -> ");
+				} else {
+					im.IfElse(c);
+
+					// Google search box AI generated this icon btw, lets go. First AI code in the codebase
+					imdom.ElSvgBegin(c, elsvg.SVG); {
+						if (im.IsFirstRender(c)) {
+							imdom.setAttr(c, "width", "14");
+							imdom.setAttr(c, "height", "14");
+							imdom.setAttr(c, "viewBox", "0 0 24 24");
+							imdom.setAttr(c, "fill", "none");
+							imdom.setAttr(c, "stroke", "currentColor");
+							imdom.setAttr(c, "stroke-width", "2");
+							imdom.setAttr(c, "stroke-linecap", "round");
+							imdom.setAttr(c, "stroke-linejoin", "round");
+							imdom.setAttr(c, "style", "margin-left: 4px; vertical-align: middle;");
+							imdom.setAttr(c, "aria-hidden", "true");
+						}
+
+						// <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+						imdom.ElSvgBegin(c, elsvg.PATH); {
+							if (im.IsFirstRender(c)) {
+								imdom.setAttr(c, "d", "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6");
+							}
+						} imdom.ElSvgEnd(c, elsvg.PATH);
+
+						// <polyline points="15 3 21 3 21 9"></polyline>
+						imdom.ElSvgBegin(c, elsvg.POLYLINE); {
+							if (im.IsFirstRender(c)) {
+								imdom.setAttr(c, "points", "15 3 21 3 21 9");
+							}
+						} imdom.ElSvgEnd(c, elsvg.POLYLINE);
+
+						// <line x1="10" y1="14" x2="21" y2="3"></line>
+						imdom.ElSvgBegin(c, elsvg.LINE); {
+							if (im.IsFirstRender(c)) {
+								imdom.setAttr(c, "x1", "10");
+								imdom.setAttr(c, "y1", "14");
+								imdom.setAttr(c, "x2", "21");
+								imdom.setAttr(c, "y2", "3");
+							}
+						} imdom.ElSvgEnd(c, elsvg.LINE);
+					} imdom.ElSvgEnd(c, elsvg.SVG);
+				} im.IfEnd(c);
 			} im.IfEnd(c);
 		} imdom.ElEnd(c, el.A);
 	} imEnd(c);

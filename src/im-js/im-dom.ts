@@ -6,6 +6,21 @@ import { im, ImCache, ImCacheRerenderFn } from "./im-core";
 import { KEY } from "./key";
 
 ///////////////////////////
+// Global state !!!
+
+let globalEventSystem: GlobalEventSystem | undefined;
+let globalEventSystemRefCount = 0;
+
+let win = (typeof window === "undefined" ? undefined : window) as Window;
+let doc = (typeof document === "undefined" ? undefined : document) as Document;
+
+// For testing reasons only
+function setWindow(window: Window) {
+    win = window;
+    doc = win.document;
+}
+
+///////////////////////////
 // DOM-node management
 
 export type ValidElement = HTMLElement | SVGElement;
@@ -170,62 +185,6 @@ function assertInvariants(appender: DomAppender<ValidElement>) {
     }
 }
 
-/**
- TODO: test case
-
-let useDiv1 = false;
-function GraphMappingsEditorView(c: im.Cache) {
-    LayoutBegin(c, BLOCK); imButton(c); {
-        Str(c, "toggle");
-        if (elHasMousePress(c)) useDiv1 = !useDiv1;
-    } LayoutEnd(c);
-
-    LayoutBegin(c, COL); imFlex(c); {
-        let div1, div2
-        LayoutBegin(c, ROW); imFlex(c); {
-            LayoutBegin(c, COL); imFlex(c); {
-                Str(c, "Div 1");
-
-                div1 = LayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
-
-                Str(c, "Div 1 end");
-            } LayoutEnd(c);
-            LayoutBegin(c, COL); imFlex(c); {
-                Str(c, "Div 2");
-
-                div2 = LayoutBeginInternal(c, COL); imFinalizeDeferred(c); imLayoutEnd(c);
-
-                Str(c, "Div 2 end");
-            } LayoutEnd(c);
-        } LayoutEnd(c);
-
-        const s = GetInline(c, imGraphMappingsEditorView) ?? imSet(c, {
-            choices: [],
-        }) as any;
-
-        const num = 10;
-        if (useDiv1) {
-            // useDiv1 = false;
-            for (let i = 0; i < num; i++) {
-                s.choices[i] = Math.random() < 0.5;
-            }
-        }
-
-        For(c); for (let i = 0; i < num; i++) {
-            const randomChoice = s.choices[i] ? div1 : div2;
-
-            DomRootExistingBegin(c, randomChoice); {
-                LayoutBegin(c, COL); {
-                    addDebugLabelToAppender(c, "bruv " + i);
-                    Str(c, "Naww: " + i);
-                } LayoutEnd(c);
-            } DomRootExistingEnd(c, randomChoice);
-        } ForEnd(c);
-    } LayoutEnd(c);
-}
-
-*/
-
 function finalizeDomAppender(a: DomAppender<ValidElement>) {
     // by the time we get here, the dom nodes we want have already been appended in the right order, and
     // `a.children` should be pretty much identical to what is in the DOM. 
@@ -248,7 +207,7 @@ function finalizeDomAppender(a: DomAppender<ValidElement>) {
  */
 function imElBegin<K extends keyof HTMLElementTagNameMap>(
     c: ImCache,
-    r: KeyRef<K>
+    r: KeyRef<K>,
 ): DomAppender<HTMLElementTagNameMap[K]> {
     // TODO: support changing the type
     // Make this entry in the current entry list, so we can delete it easily
@@ -256,7 +215,7 @@ function imElBegin<K extends keyof HTMLElementTagNameMap>(
 
     let childAppender: DomAppender<HTMLElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
-        const element = document.createElement(r.val);
+        const element = doc.createElement(r.val);
         childAppender = im.Set(c, newDomAppender(element, appender.domRoot, []));
         childAppender.keyRef = r;
     }
@@ -286,14 +245,14 @@ function endDomAppender(c: ImCache, appender: DomAppender<ValidElement>) {
  */
 function imElSvgBegin<K extends keyof SVGElementTagNameMap>(
     c: ImCache,
-    r: KeyRef<K>
+    r: KeyRef<K>,
 ): DomAppender<SVGElementTagNameMap[K]> {
     // Make this entry in the current entry list, so we can delete it easily
     const appender = getCurrentAppender(c);
 
     let childAppender: DomAppender<SVGElementTagNameMap[K]> | undefined = im.Get(c, newDomAppender);
     if (childAppender === undefined) {
-        const svgElement = document.createElementNS("http://www.w3.org/2000/svg", r.val);
+        const svgElement = doc.createElementNS("http://www.w3.org/2000/svg", r.val);
         // Seems unnecessary. 
         // svgElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
         childAppender = im.Set(c, newDomAppender(svgElement, appender.domRoot, []));
@@ -441,13 +400,13 @@ function imStr(c: ImCache, value: Stringifyable): Text {
     // imStr for typeId safety
     let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
-        document.createTextNode(""),
+        doc.createTextNode(""),
         appender,
         null
     ));
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
-    let lastValue = im.GetInline(c, document.createTextNode);
+    let lastValue = im.GetInline(c, doc.createTextNode);
     if (im.isSetRequired(c) === true || lastValue !== value) {
         im.Set(c, value);
         textNodeLeafAppender.root.nodeValue = (value != null && value.toString) ? value.toString() : "<couldn't stringify>";
@@ -464,7 +423,7 @@ function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text 
 
     let textNodeLeafAppender; textNodeLeafAppender = im.GetInline(c, imStr);
     if (textNodeLeafAppender === undefined) textNodeLeafAppender = im.Set(c, newDomAppender(
-        document.createTextNode(""),
+        doc.createTextNode(""),
         appender.domRoot,
         null
     ));
@@ -472,7 +431,7 @@ function imStrFmt<T>(c: ImCache, value: T, formatter: (val: T) => string): Text 
     const formatterChanged = im.Memo(c, formatter);
 
     // The user can't select this text node if we're constantly setting it, so it's behind a cache
-    let lastValue = im.GetInline(c, document.createTextNode);
+    let lastValue = im.GetInline(c, doc.createTextNode);
     if (lastValue !== value || formatterChanged !== 0) {
         im.Set(c, value);
         textNodeLeafAppender.root.nodeValue = formatter(value);
@@ -890,23 +849,28 @@ function resetImKeyboardState(keyboard: KeyboardState) {
     updateKeysState(keys, null, null, true);
 }
 
-/**
- * See the decision matrix above {@link globalStateStackPush}
- */
-let globalEventSystem: GlobalEventSystem | undefined;
-
-// TODO: is there any point in separating this from DomRoot ?
 function imGlobalEventSystemBegin(c: ImCache): GlobalEventSystem {
     let state = im.Get(c, newImGlobalEventSystem);
     if (state === undefined) {
+        let eventSystem = globalEventSystem;
+
         // Can't make two of these
-        assert(globalEventSystem === undefined);
+        if (eventSystem === undefined) {
+            eventSystem = newImGlobalEventSystem(c);
+            adddocAndWindowEventListeners(eventSystem);
 
-        const eventSystem = newImGlobalEventSystem(c);
-        addDocumentAndWindowEventListeners(eventSystem);
-        im.onImmediateModeBlockDestroyed(c, () => removeDocumentAndWindowEventListeners(eventSystem));
+            globalEventSystemRefCount++;
+            im.onImmediateModeBlockDestroyed(c, () => {
+                globalEventSystemRefCount--;
+                if (globalEventSystemRefCount === 0) {
+                    assert(!!eventSystem);
+                    removedocAndWindowEventListeners(eventSystem);
+                    globalEventSystem = undefined;
+                }
+            });
+        }
+
         state = im.Set(c, eventSystem);
-
         globalEventSystem = state;
     }
 
@@ -1053,28 +1017,28 @@ function resetImMouseState(mouse: MouseState) {
     mouse.rightMouseButton = false;
 }
 
-function addDocumentAndWindowEventListeners(eventSystem: GlobalEventSystem) {
-    document.addEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
-    document.addEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
-    document.addEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
-    document.addEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
-    document.addEventListener("click", eventSystem.globalEventHandlers.mouseclick);
-    document.addEventListener("wheel", eventSystem.globalEventHandlers.wheel);
-    document.addEventListener("keydown", eventSystem.globalEventHandlers.keydown);
-    document.addEventListener("keyup", eventSystem.globalEventHandlers.keyup);
-    window.addEventListener("blur", eventSystem.globalEventHandlers.blur);
+function adddocAndWindowEventListeners(eventSystem: GlobalEventSystem) {
+    doc.addEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
+    doc.addEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
+    doc.addEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
+    doc.addEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
+    doc.addEventListener("click", eventSystem.globalEventHandlers.mouseclick);
+    doc.addEventListener("wheel", eventSystem.globalEventHandlers.wheel);
+    doc.addEventListener("keydown", eventSystem.globalEventHandlers.keydown);
+    doc.addEventListener("keyup", eventSystem.globalEventHandlers.keyup);
+    win.addEventListener("blur", eventSystem.globalEventHandlers.blur);
 }
 
-function removeDocumentAndWindowEventListeners(eventSystem: GlobalEventSystem) {
-    document.removeEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
-    document.removeEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
-    document.removeEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
-    document.removeEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
-    document.removeEventListener("click", eventSystem.globalEventHandlers.mouseclick);
-    document.removeEventListener("wheel", eventSystem.globalEventHandlers.wheel);
-    document.removeEventListener("keydown", eventSystem.globalEventHandlers.keydown);
-    document.removeEventListener("keyup", eventSystem.globalEventHandlers.keyup);
-    window.removeEventListener("blur", eventSystem.globalEventHandlers.blur);
+function removedocAndWindowEventListeners(eventSystem: GlobalEventSystem) {
+    doc.removeEventListener("mousedown", eventSystem.globalEventHandlers.mousedown);
+    doc.removeEventListener("mousemove", eventSystem.globalEventHandlers.mousemove);
+    doc.removeEventListener("mouseenter", eventSystem.globalEventHandlers.mouseenter);
+    doc.removeEventListener("mouseup", eventSystem.globalEventHandlers.mouseup);
+    doc.removeEventListener("click", eventSystem.globalEventHandlers.mouseclick);
+    doc.removeEventListener("wheel", eventSystem.globalEventHandlers.wheel);
+    doc.removeEventListener("keydown", eventSystem.globalEventHandlers.keydown);
+    doc.removeEventListener("keyup", eventSystem.globalEventHandlers.keyup);
+    win.removeEventListener("blur", eventSystem.globalEventHandlers.blur);
 }
 
 ///////////////////////////
@@ -1421,6 +1385,8 @@ export const key = KEY;
 export const imdom = {
     /** Internal methods */
     newDomAppender,  // This is the typeId of a Dom Appender.
+    setWindow,       // Required for testing purposes
+
     getAppender: getCurrentAppender,  // Gets the current DOM appender. Very useful for utils
     getElement: getCurrentElement,    // Short for getAppender().root
 
@@ -1431,12 +1397,12 @@ export const imdom = {
      * function imMain(c: im.Cache) {
      *      try {
      *          im.CacheBegin(c, imMain); {
-     *              imdom.Begin(c, document.body); {
+     *              imdom.Begin(c, doc.body); {
      *                  // Your code here
-     *              } imdom.End(c, document.body, ev);
+     *              } imdom.End(c, doc.body, ev);
      *          } im.CacheEnd(c);
      *      } catch (e) {
-     *          document.body.replaceChildren();
+     *          doc.body.replaceChildren();
      *          throw e;
      *      }
      * }

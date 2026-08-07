@@ -218,11 +218,6 @@ export function imVisualTestHarness(
 
                         im.For(c); for (const test of tests) {
                             imSidebarItemBegin(c, sidebar, test); {
-                                const hasMouseOver = imdom.hasMouseOver(c);
-                                if (hasMouseOver) {
-                                    // TODO: same as right sidebar - hover any test.
-                                }
-
                                 if (imButtonIsClicked(c, test.name, test === currentTest)) {
                                     deferredEvent = () => {
                                         setCurrentTest(s, test, true);
@@ -399,38 +394,27 @@ function imSidebarBegin(c: ImCache, sidebar: SidebarState, currentItem: unknown)
             imdom.setStyle(c, "maxWidth", lerp(SIDEBAR_OPEN_TRIGGER_THRESHOLD * rootClientRect.width, 5000, sidebar.sideBarOpen01) + "px");
         }
 
-        sidebar.hoveredItem     = sidebar.hoveredItemNext;
-        sidebar.hoveredItemNext = undefined;
-        sidebar.currentItem     =  currentItem;
+        imui.Begin(c, COL); {
+            const hasMouseOver = imdom.hasMouseOver(c);
 
-        // animate sidebar
-        {
-            const mouse = imdom.getMouse();
-            const threshold = sidebar.sideBarOpen ? 0.3 : SIDEBAR_OPEN_TRIGGER_THRESHOLD;
-            let minX = 0, maxX = 0;
+            sidebar.hoveredItem     = sidebar.hoveredItemNext;
+            sidebar.hoveredItemNext = undefined;
+            sidebar.currentItem     =  currentItem;
 
-            if (isLeft) {
-                minX = rootClientRect.left;
-                maxX = lerp01(rootClientRect.left, rootClientRect.right, threshold);
-            } else {
-                minX = lerp01(rootClientRect.left, rootClientRect.right, 1 - threshold);
-                maxX = rootClientRect.right;
+            // animate sidebar
+            {
+                sidebar.sideBarOpen = hasMouseOver;
+                const target = sidebar.sideBarOpen ? 1 : 0;
+                sidebar.sideBarOpen01 = lerp01(sidebar.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
             }
-
-            if (minX <= mouse.x && mouse.x <= maxX) {
-                sidebar.sideBarOpen = true;
-            } else {
-                sidebar.sideBarOpen = false;
-            }
-
-            const target = sidebar.sideBarOpen ? 1 : 0;
-            sidebar.sideBarOpen01 = lerp01(sidebar.sideBarOpen01, target, 30 * im.getDeltaTimeSeconds(c));
-        }
+        } // imui.End
     } // imui.End
 }
 
 function imSidebarEnd(c: ImCache) {
     {
+        {
+        } imui.End(c);
     } imui.End(c);
 }
 

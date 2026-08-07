@@ -3,8 +3,6 @@
 // want to manually highlight every change you've made - 
 // this can automate that work away a bit.
 
-import { assert } from "assert";
-
 export const NONE   = 0;     // lines equal in both text
 export const INSERT = 1;     // lines inserted in the new text
 export const REMOVE = 2;     // lines removed from the old text

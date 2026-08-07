@@ -220,7 +220,7 @@ export type ImCacheRerenderFn = (c: ImCache) => void;
  * The main point of this framework is that rerendering your components as an animation eliminates and simplifies various problems, 
  * so it's pretty pointless if you have to start issuing manual rerenders.
  */
-function imCacheBegin(c: ImCache, isAnimationFrame: boolean) {
+function imCacheBegin(c: ImCache, isAnimationFrame: boolean = true) {
     const fpsState = getFpsCounterState(c);
 
     c[CACHE_IS_ANIMATION_FRAME] = isAnimationFrame;

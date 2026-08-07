@@ -47,6 +47,8 @@ const options: esbuild.BuildOptions = {
 	bundle: true,
 	minify: false,
 	write: false,
+	platform: "node",
+	format: "cjs",
 	stdin: {
 		// Can't believe this works!
 		// No reason why I can't put all the tests into a HTML file or something like that.
